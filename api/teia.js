@@ -1,7 +1,7 @@
 const HUBSPOT_BASE = 'https://api.hubapi.com';
 const ASSOC_CHUNK = 100;
 const COMPANY_CHUNK = 100;
-const MAX_DEALS = 2000;
+const MAX_DEALS = 2000; // teto de segurança — ajustar conforme performance
 
 function roleFromLabel(label) {
   if (!label) return null;
@@ -44,16 +44,15 @@ module.exports = async function handler(req, res) {
     // 1. Search API — só deals não fechados, ordenados por modificação recente
     let allDeals = [];
     let after = undefined;
+    let totalHubSpot = null;
 
     do {
-      // Exclui apenas "Recebido no Núcleo" (stage 0 dos dois pipelines)
-      // = tudo que avançou pelo menos até Diagnóstico/Briefing/Test Fit
       const body = {
         filterGroups: [{
           filters: [{
-            propertyName: 'dealstage',
-            operator: 'NOT_IN',
-            values: ['1360364548', '1360364560'], // Recebido no Núcleo (Projeto + Obra)
+            propertyName: 'pipeline',
+            operator: 'EQ',
+            value: '899974520', // pipeline Projeto
           }],
         }],
         properties: DEAL_PROPS,
@@ -67,6 +66,7 @@ module.exports = async function handler(req, res) {
       });
       if (!r.ok) throw new Error(`Deals Search error: ${r.status} ${await r.text()}`);
       const data = await r.json();
+      if (totalHubSpot === null) totalHubSpot = data.total ?? null;
       allDeals = allDeals.concat(data.results || []);
       after = data.paging?.next?.after;
       if (allDeals.length >= MAX_DEALS) break;
@@ -152,6 +152,7 @@ module.exports = async function handler(req, res) {
       total: deals.length,
       deals,
       _debug: {
+        totalHubSpot,
         totalDealsAbertos: allDeals.length,
         comEdificio,
         comNucleo,
