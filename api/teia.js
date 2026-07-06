@@ -46,13 +46,16 @@ module.exports = async function handler(req, res) {
     let after = undefined;
 
     do {
-      // Filtra deals que passaram por "Diagnóstico / Briefing / Test Fit"
-      // em qualquer um dos dois pipelines (Projeto ou Obra)
+      // Exclui apenas "Recebido no Núcleo" (stage 0 dos dois pipelines)
+      // = tudo que avançou pelo menos até Diagnóstico/Briefing/Test Fit
       const body = {
-        filterGroups: [
-          { filters: [{ propertyName: 'hs_date_entered_1366396702', operator: 'HAS_PROPERTY' }] }, // Projeto
-          { filters: [{ propertyName: 'hs_date_entered_1366399924', operator: 'HAS_PROPERTY' }] }, // Obra
-        ],
+        filterGroups: [{
+          filters: [{
+            propertyName: 'dealstage',
+            operator: 'NOT_IN',
+            values: ['1360364548', '1360364560'], // Recebido no Núcleo (Projeto + Obra)
+          }],
+        }],
         properties: DEAL_PROPS,
         sorts: [{ propertyName: 'hs_lastmodifieddate', direction: 'DESCENDING' }],
         limit: 100,
