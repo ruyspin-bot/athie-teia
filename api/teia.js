@@ -1,4 +1,7 @@
 const HUBSPOT_BASE = 'https://api.hubapi.com';
+const ASSOC_CHUNK = 100; // HubSpot recomenda ≤100 por batch
+const COMPANY_CHUNK = 100;
+const MAX_DEALS = 500; // limita para deals mais recentes na Fase 1
 
 function roleFromLabel(label) {
   if (!label) return null;
@@ -10,6 +13,12 @@ function roleFromLabel(label) {
   if (l.includes('parceiro') || l.includes('partner')) return 'parceiro';
   if (l.includes('concorrente') || l.includes('competitor')) return 'concorrente';
   return label;
+}
+
+function chunk(arr, size) {
+  const out = [];
+  for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
+  return out;
 }
 
 module.exports = async function handler(req, res) {
@@ -25,11 +34,10 @@ module.exports = async function handler(req, res) {
   };
 
   try {
-    // 1. Busca deals ativos com propriedades relevantes
+    // 1. Busca deals ativos (limita aos MAX_DEALS mais recentes)
     const DEAL_PROPS = [
-      'dealname', 'dealstage', 'pipeline',
+      'dealname', 'dealstage', 'pipeline', 'closedate',
       'aw_edificio_id', 'aw_andar_de_interesse',
-      // fallbacks caso os nomes sejam diferentes
       'edificio', 'andar', 'building', 'floor',
       'nucleo', 'nucleos', 'aw_nucleo',
     ].join(',');
@@ -43,54 +51,62 @@ module.exports = async function handler(req, res) {
       const data = await r.json();
       allDeals = allDeals.concat(data.results || []);
       after = data.paging?.next?.after;
+      if (allDeals.length >= MAX_DEALS) break; // não passa do limite
     } while (after);
 
-    if (allDeals.length === 0) return res.json({ deals: [], companies: {}, associations: [] });
+    allDeals = allDeals.slice(0, MAX_DEALS);
 
-    // 2. Busca associações deal→company COM rótulos (v4)
-    const dealIds = allDeals.map(d => ({ id: d.id }));
-    const assocRes = await fetch(
-      `${HUBSPOT_BASE}/crm/v4/associations/deals/companies/batch/read`,
-      { method: 'POST', headers: h, body: JSON.stringify({ inputs: dealIds }) }
-    );
-    if (!assocRes.ok) throw new Error(`Associations API error: ${assocRes.status} ${await assocRes.text()}`);
-    const assocData = await assocRes.json();
+    if (allDeals.length === 0) return res.json({ deals: [], companies: {} });
 
-    // Monta mapa dealId → [{ companyId, label }]
+    // 2. Associações deal→company em chunks de ASSOC_CHUNK
+    const dealIdChunks = chunk(allDeals.map(d => ({ id: d.id })), ASSOC_CHUNK);
     const dealToCompanies = {};
     const companyIdSet = new Set();
-    (assocData.results || []).forEach(r => {
-      const dealId = r.from.id;
-      dealToCompanies[dealId] = [];
-      (r.to || []).forEach(t => {
-        const label = t.associationTypes?.[0]?.label || null;
-        dealToCompanies[dealId].push({ companyId: String(t.toObjectId), label });
-        companyIdSet.add(String(t.toObjectId));
-      });
-    });
 
-    // 3. Busca detalhes das companies
-    let companiesMap = {};
-    if (companyIdSet.size > 0) {
-      const compRes = await fetch(
+    for (const batch of dealIdChunks) {
+      const r = await fetch(
+        `${HUBSPOT_BASE}/crm/v4/associations/deals/companies/batch/read`,
+        { method: 'POST', headers: h, body: JSON.stringify({ inputs: batch }) }
+      );
+      if (!r.ok) {
+        console.error('Associations batch error:', await r.text());
+        continue; // ignora chunk com erro, não derruba tudo
+      }
+      const data = await r.json();
+      (data.results || []).forEach(item => {
+        const dealId = item.from.id;
+        dealToCompanies[dealId] = [];
+        (item.to || []).forEach(t => {
+          const label = t.associationTypes?.[0]?.label || null;
+          dealToCompanies[dealId].push({ companyId: String(t.toObjectId), label });
+          companyIdSet.add(String(t.toObjectId));
+        });
+      });
+    }
+
+    // 3. Detalhes das companies em chunks de COMPANY_CHUNK
+    const companiesMap = {};
+    const companyIds = [...companyIdSet];
+
+    for (const batch of chunk(companyIds, COMPANY_CHUNK)) {
+      const r = await fetch(
         `${HUBSPOT_BASE}/crm/v3/objects/companies/batch/read`,
         {
           method: 'POST', headers: h,
           body: JSON.stringify({
-            inputs: [...companyIdSet].map(id => ({ id })),
-            properties: ['name', 'domain', 'type'],
+            inputs: batch.map(id => ({ id })),
+            properties: ['name', 'domain'],
           }),
         }
       );
-      if (compRes.ok) {
-        const compData = await compRes.json();
-        (compData.results || []).forEach(c => {
-          companiesMap[c.id] = c.properties?.name || `Company ${c.id}`;
-        });
-      }
+      if (!r.ok) continue;
+      const data = await r.json();
+      (data.results || []).forEach(c => {
+        companiesMap[c.id] = c.properties?.name || `Company ${c.id}`;
+      });
     }
 
-    // 4. Monta payload normalizado para o frontend
+    // 4. Normaliza para o frontend
     const deals = allDeals.map(d => {
       const p = d.properties || {};
       const edificio = p.aw_edificio_id || p.edificio || p.building || null;
@@ -112,7 +128,6 @@ module.exports = async function handler(req, res) {
         andar,
         nucleo,
         ...actors,
-        // debug: todas as associações brutas
         _associacoes: (dealToCompanies[d.id] || []).map(a => ({
           empresa: companiesMap[a.companyId] || a.companyId,
           rotulo: a.label,
@@ -120,15 +135,10 @@ module.exports = async function handler(req, res) {
       };
     });
 
-    return res.json({
-      total: deals.length,
-      deals,
-      // inclui mapa de companies para debug
-      _companies: companiesMap,
-    });
+    return res.json({ total: deals.length, deals });
 
   } catch (err) {
     console.error(err);
     return res.status(500).json({ error: err.message });
   }
-}
+};
