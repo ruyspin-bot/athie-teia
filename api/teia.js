@@ -1,24 +1,41 @@
 const HUBSPOT_BASE = 'https://api.hubapi.com';
 const ASSOC_CHUNK = 100;
 const COMPANY_CHUNK = 100;
-const MAX_DEALS = 2000; // teto de segurança — ajustar conforme performance
+const MAX_DEALS = 2000;
 
+// Rótulos reais do HubSpot da ATIE (confirmados 05/07/2026)
 function roleFromLabel(label) {
   if (!label) return null;
-  const l = label.toLowerCase();
-  if (l.includes('cliente') || l.includes('client')) return 'cliente';
-  if (l.includes('broker') || l.includes('corretor')) return 'broker';
-  if (l.includes('gerenciadora') || l.includes('property manager') || l.includes('gestora')) return 'gerenciadora';
-  if (l.includes('dono') || l.includes('incorporador') || l.includes('owner') || l.includes('proprietário')) return 'dono';
-  if (l.includes('parceiro') || l.includes('partner')) return 'parceiro';
-  if (l.includes('concorrente') || l.includes('competitor')) return 'concorrente';
-  return label;
+  const l = label.toLowerCase().trim();
+  if (l === 'cliente final' || l === 'cliente') return 'cliente';
+  if (l === 'broker' || l.includes('corretor')) return 'broker';
+  if (l.includes('edificio avaliado') || l.includes('edifício do deal') || l.includes('edificio do deal')) return 'edificio';
+  if (l === 'gerenciadora') return 'gerenciadora';
+  if (l === 'escritório parceiro' || l === 'escritorio parceiro' || l.includes('parceiro')) return 'parceiro';
+  if (l === 'concorrente') return 'concorrente';
+  if (l.includes('indicou') || l === 'indicador') return 'indicador';
+  if (l === 'pm do cliente' || l === 'pm') return 'pm';
+  if (l.includes('dono') || l.includes('incorporador')) return 'dono';
+  return null;
 }
 
 function chunk(arr, size) {
   const out = [];
   for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
   return out;
+}
+
+async function fetchWithRetry(url, opts = {}, retries = 3) {
+  for (let i = 0; i < retries; i++) {
+    const r = await fetch(url, opts);
+    if (r.status === 429) {
+      const wait = (i + 1) * 1000;
+      await new Promise(res => setTimeout(res, wait));
+      continue;
+    }
+    return r;
+  }
+  throw new Error('Rate limit persistente após retries');
 }
 
 module.exports = async function handler(req, res) {
@@ -28,20 +45,12 @@ module.exports = async function handler(req, res) {
   const token = process.env.HUBSPOT_TOKEN;
   if (!token) return res.status(500).json({ error: 'HUBSPOT_TOKEN não configurado' });
 
-  const h = {
-    'Authorization': `Bearer ${token}`,
-    'Content-Type': 'application/json',
-  };
+  const h = { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' };
 
-  const DEAL_PROPS = [
-    'dealname', 'dealstage', 'pipeline', 'closedate', 'hs_lastmodifieddate',
-    'aw_edificio_id', 'aw_andar_de_interesse',
-    'edificio', 'andar', 'building', 'floor',
-    'nucleo', 'nucleos', 'aw_nucleo',
-  ];
+  const DEAL_PROPS = ['dealname', 'dealstage', 'pipeline', 'hs_lastmodifieddate'];
 
   try {
-    // 1. Search API — só deals não fechados, ordenados por modificação recente
+    // 1. Busca deals do pipeline Projeto (899974520)
     let allDeals = [];
     let after = undefined;
     let totalHubSpot = null;
@@ -49,11 +58,7 @@ module.exports = async function handler(req, res) {
     do {
       const body = {
         filterGroups: [{
-          filters: [{
-            propertyName: 'pipeline',
-            operator: 'EQ',
-            value: '899974520', // pipeline Projeto
-          }],
+          filters: [{ propertyName: 'pipeline', operator: 'EQ', value: '899974520' }],
         }],
         properties: DEAL_PROPS,
         sorts: [{ propertyName: 'hs_lastmodifieddate', direction: 'DESCENDING' }],
@@ -61,7 +66,7 @@ module.exports = async function handler(req, res) {
         ...(after ? { after } : {}),
       };
 
-      const r = await fetch(`${HUBSPOT_BASE}/crm/v3/objects/deals/search`, {
+      const r = await fetchWithRetry(`${HUBSPOT_BASE}/crm/v3/objects/deals/search`, {
         method: 'POST', headers: h, body: JSON.stringify(body),
       });
       if (!r.ok) throw new Error(`Deals Search error: ${r.status} ${await r.text()}`);
@@ -75,19 +80,19 @@ module.exports = async function handler(req, res) {
     allDeals = allDeals.slice(0, MAX_DEALS);
 
     if (allDeals.length === 0) {
-      return res.json({ total: 0, deals: [], _debug: 'Nenhum deal aberto encontrado' });
+      return res.json({ total: 0, deals: [], _debug: { totalHubSpot, msg: 'Nenhum deal encontrado' } });
     }
 
-    // 2. Associações em chunks
+    // 2. Associações deal→company em chunks (com rótulos v4)
     const dealToCompanies = {};
     const companyIdSet = new Set();
 
     for (const batch of chunk(allDeals.map(d => ({ id: d.id })), ASSOC_CHUNK)) {
-      const r = await fetch(
+      const r = await fetchWithRetry(
         `${HUBSPOT_BASE}/crm/v4/associations/deals/companies/batch/read`,
         { method: 'POST', headers: h, body: JSON.stringify({ inputs: batch }) }
       );
-      if (!r.ok) { console.error('Assoc error', await r.text()); continue; }
+      if (!r.ok) { console.error('Assoc error', r.status); continue; }
       const data = await r.json();
       (data.results || []).forEach(item => {
         const dealId = item.from.id;
@@ -100,10 +105,10 @@ module.exports = async function handler(req, res) {
       });
     }
 
-    // 3. Companies em chunks
+    // 3. Nomes das companies em chunks
     const companiesMap = {};
     for (const batch of chunk([...companyIdSet], COMPANY_CHUNK)) {
-      const r = await fetch(`${HUBSPOT_BASE}/crm/v3/objects/companies/batch/read`, {
+      const r = await fetchWithRetry(`${HUBSPOT_BASE}/crm/v3/objects/companies/batch/read`, {
         method: 'POST', headers: h,
         body: JSON.stringify({ inputs: batch.map(id => ({ id })), properties: ['name'] }),
       });
@@ -117,24 +122,21 @@ module.exports = async function handler(req, res) {
     // 4. Normaliza para o frontend
     const deals = allDeals.map(d => {
       const p = d.properties || {};
-      const edificio = p.aw_edificio_id || p.edificio || p.building || null;
-      const andar    = p.aw_andar_de_interesse || p.andar || p.floor || null;
-      const nucleo   = p.aw_nucleo || p.nucleo || p.nucleos || null;
-
       const actors = {};
       (dealToCompanies[d.id] || []).forEach(({ companyId, label }) => {
         const role = roleFromLabel(label);
         const name = companiesMap[companyId] || companyId;
-        if (role) actors[role] = name;
+        if (role && !actors[role]) actors[role] = name; // primeiro ganha
       });
 
       return {
         id: d.id,
         nome: p.dealname || `Deal ${d.id}`,
         stage: p.dealstage || null,
-        edificio,
-        andar,
-        nucleo,
+        nucleo: null, // confirmar propriedade com Lucca
+        // edificio vem da associação "Edificio avaliado em"
+        edificio: actors.edificio || null,
+        andar: null,
         ...actors,
         _associacoes: (dealToCompanies[d.id] || []).map(a => ({
           empresa: companiesMap[a.companyId] || a.companyId,
@@ -143,23 +145,22 @@ module.exports = async function handler(req, res) {
       };
     });
 
-    // debug: mostra quais propriedades de prédio/andar vieram preenchidas
-    const comEdificio = deals.filter(d => d.edificio).length;
-    const comNucleo   = deals.filter(d => d.nucleo).length;
-    const comBroker   = deals.filter(d => d.broker).length;
+    const comEdificio  = deals.filter(d => d.edificio).length;
+    const comBroker    = deals.filter(d => d.broker).length;
+    const comCliente   = deals.filter(d => d.cliente).length;
+    const comGerenc    = deals.filter(d => d.gerenciadora).length;
 
     return res.json({
       total: deals.length,
       deals,
       _debug: {
         totalHubSpot,
-        totalDealsAbertos: allDeals.length,
+        totalBuscados: allDeals.length,
         comEdificio,
-        comNucleo,
         comBroker,
-        aviso: comEdificio === 0
-          ? 'Nenhum deal tem o campo edificio preenchido — confirmar nome da propriedade no HubSpot'
-          : null,
+        comCliente,
+        comGerenciadora: comGerenc,
+        aviso: comEdificio === 0 ? 'Nenhum deal tem o rótulo "Edificio avaliado em" — confirmar com Lucca' : null,
       },
     });
 
