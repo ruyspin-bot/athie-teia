@@ -9,7 +9,7 @@ function roleFromLabel(label) {
   const l = label.toLowerCase().trim();
   if (l === 'cliente final' || l === 'cliente') return 'cliente';
   if (l === 'broker' || l.includes('corretor')) return 'broker';
-  if (l.includes('edificio avaliado') || l.includes('edifício do deal') || l.includes('edificio do deal')) return 'edificio';
+  if (l.includes('edificio avaliado') || l.includes('edifício avaliado') || l.includes('edifício do deal') || l.includes('edificio do deal')) return 'edificio';
   if (l === 'gerenciadora') return 'gerenciadora';
   if (l === 'escritório parceiro' || l === 'escritorio parceiro' || l.includes('parceiro')) return 'parceiro';
   if (l === 'concorrente') return 'concorrente';
@@ -126,7 +126,12 @@ module.exports = async function handler(req, res) {
       (dealToCompanies[d.id] || []).forEach(({ companyId, label }) => {
         const role = roleFromLabel(label);
         const name = companiesMap[companyId] || companyId;
-        if (role && !actors[role]) actors[role] = name; // primeiro ganha
+        if (role && !actors[role]) {
+          actors[role] = name;
+        } else if (!role && !actors.edificio && /^edif[íi]cio\b/i.test(name)) {
+          // Fallback: empresa nomeada "Edifício X" sem rótulo → prédio
+          actors.edificio = name;
+        }
       });
 
       return {
@@ -150,6 +155,8 @@ module.exports = async function handler(req, res) {
     const comCliente   = deals.filter(d => d.cliente).length;
     const comGerenc    = deals.filter(d => d.gerenciadora).length;
 
+    const comEdificioFallback = deals.filter(d => d.edificio && !(dealToCompanies[d.id] || []).some(a => a.label && a.label.toLowerCase().includes('avaliado'))).length;
+
     return res.json({
       total: deals.length,
       deals,
@@ -160,7 +167,8 @@ module.exports = async function handler(req, res) {
         comBroker,
         comCliente,
         comGerenciadora: comGerenc,
-        aviso: comEdificio === 0 ? 'Nenhum deal tem o rótulo "Edificio avaliado em" — confirmar com Lucca' : null,
+        comEdificioViaFallbackNome: comEdificioFallback,
+        aviso: comEdificio === 0 ? 'Nenhum deal com rótulo "Edifício avaliado em" — verificar accent fix' : null,
       },
     });
 
