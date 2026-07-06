@@ -98,7 +98,7 @@ module.exports = async function handler(req, res) {
         const dealId = item.from.id;
         dealToCompanies[dealId] = [];
         (item.to || []).forEach(t => {
-          const label = t.associationTypes?.[0]?.label || null;
+          const label = t.associationTypes?.find(at => at.label)?.label || null;
           dealToCompanies[dealId].push({ companyId: String(t.toObjectId), label });
           companyIdSet.add(String(t.toObjectId));
         });
