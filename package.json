@@ -2,7 +2,11 @@
   "name": "athie-teia",
   "version": "1.0.0",
   "private": true,
-"engines": {
+  "description": "A Teia — visualização de interconexões (deals/companies) do HubSpot da Athié Wohnrath.",
+  "engines": {
     "node": ">=18"
+  },
+  "scripts": {
+    "dev": "vercel dev"
   }
 }

@@ -1,179 +1,298 @@
+/**
+ * /api/teia
+ * ------------------------------------------------------------------
+ * Versão Fase 2 — lê Andar e Edifício como Custom Objects de verdade,
+ * em vez do texto livre no Deal. Estrutura:
+ *   1. Deals ativos.
+ *   2. Deal -> Company (Cliente Final, Broker, Gerenciadora, ...) — igual
+ *      já era, sem mudança.
+ *   3. Deal -> Andar (rótulo "Negócio"/"Andar Negociado").
+ *   4. Andar -> Edifício (rótulo "Pertence a").
+ *   5. Andar -> Company (rótulo "Dono"/"Proprietário").
+ *   6. Monta um array `andares` por deal, cada um com seu próprio dono —
+ *      isso é o que resolve "dono variando por andar no mesmo negócio".
+ *
+ * Se a leitura dos Custom Objects falhar (nome do objeto errado, escopo
+ * faltando, ou eles ainda não existirem/populados), cai para o modelo
+ * antigo (edifício/andar como texto no Deal) e avisa em meta.aviso —
+ * nunca quebra a teia por causa disso.
+ *
+ * CONFIGURAÇÃO NECESSÁRIA (variáveis de ambiente na Vercel):
+ *   HUBSPOT_TOKEN        (obrigatória) — token do Private App, escopos:
+ *                         crm.objects.deals.read, crm.objects.companies.read,
+ *                         crm.objects.custom.read, crm.schemas.deals.read,
+ *                         crm.schemas.companies.read, crm.schemas.custom.read
+ *
+ * CONFIGURAÇÃO DOS CUSTOM OBJECTS — ver README "Em aberto (Fase 2)".
+ * Os defaults abaixo são um PALPITE a partir do portal ID do Blueprint
+ * (51253038) + convenção padrão do HubSpot (p<portalId>_<nome plural>).
+ * CONFIRME na tela "Detalhes da API" de um registro real antes de confiar.
+ *   HUBSPOT_OBJECT_ANDAR         (default: "p51253038_andares")
+ *   HUBSPOT_OBJECT_EDIFICIO      (default: "p51253038_edificios")
+ *   HUBSPOT_PROP_ANDAR_NOME      (default: "nome_do_andar")
+ *   HUBSPOT_PROP_ANDAR_NUMERO    (default: "numero_do_andar")
+ *   HUBSPOT_PROP_EDIFICIO_NOME   (default: "name" — display property padrão)
+ *   HUBSPOT_PROP_EDIFICIO_CNPJ   (default: "cnpj_do_condominio")
+ *
+ * CONFIGURAÇÃO ANTIGA, mantida como fallback (ver README):
+ *   HUBSPOT_PROP_EDIFICIO   (default: "aw_edificio_id")
+ *   HUBSPOT_PROP_ANDAR      (default: "aw_andar_de_interesse")
+ *   HUBSPOT_NUCLEO_SOURCE   "pipeline" (default) ou "property"
+ *   HUBSPOT_PROP_NUCLEO     nome da propriedade, se HUBSPOT_NUCLEO_SOURCE=property
+ * ------------------------------------------------------------------
+ */
+
+const {
+  makeClient,
+  getPipelineNames,
+  getActiveDeals,
+  getAssociations,
+  getObjectsById,
+  getCompanies,
+} = require('../lib/hubspot');
+
 const HUBSPOT_BASE = 'https://api.hubapi.com';
-const ASSOC_CHUNK = 100;
-const COMPANY_CHUNK = 100;
-const MAX_DEALS = 2000;
 
-// Rótulos reais do HubSpot da ATIE (confirmados 05/07/2026)
-function roleFromLabel(label) {
-  if (!label) return null;
-  const l = label.toLowerCase().trim();
-  if (l === 'cliente final' || l === 'cliente') return 'cliente';
-  if (l === 'broker' || l.includes('corretor')) return 'broker';
-  if (l.includes('edificio avaliado') || l.includes('edifício avaliado') || l.includes('edifício do deal') || l.includes('edificio do deal')) return 'edificio';
-  if (l === 'gerenciadora') return 'gerenciadora';
-  if (l === 'escritório parceiro' || l === 'escritorio parceiro' || l.includes('parceiro')) return 'parceiro';
-  if (l === 'concorrente') return 'concorrente';
-  if (l.includes('indicou') || l === 'indicador') return 'indicador';
-  if (l === 'pm do cliente' || l === 'pm') return 'pm';
-  if (l.includes('dono') || l.includes('incorporador')) return 'dono';
-  return null;
-}
+// ---- Custom Objects da Fase 2 (palpite a confirmar — ver docstring acima) ----
+const OBJ_ANDAR = process.env.HUBSPOT_OBJECT_ANDAR || 'p51253038_andares';
+const OBJ_EDIFICIO = process.env.HUBSPOT_OBJECT_EDIFICIO || 'p51253038_edificios';
+const PROP_ANDAR_NOME = process.env.HUBSPOT_PROP_ANDAR_NOME || 'nome_do_andar';
+const PROP_ANDAR_NUMERO = process.env.HUBSPOT_PROP_ANDAR_NUMERO || 'numero_do_andar';
+const PROP_EDIFICIO_NOME = process.env.HUBSPOT_PROP_EDIFICIO_NOME || 'nome_do_edificio';
+const PROP_EDIFICIO_CNPJ = process.env.HUBSPOT_PROP_EDIFICIO_CNPJ || 'cnpj_do_condominio';
 
-function chunk(arr, size) {
-  const out = [];
-  for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
-  return out;
-}
+// ---- fallback do modelo antigo (Fase 1), usado só se os Custom Objects falharem ----
+const PROP_EDIFICIO = process.env.HUBSPOT_PROP_EDIFICIO || 'aw_edificio_id';
+const PROP_ANDAR = process.env.HUBSPOT_PROP_ANDAR || 'aw_andar_de_interesse';
+const NUCLEO_SOURCE = process.env.HUBSPOT_NUCLEO_SOURCE || 'pipeline'; // 'pipeline' | 'property'
+const PROP_NUCLEO = process.env.HUBSPOT_PROP_NUCLEO || 'nucleo';
 
-async function fetchWithRetry(url, opts = {}, retries = 3) {
-  for (let i = 0; i < retries; i++) {
-    const r = await fetch(url, opts);
-    if (r.status === 429) {
-      const wait = (i + 1) * 1000;
-      await new Promise(res => setTimeout(res, wait));
-      continue;
-    }
-    return r;
-  }
-  throw new Error('Rate limit persistente após retries');
-}
+// ---- mapeia o RÓTULO da associação Deal<->Company para um papel conhecido ----
+// Confirmado em 09/07 direto na tela de edição de associação (Deal<->Company)
+// do HubSpot da ATIE. Rótulos reais (8, incluindo os pares): Cliente Final,
+// Broker, Concorrente, Escritório Parceiro, Gerenciadora, "Edificio avaliado
+// em" / "Edificio do Deal", "Indicou em" / "Indicador", "PM do Cliente" /
+// "Deal como PM". Rótulos que não baterem em nada caem em "outro" (viram nó
+// tipo "escritorio") e são listados em meta.unmatched_labels.
+//
+// IMPORTANTE — "Dono"/"Incorporador"/"Dona de Prédio" NÃO existem como rótulo
+// de associação Deal<->Company (só existem como opção da propriedade "Papéis
+// Possíveis" da Company). Ou seja: hoje não tem como a teia mostrar "dono do
+// andar" a partir da associação do deal. O campo "Proprietário da empresa" que
+// aparece no card da Company é provavelmente uma associação Company<->Company
+// separada — ainda não lida por esta função (ver README, seção "Em aberto").
+const ROLE_RULES = [
+  { role: 'cliente', match: /cliente/i },                       // "Cliente Final"
+  { role: 'broker', match: /broker/i },                         // "Broker"
+  { role: 'gerenciadora', match: /gerenc/i },                   // "Gerenciadora"
+  { role: 'edificio_company', match: /edif[íi]cio/i },          // "Edificio avaliado em" / "Edificio do Deal"
+  { role: 'parceiro', match: /parceir/i },                      // "Escritório Parceiro" / "Deal como Parceiro"
+  { role: 'concorrente', match: /concorrent/i },                // "Concorrente"
+  { role: 'indicador', match: /indic/i },                       // "Indicou em" / "Indicador"
+  { role: 'pm', match: /\bpm\b/i },                             // "PM do Cliente" / "Deal como PM"
+];
 
-module.exports = async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Cache-Control', 's-maxage=120, stale-while-revalidate=60');
+// cache em memória — só ajuda enquanto a função ficar "quente" (mesma instância);
+// reduz chamadas em navegações repetidas dentro de poucos minutos.
+let cache = { at: 0, payload: null };
+const CACHE_TTL_MS = 2 * 60 * 1000; // 2 minutos
 
-  const token = process.env.HUBSPOT_TOKEN;
-  if (!token) return res.status(500).json({ error: 'HUBSPOT_TOKEN não configurado' });
-
-  const h = { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' };
-
-  const DEAL_PROPS = ['dealname', 'dealstage', 'pipeline', 'hs_lastmodifieddate'];
-
+module.exports = async (req, res) => {
   try {
-    // 1. Busca deals do pipeline Projeto (899974520)
-    let allDeals = [];
-    let after = undefined;
-    let totalHubSpot = null;
+    const token = process.env.HUBSPOT_TOKEN;
+    if (!token) {
+      res.status(500).json({ error: 'Faltou configurar HUBSPOT_TOKEN nas variáveis de ambiente da Vercel.' });
+      return;
+    }
 
-    do {
-      const body = {
-        filterGroups: [{
-          filters: [{ propertyName: 'pipeline', operator: 'EQ', value: '899974520' }],
-        }],
-        properties: DEAL_PROPS,
-        sorts: [{ propertyName: 'hs_lastmodifieddate', direction: 'DESCENDING' }],
-        limit: 100,
-        ...(after ? { after } : {}),
+    if (cache.payload && Date.now() - cache.at < CACHE_TTL_MS) {
+      res.setHeader('Cache-Control', 'no-store');
+      res.status(200).json(cache.payload);
+      return;
+    }
+
+    const hs = makeClient(token);
+
+    const nucleoByPipelineId = NUCLEO_SOURCE === 'pipeline' ? await getPipelineNames(hs) : null;
+
+    const allDeals = await getActiveDeals(hs, [
+      'dealname',
+      'pipeline',
+      'dealstage',
+      PROP_EDIFICIO,
+      PROP_ANDAR,
+      PROP_NUCLEO,
+    ]);
+    if (!allDeals.length) {
+      const payload = { deals: [], meta: { total_deals: 0, deals_incluidos: 0, gerado_em: new Date().toISOString(), fonte: 'hubspot' } };
+      res.status(200).json(payload);
+      return;
+    }
+
+    const allDealIds = allDeals.map((d) => d.id);
+    const associationsByDeal = await getAssociations(hs, 'deals', 'companies', allDealIds);
+
+    // Filtro core: só deals com ao menos 1 associação a empresa
+    const rawDeals = allDeals.filter((d) => (associationsByDeal[d.id] || []).length > 0);
+
+    const companyIdsFromDeals = [...new Set(Object.values(associationsByDeal).flatMap((arr) => arr.map((a) => a.toId)))];
+
+    let deals_sem_edificio = 0;
+    let deals_com_empresa_edificio = 0;
+    const unmatchedLabels = new Set();
+
+    // ---- tenta ler a Fase 2 (Custom Objects Andar/Edifício) ----
+    let andaresByDeal = {};
+    let andaresById = {};
+    let edificiosById = {};
+    let donoByAndar = {};
+    let companyIdsFromAndares = [];
+    let fase2Ok = false;
+    let fase2Erro = null;
+
+    try {
+      const dealAndarAssoc = await getAssociations(hs, 'deals', OBJ_ANDAR, allDealIds);
+      const andarIds = [...new Set(Object.values(dealAndarAssoc).flatMap((arr) => arr.map((a) => a.toId)))];
+
+      if (andarIds.length) {
+        andaresById = await getObjectsById(hs, OBJ_ANDAR, andarIds, [PROP_ANDAR_NOME, PROP_ANDAR_NUMERO]);
+
+        const andarEdificioAssoc = await getAssociations(hs, OBJ_ANDAR, OBJ_EDIFICIO, andarIds);
+        const edificioIds = [...new Set(Object.values(andarEdificioAssoc).flatMap((arr) => arr.map((a) => a.toId)))];
+        if (edificioIds.length) {
+          edificiosById = await getObjectsById(hs, OBJ_EDIFICIO, edificioIds, [PROP_EDIFICIO_NOME, PROP_EDIFICIO_CNPJ]);
+        }
+
+        const andarCompanyAssoc = await getAssociations(hs, OBJ_ANDAR, 'companies', andarIds);
+        companyIdsFromAndares = [...new Set(Object.values(andarCompanyAssoc).flatMap((arr) => arr.map((a) => a.toId)))];
+
+        // monta: andarId -> { id, nome, numero, edificio, dono }
+        andarIds.forEach((andarId) => {
+          const andarObj = andaresById[andarId];
+          const edificioAssoc = (andarEdificioAssoc[andarId] || [])[0];
+          const edificioObj = edificioAssoc ? edificiosById[edificioAssoc.toId] : null;
+          const donoAssoc = (andarCompanyAssoc[andarId] || [])[0];
+
+          donoByAndar[andarId] = {
+            andar: andarObj
+              ? {
+                  id: andarId,
+                  nome: andarObj.properties[PROP_ANDAR_NOME] || `Andar ${andarId}`,
+                  numero: andarObj.properties[PROP_ANDAR_NUMERO] || null,
+                }
+              : { id: andarId, nome: `Andar ${andarId}`, numero: null },
+            edificio: edificioObj
+              ? { id: edificioAssoc.toId, nome: edificioObj.properties[PROP_EDIFICIO_NOME] || `Edifício ${edificioAssoc.toId}` }
+              : null,
+            donoCompanyId: donoAssoc ? donoAssoc.toId : null,
+          };
+        });
+
+        // deal -> lista de andares (objeto completo, dono resolvido depois que tivermos os nomes das companies)
+        Object.entries(dealAndarAssoc).forEach(([dealId, arr]) => {
+          andaresByDeal[dealId] = arr.map((a) => donoByAndar[a.toId]).filter(Boolean);
+        });
+
+        fase2Ok = true;
+      }
+    } catch (err) {
+      fase2Erro = err.message;
+      console.warn('[api/teia] Fase 2 (Andar/Edifício) indisponível, usando fallback de texto:', err.message);
+    }
+
+    // companies: as dos rótulos do deal + as donas de andar, tudo num batch só
+    const allCompanyIds = [...new Set([...companyIdsFromDeals, ...companyIdsFromAndares])];
+    const companiesById = await getCompanies(hs, allCompanyIds);
+
+    const deals = rawDeals.map((d) => {
+      const p = d.properties || {};
+      const nucleo =
+        NUCLEO_SOURCE === 'pipeline'
+          ? nucleoByPipelineId[p.pipeline] || p.pipeline || 'Núcleo não identificado'
+          : p[PROP_NUCLEO] || 'Núcleo não identificado';
+
+      const record = {
+        id: d.id,
+        nome: p.dealname || `Deal ${d.id}`,
+        nucleo,
+        stage: p.dealstage || '—',
+        cliente: null,
+        broker: null,
+        gerenciadora: null,
+        dono: null,
+        parceiro: null,
+        concorrente: null,
+        edificio: null,
+        andar: null,
+        andares: [], // Fase 2: cada item tem seu próprio dono
       };
 
-      const r = await fetchWithRetry(`${HUBSPOT_BASE}/crm/v3/objects/deals/search`, {
-        method: 'POST', headers: h, body: JSON.stringify(body),
-      });
-      if (!r.ok) throw new Error(`Deals Search error: ${r.status} ${await r.text()}`);
-      const data = await r.json();
-      if (totalHubSpot === null) totalHubSpot = data.total ?? null;
-      allDeals = allDeals.concat(data.results || []);
-      after = data.paging?.next?.after;
-      if (allDeals.length >= MAX_DEALS) break;
-    } while (after);
-
-    allDeals = allDeals.slice(0, MAX_DEALS);
-
-    if (allDeals.length === 0) {
-      return res.json({ total: 0, deals: [], _debug: { totalHubSpot, msg: 'Nenhum deal encontrado' } });
-    }
-
-    // 2. Associações deal→company em chunks (com rótulos v4)
-    const dealToCompanies = {};
-    const companyIdSet = new Set();
-
-    for (const batch of chunk(allDeals.map(d => ({ id: d.id })), ASSOC_CHUNK)) {
-      const r = await fetchWithRetry(
-        `${HUBSPOT_BASE}/crm/v4/associations/deals/companies/batch/read`,
-        { method: 'POST', headers: h, body: JSON.stringify({ inputs: batch }) }
-      );
-      if (!r.ok) { console.error('Assoc error', r.status); continue; }
-      const data = await r.json();
-      (data.results || []).forEach(item => {
-        const dealId = item.from.id;
-        dealToCompanies[dealId] = [];
-        (item.to || []).forEach(t => {
-          const label = t.associationTypes?.find(at => at.label)?.label || null;
-          dealToCompanies[dealId].push({ companyId: String(t.toObjectId), label });
-          companyIdSet.add(String(t.toObjectId));
-        });
-      });
-    }
-
-    // 3. Nomes das companies em chunks
-    const companiesMap = {};
-    for (const batch of chunk([...companyIdSet], COMPANY_CHUNK)) {
-      const r = await fetchWithRetry(`${HUBSPOT_BASE}/crm/v3/objects/companies/batch/read`, {
-        method: 'POST', headers: h,
-        body: JSON.stringify({ inputs: batch.map(id => ({ id })), properties: ['name'] }),
-      });
-      if (!r.ok) continue;
-      const data = await r.json();
-      (data.results || []).forEach(c => {
-        companiesMap[c.id] = c.properties?.name || `Company ${c.id}`;
-      });
-    }
-
-    // 4. Normaliza para o frontend
-    const deals = allDeals.map(d => {
-      const p = d.properties || {};
-      const actors = {};
-      (dealToCompanies[d.id] || []).forEach(({ companyId, label }) => {
-        const role = roleFromLabel(label);
-        const name = companiesMap[companyId] || companyId;
-        if (role && !actors[role]) {
-          actors[role] = name;
-        } else if (!role && !actors.edificio && /^edif[íi]cio\b/i.test(name)) {
-          // Fallback: empresa nomeada "Edifício X" sem rótulo → prédio
-          actors.edificio = name;
+      // ---- papéis Deal<->Company (Cliente Final, Broker...) — igual antes ----
+      const assocs = associationsByDeal[d.id] || [];
+      assocs.forEach((a) => {
+        const company = companiesById[a.toId];
+        const companyName = company ? company.properties.name : `Company ${a.toId}`;
+        const rule = ROLE_RULES.find((r) => r.match.test(a.label || ''));
+        const role = rule ? rule.role : 'outro';
+        if (role === 'edificio_company') {
+          deals_com_empresa_edificio++;
+          record.edificio_company_legado = companyName;
+        } else if (role === 'outro') {
+          unmatchedLabels.add(a.label || '(sem rótulo)');
+          if (!record.parceiro) record.parceiro = companyName;
+        } else if (!record[role]) {
+          record[role] = companyName;
         }
       });
 
-      return {
-        id: d.id,
-        nome: p.dealname || `Deal ${d.id}`,
-        stage: p.dealstage || null,
-        nucleo: null, // confirmar propriedade com Lucca
-        // edificio vem da associação "Edificio avaliado em"
-        edificio: actors.edificio || null,
-        andar: null,
-        ...actors,
-        _associacoes: (dealToCompanies[d.id] || []).map(a => ({
-          empresa: companiesMap[a.companyId] || a.companyId,
-          rotulo: a.label,
-        })),
-      };
+      // ---- Fase 2: andares reais, cada um com seu dono ----
+      const andaresDoDeal = andaresByDeal[d.id] || [];
+      if (fase2Ok && andaresDoDeal.length) {
+        record.andares = andaresDoDeal.map((a) => ({
+          id: a.andar.id,
+          nome: a.andar.nome,
+          numero: a.andar.numero,
+          edificio: a.edificio ? a.edificio.nome : 'Sem edifício identificado',
+          dono: a.donoCompanyId ? (companiesById[a.donoCompanyId] ? companiesById[a.donoCompanyId].properties.name : `Company ${a.donoCompanyId}`) : null,
+        }));
+        // campos "resumo" (compat com o grafo atual, que ainda espera 1 valor por deal)
+        record.edificio = record.andares[0].edificio;
+        record.andar = record.andares.map((a) => a.nome).join(', ');
+        record.dono = record.andares.find((a) => a.dono) ? record.andares.find((a) => a.dono).dono : null;
+      } else {
+        // ---- fallback Fase 1: texto livre no Deal ----
+        record.edificio = p[PROP_EDIFICIO] || null;
+        record.andar = p[PROP_ANDAR] || null;
+        if (!record.edificio) {
+          deals_sem_edificio++;
+          record.edificio = 'Sem edifício identificado';
+        }
+      }
+
+      return record;
     });
 
-    const comEdificio  = deals.filter(d => d.edificio).length;
-    const comBroker    = deals.filter(d => d.broker).length;
-    const comCliente   = deals.filter(d => d.cliente).length;
-    const comGerenc    = deals.filter(d => d.gerenciadora).length;
-
-    const comEdificioFallback = deals.filter(d => d.edificio && !(dealToCompanies[d.id] || []).some(a => a.label && a.label.toLowerCase().includes('avaliado'))).length;
-
-    return res.json({
-      total: deals.length,
+    const payload = {
       deals,
-      _debug: {
-        totalHubSpot,
-        totalBuscados: allDeals.length,
-        comEdificio,
-        comBroker,
-        comCliente,
-        comGerenciadora: comGerenc,
-        comEdificioViaFallbackNome: comEdificioFallback,
-        aviso: comEdificio === 0 ? 'Nenhum deal com rótulo "Edifício avaliado em" — verificar accent fix' : null,
+      meta: {
+        total_deals_no_hubspot: allDeals.length,
+        deals_com_associacao: rawDeals.length,
+        deals_incluidos: deals.length,
+        deals_sem_edificio,
+        deals_com_empresa_edificio,
+        unmatched_labels: [...unmatchedLabels],
+        modelo: fase2Ok ? 'fase2_custom_objects' : 'fase1_texto_legado',
+        fase2_erro: fase2Erro,
+        gerado_em: new Date().toISOString(),
+        fonte: 'hubspot',
       },
-    });
+    };
 
+    cache = { at: Date.now(), payload };
+    res.setHeader('Cache-Control', 'no-store');
+    res.status(200).json(payload);
   } catch (err) {
-    console.error(err);
-    return res.status(500).json({ error: err.message });
+    console.error('[api/teia] erro:', err);
+    res.status(502).json({ error: err.message || 'Erro ao consultar o HubSpot.' });
   }
 };

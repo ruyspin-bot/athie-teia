@@ -1,0 +1,23 @@
+{
+  "functions": {
+    "api/teia.js": {
+      "maxDuration": 60
+    },
+    "api/verificar-rotulos.js": {
+      "maxDuration": 30
+    },
+    "api/criar-andares.js": {
+      "maxDuration": 30
+    }
+  },
+  "crons": [
+    {
+      "path": "/api/verificar-rotulos",
+      "schedule": "0 */6 * * *"
+    },
+    {
+      "path": "/api/criar-andares",
+      "schedule": "0 */6 * * *"
+    }
+  ]
+}

@@ -6,15 +6,19 @@
 <title>A Teia — Athié Wohnrath</title>
 <style>
   :root{
+    /* Identidade Athié Wohnrath — tema claro */
     --tiffany:#00DEDB; --dark-tiffany:#00585C; --preto:#000000;
     --prata:#BFBFBF; --prata2:#D9D9D9; --white:#FFFFFF;
+    /* nomes de variáveis mantidos, remapeados para a marca (tema claro) */
     --blue:#3278DC; --blue-light:#00585C; --blue-pale:#DDEBFA;
     --dark1:#000000; --dark3:#FFFFFF; --dark2:#F4F6F6;
     --gray:#585858; --divider:#E6E6E6; --green:#00585C;
+    /* paleta categórica dos papéis (cores secundárias da marca) */
     --c-cliente:#3278DC; --c-broker:#00AA50; --c-gerenciadora:#9650DC;
     --c-dono:#E0A800; --c-edificio:#00585C; --c-andar:#5CC4C0;
     --c-escritorio:#E63232; --c-deal:#00585C;
     --warn:#B8860B; --warn-bg:#FFF6D0;
+    /* texto */
     --ink:#0E1A1A; --ink-2:#3a4a4a; --ink-3:#6b7878;
     --font-head:"Segoe UI","Segoe UI Semibold",Frutiger,"Helvetica Neue",Arial,sans-serif;
     --font-body:Calibri,"Segoe UI",Candara,"Trebuchet MS",sans-serif;
@@ -22,10 +26,17 @@
   }
   *{box-sizing:border-box;margin:0;padding:0;}
   html,body{height:100%;}
-  body{font-family:var(--font-body);color:var(--ink);background:var(--dark2);font-size:13px;line-height:1.6;overflow:hidden;}
+  body{
+    font-family:var(--font-body);color:var(--ink);background:var(--dark2);
+    font-size:13px;line-height:1.6;overflow:hidden;
+  }
   .app{display:flex;flex-direction:column;height:100vh;}
 
-  .topbar{background:var(--dark3);padding:14px 24px;display:flex;align-items:center;gap:20px;border-bottom:1px solid rgba(14,26,26,.08);flex-shrink:0;}
+  /* ===== TOPBAR ===== */
+  .topbar{
+    background:var(--dark3);padding:14px 24px;display:flex;align-items:center;
+    gap:20px;border-bottom:1px solid rgba(14,26,26,.08);flex-shrink:0;
+  }
   .brand{display:flex;flex-direction:column;gap:2px;padding-right:20px;border-right:1px solid rgba(14,26,26,.1);}
   .brand .wm{font-size:9px;font-weight:600;letter-spacing:3px;color:var(--green);text-transform:uppercase;}
   .brand .cli{font-family:var(--font-head);font-size:13px;font-weight:600;color:var(--ink);}
@@ -33,17 +44,24 @@
   .title-block h1{font-family:var(--font-head);font-size:17px;font-weight:700;letter-spacing:-.2px;}
   .title-block .sub{font-size:10.5px;color:rgba(14,26,26,.4);font-weight:300;}
   .topbar-spacer{flex:1;}
-  .status-badge{font-size:9px;letter-spacing:1px;text-transform:uppercase;padding:5px 10px;border-radius:2px;font-weight:600;}
-  .status-badge.loading{color:#1a5c8c;border:1px solid rgba(50,120,220,.3);background:rgba(50,120,220,.08);}
-  .status-badge.live{color:#006b3c;border:1px solid rgba(0,170,80,.3);background:rgba(0,170,80,.08);}
-  .status-badge.mock{color:var(--warn);border:1px solid rgba(255,200,0,.45);background:rgba(255,200,0,.10);}
-  .status-badge.error{color:#a00;border:1px solid rgba(200,0,0,.3);background:rgba(200,0,0,.07);}
-  .search{display:flex;align-items:center;background:var(--dark2);border:1px solid rgba(14,26,26,.12);border-radius:3px;padding:0 10px;height:34px;width:230px;transition:border-color .15s;}
+  .mock-badge{
+    font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--warn);
+    border:1px solid rgba(255,200,0,.45);background:rgba(255,200,0,.10);
+    padding:5px 10px;border-radius:2px;font-weight:600;
+  }
+  .search{
+    display:flex;align-items:center;background:var(--dark2);border:1px solid rgba(14,26,26,.12);
+    border-radius:3px;padding:0 10px;height:34px;width:230px;transition:border-color .15s;
+  }
   .search:focus-within{border-color:var(--blue-light);}
   .search svg{opacity:.4;flex-shrink:0;}
-  .search input{background:none;border:none;outline:none;color:var(--ink);font-family:inherit;font-size:12px;width:100%;padding-left:8px;}
+  .search input{
+    background:none;border:none;outline:none;color:var(--ink);font-family:inherit;
+    font-size:12px;width:100%;padding-left:8px;
+  }
   .search input::placeholder{color:rgba(14,26,26,.3);}
 
+  /* ===== KPI STRIP ===== */
   .kpis{display:flex;background:var(--dark3);border-bottom:1px solid rgba(14,26,26,.08);flex-shrink:0;}
   .kpi{padding:14px 24px;border-right:1px solid rgba(14,26,26,.06);min-width:150px;}
   .kpi .kv{font-family:var(--font-head);font-size:24px;font-weight:700;line-height:1;letter-spacing:-.5px;}
@@ -52,35 +70,49 @@
   .kpi.hot{background:rgba(0,222,219,.07);}
   .kpi .kx{font-size:10px;color:rgba(14,26,26,.4);font-weight:300;margin-top:2px;}
 
+  /* ===== BODY ===== */
   .body{display:flex;flex:1;min-height:0;}
-  .stage{position:relative;flex:1;min-width:0;background:radial-gradient(ellipse at 50% 40%, #F7FBFB 0%, #E4F3F2 72%);}
+  .stage{position:relative;flex:1;min-width:0;background:
+    radial-gradient(ellipse at 50% 40%, #F7FBFB 0%, #E4F3F2 72%);}
   canvas{display:block;width:100%;height:100%;cursor:grab;}
   canvas.grabbing{cursor:grabbing;}
+
+  /* floating controls on canvas */
   .stage-controls{position:absolute;left:16px;bottom:16px;display:flex;gap:8px;z-index:5;}
-  .ctrl-btn{background:rgba(28,28,28,.85);border:1px solid rgba(14,26,26,.14);color:#fff;font-family:inherit;font-size:11px;padding:8px 12px;border-radius:3px;cursor:pointer;display:flex;align-items:center;gap:6px;backdrop-filter:blur(6px);transition:all .15s;}
+  .ctrl-btn{
+    background:rgba(28,28,28,.85);border:1px solid rgba(14,26,26,.14);color:#fff;
+    font-family:inherit;font-size:11px;padding:8px 12px;border-radius:3px;cursor:pointer;
+    display:flex;align-items:center;gap:6px;backdrop-filter:blur(6px);transition:all .15s;
+  }
   .ctrl-btn:hover{background:rgba(0,88,92,.55);border-color:var(--blue-light);}
-  .stage-hint{position:absolute;left:16px;top:16px;z-index:5;font-size:10.5px;color:rgba(14,26,26,.35);font-weight:300;max-width:260px;line-height:1.5;pointer-events:none;}
+  .stage-hint{
+    position:absolute;left:16px;top:16px;z-index:5;font-size:10.5px;color:rgba(14,26,26,.35);
+    font-weight:300;max-width:260px;line-height:1.5;pointer-events:none;
+  }
   .stage-hint b{color:rgba(14,26,26,.6);font-weight:500;}
+
+  /* zoom controls */
   .zoom{position:absolute;right:16px;bottom:16px;display:flex;flex-direction:column;gap:2px;z-index:5;}
-  .zoom button{width:32px;height:32px;background:rgba(28,28,28,.85);border:1px solid rgba(14,26,26,.14);color:#fff;font-size:16px;cursor:pointer;backdrop-filter:blur(6px);}
+  .zoom button{
+    width:32px;height:32px;background:rgba(28,28,28,.85);border:1px solid rgba(14,26,26,.14);
+    color:#fff;font-size:16px;cursor:pointer;backdrop-filter:blur(6px);
+  }
   .zoom button:first-child{border-radius:3px 3px 0 0;}
   .zoom button:last-child{border-radius:0 0 3px 3px;}
   .zoom button:hover{background:rgba(0,88,92,.55);}
 
-  /* loading overlay */
-  .overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(244,246,246,.88);z-index:10;flex-direction:column;gap:12px;}
-  .spinner{width:32px;height:32px;border:3px solid rgba(0,88,92,.15);border-top-color:var(--green);border-radius:50%;animation:spin .8s linear infinite;}
-  @keyframes spin{to{transform:rotate(360deg)}}
-  .overlay-msg{font-size:12px;color:rgba(14,26,26,.5);}
-  .overlay.hidden{display:none;}
-
-  .side{width:340px;flex-shrink:0;background:var(--dark3);border-left:1px solid rgba(14,26,26,.08);overflow-y:auto;display:flex;flex-direction:column;}
+  /* ===== SIDE PANEL ===== */
+  .side{
+    width:340px;flex-shrink:0;background:var(--dark3);border-left:1px solid rgba(14,26,26,.08);
+    overflow-y:auto;display:flex;flex-direction:column;
+  }
   .side::-webkit-scrollbar{width:8px;}
   .side::-webkit-scrollbar-thumb{background:rgba(14,26,26,.12);border-radius:4px;}
   .panel{padding:18px 20px;border-bottom:1px solid rgba(14,26,26,.06);}
   .panel-h{font-size:9px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:rgba(14,26,26,.4);margin-bottom:14px;display:flex;align-items:center;gap:8px;}
   .panel-h::after{content:'';flex:1;height:1px;background:rgba(14,26,26,.08);}
 
+  /* legend / filters */
   .legend-item{display:flex;align-items:center;gap:10px;padding:6px 8px;border-radius:3px;cursor:pointer;transition:background .12s;user-select:none;}
   .legend-item:hover{background:rgba(14,26,26,.04);}
   .legend-item.off{opacity:.3;}
@@ -92,12 +124,17 @@
   .nucleo-select{width:100%;background:var(--dark2);border:1px solid rgba(14,26,26,.12);color:var(--ink);font-family:inherit;font-size:12px;padding:9px 10px;border-radius:3px;outline:none;cursor:pointer;}
   .nucleo-select:focus{border-color:var(--blue-light);}
 
-  .insight{background:rgba(0,222,219,.08);border:1px solid rgba(0,222,219,.28);border-left:3px solid var(--green);border-radius:3px;padding:12px 14px;margin-bottom:10px;cursor:pointer;transition:all .15s;}
+  /* insights */
+  .insight{
+    background:rgba(0,222,219,.08);border:1px solid rgba(0,222,219,.28);border-left:3px solid var(--green);
+    border-radius:3px;padding:12px 14px;margin-bottom:10px;cursor:pointer;transition:all .15s;
+  }
   .insight:hover{background:rgba(0,222,219,.15);}
   .insight .it{font-size:12px;font-weight:600;color:var(--green);margin-bottom:4px;display:flex;align-items:center;gap:6px;}
   .insight .id{font-size:11px;color:rgba(14,26,26,.7);line-height:1.55;font-weight:300;}
   .insight .im{font-size:10px;color:rgba(14,26,26,.4);margin-top:6px;font-family:var(--font-mono);}
 
+  /* detail */
   .detail-empty{font-size:11.5px;color:rgba(14,26,26,.3);font-weight:300;line-height:1.6;}
   .node-badge{display:inline-flex;align-items:center;gap:7px;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;padding:5px 10px;border-radius:2px;margin-bottom:12px;}
   .detail-name{font-family:var(--font-head);font-size:19px;font-weight:700;line-height:1.2;margin-bottom:4px;letter-spacing:-.3px;}
@@ -120,21 +157,17 @@
   .ftable .andar{font-weight:600;color:var(--ink);white-space:nowrap;}
   .ftable .broker{color:var(--c-broker);}
   .ftable .dono{color:var(--c-dono);}
-  .ftable .nuc{color:#888;font-size:9px;}
+  .ftable .nuc{color:#A9CBF5;font-size:9px;}
   .sumchips{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:12px;}
   .sumchip{font-size:9px;font-weight:600;padding:4px 9px;border-radius:2px;letter-spacing:.4px;}
   .sumchip.br{background:rgba(0,170,80,.16);color:var(--c-broker);}
   .sumchip.do{background:rgba(255,200,0,.16);color:var(--c-dono);}
-  .sumchip.nu{background:rgba(50,120,220,.22);color:#3278DC;}
-  .chip{display:inline-block;font-size:9px;font-weight:600;padding:3px 8px;border-radius:2px;letter-spacing:.5px;text-transform:uppercase;margin-right:5px;}
-  .chip.n{background:rgba(50,120,220,.25);color:#3278DC;}
-  .chip.s{background:rgba(14,26,26,.08);color:rgba(14,26,26,.6);}
+  .sumchip.nu{background:rgba(50,120,220,.22);color:#A9CBF5;}
 
-  /* painel de debug (oculto por padrão) */
-  .debug-panel{padding:16px 20px;border-top:1px solid rgba(14,26,26,.06);}
-  .debug-toggle{font-size:10px;color:rgba(14,26,26,.3);cursor:pointer;text-decoration:underline;}
-  .debug-content{display:none;margin-top:10px;font-size:10px;font-family:var(--font-mono);color:rgba(14,26,26,.5);overflow-x:auto;white-space:pre-wrap;word-break:break-all;max-height:300px;overflow-y:auto;}
-  .debug-content.open{display:block;}
+  /* stage chip when nucleo/stage */
+  .chip{display:inline-block;font-size:9px;font-weight:600;padding:3px 8px;border-radius:2px;letter-spacing:.5px;text-transform:uppercase;margin-right:5px;}
+  .chip.n{background:rgba(50,120,220,.25);color:#A9CBF5;}
+  .chip.s{background:rgba(14,26,26,.08);color:rgba(14,26,26,.6);}
 
   .footer-note{padding:16px 20px;font-size:10px;color:rgba(14,26,26,.28);font-weight:300;line-height:1.6;}
   .footer-note b{color:rgba(14,26,26,.45);font-weight:500;}
@@ -152,6 +185,8 @@
 </head>
 <body>
 <div class="app">
+
+  <!-- TOPBAR -->
   <div class="topbar">
     <div class="brand">
       <span class="wm">SCIENT</span>
@@ -159,27 +194,25 @@
     </div>
     <div class="title-block">
       <h1>A Teia</h1>
-      <span class="sub">Mapa de interconexões · deals ativos</span>
+      <span class="sub">Mapa de interconexões · deals ativos · protótipo de visualização</span>
     </div>
     <div class="topbar-spacer"></div>
     <div class="search">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6b7878" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
       <input id="search" type="text" placeholder="Buscar cliente, prédio, broker…" autocomplete="off">
     </div>
-    <span id="status-badge" class="status-badge loading">Carregando…</span>
+    <span class="mock-badge">Dados simulados</span>
   </div>
 
+  <!-- KPIs -->
   <div class="kpis" id="kpis"></div>
 
+  <!-- BODY -->
   <div class="body">
     <div class="stage">
       <canvas id="cv"></canvas>
-      <div class="overlay" id="overlay">
-        <div class="spinner"></div>
-        <div class="overlay-msg">Conectando ao HubSpot…</div>
-      </div>
       <div class="stage-hint">
-        <b>Clique</b> num nó para ver a rede dele · <b>arraste</b> os nós · <b>scroll</b> pra zoom
+        <b>Clique</b> num nó para ver a rede dele · <b>arraste</b> os nós · <b>scroll</b> pra zoom · arraste o fundo pra mover
       </div>
       <div class="stage-controls">
         <button class="ctrl-btn" id="btn-pause">⏸ Pausar</button>
@@ -192,29 +225,30 @@
       </div>
     </div>
 
+    <!-- SIDE -->
     <aside class="side">
       <div class="panel" id="detail-panel">
         <div class="panel-h">Detalhe</div>
-        <div class="detail-empty">Clique num nó para inspecionar suas conexões.</div>
+        <div class="detail-empty">Nenhum nó selecionado.<br>Clique num ponto da teia para inspecionar suas conexões — ou comece por uma das sobreposições ao lado.</div>
       </div>
+
       <div class="panel">
         <div class="panel-h">O que a teia revela</div>
-        <div id="insights"><div class="detail-empty">Aguardando dados…</div></div>
+        <div id="insights"></div>
       </div>
+
       <div class="panel">
         <div class="panel-h">Filtrar por núcleo</div>
-        <select class="nucleo-select" id="nucleo-select"><option value="">Todos os núcleos</option></select>
+        <select class="nucleo-select" id="nucleo-select"></select>
       </div>
+
       <div class="panel">
         <div class="panel-h">Camadas / Legenda</div>
         <div id="legend"></div>
       </div>
-      <div class="debug-panel">
-        <span class="debug-toggle" onclick="toggleDebug()">▶ ver dados brutos (debug)</span>
-        <pre class="debug-content" id="debug-content"></pre>
-      </div>
-      <div class="footer-note" id="footer-note">
-        Conectando ao HubSpot…
+
+      <div class="footer-note">
+        <b>A Teia</b> · deals ativos do HubSpot da ATIE, lidos via <b>CRM Associations API v4</b> — sem Custom Objects. Se o badge acima disser "fallback", a função serverless não respondeu (confira o token na Vercel e o console do navegador) e você está vendo dados simulados.
       </div>
     </aside>
   </div>
@@ -222,216 +256,392 @@
 
 <script>
 /* ============================================================
-   TIPOS E ESTILO DOS NÓS
+   DADOS SIMULADOS — baseados nos exemplos do briefing
+   Cada deal gera nós (atores) + arestas rotuladas, espelhando
+   a estrutura real do HubSpot (Deal <-(rótulo)-> Company).
    ============================================================ */
+const SIMULATED_DEALS = [
+  { id:'D1', nome:'Anthropic · Infinity One', nucleo:'Núcleo 2', stage:'Test Fit',
+    cliente:'Anthropic', broker:'CBRE', gerenciadora:'Cushman & Wakefield',
+    edificio:'Infinity One', andar:'7º andar', dono:'Brookfield' },
+  { id:'D2', nome:'Bradesco Ômega L.', nucleo:'Núcleo 1', stage:'Proposta',
+    cliente:'Bradesco', broker:'CB', gerenciadora:'Cushman & Wakefield',
+    edificio:'Bradesco Paulista', andar:null, dono:null },
+  { id:'D3', nome:'Adidas · Faria Lima', nucleo:'Núcleo 3', stage:'Obra',
+    cliente:'Adidas', broker:'CBRE', gerenciadora:'JLL',
+    edificio:'Faria Lima Plaza', andar:'10º andar', dono:'Fundo XP', parceiro:'PITAR' },
+  { id:'D4', nome:'TechCo · Infinity One', nucleo:'Núcleo 5', stage:'RFP',
+    cliente:'TechCo', broker:'Colliers', gerenciadora:'Cushman & Wakefield',
+    edificio:'Infinity One', andar:'12º andar', dono:'Fundo Kinea', concorrente:'PITAR' },
+  { id:'D9', nome:'Stripe · Infinity One', nucleo:'Núcleo 8', stage:'Proposta',
+    cliente:'Stripe', broker:'CB', gerenciadora:null,
+    edificio:'Infinity One', andar:'3º andar', dono:'Brookfield' },
+  { id:'D5', nome:'Nubank · Água Branca', nucleo:'Núcleo 2', stage:'Proposta',
+    cliente:'Nubank', broker:'CB', gerenciadora:'Cushman & Wakefield',
+    edificio:'Água Branca', andar:'3º andar', dono:'Brookfield' },
+  { id:'D6', nome:'iFood · Água Branca', nucleo:'Núcleo 7', stage:'Test Fit',
+    cliente:'iFood', broker:'CBRE', gerenciadora:null,
+    edificio:'Água Branca', andar:'8º andar', dono:'Fundo XP' },
+  { id:'D7', nome:'Itaú · JK Iguatemi', nucleo:'Núcleo 4', stage:'Obra',
+    cliente:'Itaú', broker:'CBRE', gerenciadora:'JLL',
+    edificio:'JK Iguatemi', andar:null, dono:'Brookfield' },
+  { id:'D8', nome:'Ambev · Faria Lima', nucleo:'Núcleo 3', stage:'Proposta',
+    cliente:'Ambev', broker:'CB', gerenciadora:null,
+    edificio:'Faria Lima Plaza', andar:'4º andar', dono:'Fundo Kinea', parceiro:'PITAR' },
+];
+
+/* ============================================================
+   FONTE DE DADOS — HubSpot (via função serverless) com fallback
+   para os dados simulados acima, caso a API não responda.
+   ============================================================ */
+let DEALS = SIMULATED_DEALS;
+let DATA_SOURCE = 'simulado';
+let DATA_META = null;
+
+function start(){
+
+/* ---- Tipos e estilo dos nós ---- */
 const TYPES = {
-  deal:        { label:'Deal',                color:'#FFFFFF', ring:'#3278DC', shape:'sq', r:9 },
-  cliente:     { label:'Cliente Final',       color:'#3278DC', r:13 },
-  broker:      { label:'Broker',              color:'#00AA50', r:11 },
-  gerenciadora:{ label:'Gerenciadora',        color:'#9650DC', r:11 },
-  dono:        { label:'Dono / Incorporador', color:'#E0A800', r:11 },
-  edificio:    { label:'Edifício',            color:'#00585C', ring:'#00DEDB', shape:'sq', r:14 },
-  andar:       { label:'Andar',               color:'#86D9D6', r:6 },
-  escritorio:  { label:'Parceiro / Concorrente', color:'#E63232', r:10 },
+  deal:        { label:'Deal',           color:'#FFFFFF', ring:'#3278DC', shape:'sq', r:9 },
+  cliente:     { label:'Cliente Final',  color:'#3278DC', r:13 },
+  broker:      { label:'Broker',         color:'#00AA50', r:11 },
+  gerenciadora:{ label:'Gerenciadora',   color:'#9650DC', r:11 },
+  dono:        { label:'Dono / Incorporador', color:'#FFC800', r:11 },
+  edificio:    { label:'Edifício',       color:'#00585C', ring:'#00DEDB', shape:'sq', r:14 },
+  andar:       { label:'Andar',          color:'#86D9D6', r:6 },
+  escritorio:  { label:'Escritório (parceiro/concorrente)', color:'#E63232', r:10 },
 };
 
 /* ============================================================
-   ESTADO GLOBAL
+   CONSTRUÇÃO DO GRAFO
    ============================================================ */
-let DEALS = [];
 const nodesMap = new Map();
-let edges = [];
-let buildingStats = [];
-let overlaps = [];
-
-/* ============================================================
-   CONSTRUÇÃO DO GRAFO A PARTIR DOS DEALS
-   ============================================================ */
-function buildGraph(deals) {
-  nodesMap.clear();
-  edges = [];
-
-  function ensure(id, type, extra={}) {
-    if (!nodesMap.has(id)) {
-      nodesMap.set(id, {
-        id, type, label: extra.label || id,
-        x: (Math.random()-.5)*600, y: (Math.random()-.5)*400,
-        vx:0, vy:0, fixed:false, deals:new Set(), meta: extra.meta||{}
-      });
-    }
-    return nodesMap.get(id);
+const edges = [];
+function ensure(id, type, extra={}){
+  if(!nodesMap.has(id)){
+    nodesMap.set(id, { id, type, label:extra.label||id,
+      x:(Math.random()-.5)*600, y:(Math.random()-.5)*400, vx:0, vy:0,
+      fixed:false, deals:new Set(), meta:extra.meta||{} });
   }
-  function link(a, b, label) { edges.push({ a, b, label }); }
+  return nodesMap.get(id);
+}
+function link(a,b,label){ edges.push({ a, b, label }); }
 
-  deals.forEach(d => {
-    const dealNode = ensure(d.id, 'deal', { label: d.nome, meta: { nucleo: d.nucleo||'—', stage: d.stage||'—' } });
-    dealNode.deals.add(d.id);
+DEALS.forEach(d=>{
+  const deal = ensure(d.id,'deal',{ label:d.nome, meta:{ nucleo:d.nucleo, stage:d.stage } });
+  const client = ensure('C:'+d.cliente,'cliente',{ label:d.cliente });
+  client.deals.add(d.id); deal.deals.add(d.id);
+  link('C:'+d.cliente, d.id, 'Cliente Final');
 
-    const roles = ['cliente','broker','gerenciadora','dono','parceiro','concorrente'];
-    roles.forEach(role => {
-      if (d[role]) {
-        const prefix = { cliente:'C', broker:'B', gerenciadora:'G', dono:'DO', parceiro:'E', concorrente:'E' }[role];
-        const typeKey = ['parceiro','concorrente'].includes(role) ? 'escritorio' : role;
-        const nodeId = `${prefix}:${d[role]}`;
-        ensure(nodeId, typeKey, { label: d[role] }).deals.add(d.id);
-        if (role === 'cliente') link(nodeId, d.id, 'Cliente Final');
-        else link(d.id, nodeId, capitalize(role));
-      }
+  if(d.broker){ ensure('B:'+d.broker,'broker',{label:d.broker}).deals.add(d.id); link(d.id,'B:'+d.broker,'Broker'); }
+  if(d.gerenciadora){ ensure('G:'+d.gerenciadora,'gerenciadora',{label:d.gerenciadora}).deals.add(d.id); link(d.id,'G:'+d.gerenciadora,'Gerenciadora'); }
+  if(d.parceiro){ ensure('E:'+d.parceiro,'escritorio',{label:d.parceiro}).deals.add(d.id); link(d.id,'E:'+d.parceiro,'Parceiro'); }
+  if(d.concorrente){ ensure('E:'+d.concorrente,'escritorio',{label:d.concorrente}).deals.add(d.id); link(d.id,'E:'+d.concorrente,'Concorrente'); }
+
+  if(Array.isArray(d.andares) && d.andares.length){
+    // Fase 2: Custom Objects de verdade — 1 nó de Edifício + 1 nó de Andar
+    // (com seu próprio dono) por item. É isso que resolve "dono variando
+    // por andar dentro do mesmo negócio".
+    d.andares.forEach(a=>{
+      const ed = ensure('ED:'+a.edificio,'edificio',{label:a.edificio});
+      ed.deals.add(d.id);
+      const anKey = 'AN:'+a.edificio+':'+(a.nome||a.id);
+      const an = ensure(anKey,'andar',{label:a.nome||('Andar '+a.id), meta:{edificio:a.edificio}});
+      an.deals.add(d.id);
+      link(d.id, anKey, 'Local do Deal');
+      link(anKey, 'ED:'+a.edificio, 'Andar de');
+      if(a.dono){ ensure('DO:'+a.dono,'dono',{label:a.dono}).deals.add(d.id); link(anKey,'DO:'+a.dono,'Dono do andar'); }
     });
-
-    // edifício
-    const edVal = d.edificio;
-    if (edVal) {
-      const edId = 'ED:' + edVal;
-      ensure(edId, 'edificio', { label: edVal }).deals.add(d.id);
-      if (d.andar) {
-        const andarId = `AN:${edVal}:${d.andar}`;
-        ensure(andarId, 'andar', { label: d.andar, meta:{edificio:edVal} }).deals.add(d.id);
-        link(d.id, andarId, 'Local');
-        link(andarId, edId, 'Andar de');
-        if (d.dono) {
-          const donoId = 'DO:' + d.dono;
-          link(andarId, donoId, 'Dono do andar');
-        }
-      } else {
-        link(d.id, edId, 'Local');
-        if (d.dono) {
-          const donoId = 'DO:' + d.dono;
-          link(edId, donoId, 'Dono');
-        }
-      }
+  } else {
+    // Fallback Fase 1 (texto livre no Deal) — usado pelos dados simulados
+    // e caso a API não consiga ler os Custom Objects.
+    const ed = ensure('ED:'+d.edificio,'edificio',{label:d.edificio});
+    ed.deals.add(d.id);
+    if(d.andar){
+      const an = ensure('AN:'+d.edificio+':'+d.andar,'andar',{label:d.andar, meta:{edificio:d.edificio}});
+      an.deals.add(d.id);
+      link(d.id,'AN:'+d.edificio+':'+d.andar,'Local do Deal');
+      link('AN:'+d.edificio+':'+d.andar,'ED:'+d.edificio,'Andar de');
+      if(d.dono){ ensure('DO:'+d.dono,'dono',{label:d.dono}).deals.add(d.id); link('AN:'+d.edificio+':'+d.andar,'DO:'+d.dono,'Dono do andar'); }
+    } else {
+      link(d.id,'ED:'+d.edificio,'Local do Deal');
+      if(d.dono){ ensure('DO:'+d.dono,'dono',{label:d.dono}).deals.add(d.id); link('ED:'+d.edificio,'DO:'+d.dono,'Dono'); }
     }
-  });
+  }
+});
 
-  const NODES = [...nodesMap.values()];
-  const degree = {};
-  edges.forEach(e => { degree[e.a]=(degree[e.a]||0)+1; degree[e.b]=(degree[e.b]||0)+1; });
-  NODES.forEach(n => { n.deg = degree[n.id]||0; });
+const NODES = [...nodesMap.values()];
+// grau (nº de conexões) -> tamanho
+const degree = {};
+edges.forEach(e=>{ degree[e.a]=(degree[e.a]||0)+1; degree[e.b]=(degree[e.b]||0)+1; });
+NODES.forEach(n=>{ n.deg = degree[n.id]||0; });
 
-  const adj = {};
-  NODES.forEach(n => adj[n.id] = new Set());
-  edges.forEach(e => { adj[e.a].add(e.b); adj[e.b].add(e.a); });
+// adjacência para seleção
+const adj = {};
+NODES.forEach(n=> adj[n.id]=new Set());
+edges.forEach(e=>{ adj[e.a].add(e.b); adj[e.b].add(e.a); });
 
-  return { NODES, adj };
+/* ============================================================
+   INSIGHTS: prédios com deals de mais de um núcleo
+   ============================================================ */
+const buildingStats = [];
+NODES.filter(n=>n.type==='edificio').forEach(ed=>{
+  const dealsHere = DEALS.filter(d=>('ED:'+d.edificio)===ed.id);
+  const nucleos = [...new Set(dealsHere.map(d=>d.nucleo))];
+  const brokers = [...new Set(dealsHere.map(d=>d.broker).filter(Boolean))];
+  const donos   = [...new Set(dealsHere.map(d=>d.dono).filter(Boolean))];
+  buildingStats.push({ edificio:ed.label, edId:ed.id, deals:dealsHere, nucleos, brokers, donos });
+});
+// "issues" = prédios que a teia revela: 2+ núcleos OU 2+ brokers no mesmo prédio
+const overlaps = buildingStats.filter(b => b.nucleos.length>1 || b.brokers.length>1);
+
+/* ============================================================
+   KPIs
+   ============================================================ */
+function computeKPIs(){
+  const brokerCount = {};
+  DEALS.forEach(d=>{ if(d.broker) brokerCount[d.broker]=(brokerCount[d.broker]||0)+1; });
+  const topBroker = Object.entries(brokerCount).sort((a,b)=>b[1]-a[1])[0];
+  return [
+    { v:DEALS.length, l:'Deals ativos' },
+    { v:NODES.filter(n=>n.type==='edificio').length, l:'Edifícios' },
+    { v:buildingStats.filter(b=>b.brokers.length>1).length, l:'Prédios multi-broker', x:'brokers diferentes por andar', hot:true },
+    { v:buildingStats.filter(b=>b.nucleos.length>1).length, l:'Sobreposições de núcleo', x:'2+ núcleos no mesmo prédio', hot:true },
+    { v:topBroker?topBroker[0]:'—', l:'Broker mais recorrente', x:topBroker? topBroker[1]+' deals':'' },
+  ];
 }
+const kpiEl = document.getElementById('kpis');
+computeKPIs().forEach(k=>{
+  const d=document.createElement('div');
+  d.className='kpi'+(k.hot?' hot':'');
+  d.innerHTML=`<div class="kv">${k.v}</div><div class="kl">${k.l}</div>${k.x?`<div class="kx">${k.x}</div>`:''}`;
+  kpiEl.appendChild(d);
+});
 
-function capitalize(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+/* ============================================================
+   LEGENDA / FILTROS DE CAMADA
+   ============================================================ */
+const visibleTypes = new Set(Object.keys(TYPES));
+const legendEl = document.getElementById('legend');
+Object.entries(TYPES).forEach(([key,t])=>{
+  const cnt = NODES.filter(n=>n.type===key).length;
+  const row=document.createElement('div');
+  row.className='legend-item';
+  row.dataset.type=key;
+  row.innerHTML=`<span class="dot ${t.shape==='sq'?'sq':''}" style="background:${t.color};${t.ring?`box-shadow:0 0 0 2px ${t.ring}`:''}"></span>
+    <span class="ln">${t.label}</span><span class="cnt">${cnt}</span>`;
+  row.onclick=()=>{
+    if(visibleTypes.has(key)){ visibleTypes.delete(key); row.classList.add('off'); }
+    else { visibleTypes.add(key); row.classList.remove('off'); }
+  };
+  legendEl.appendChild(row);
+});
 
-function computeInsights(deals) {
-  const stats = [];
-  nodesMap.forEach((n, id) => {
-    if (n.type !== 'edificio') return;
-    const dealsHere = deals.filter(d => d.edificio && ('ED:'+d.edificio)===id);
-    const nucleos = [...new Set(dealsHere.map(d=>d.nucleo).filter(Boolean))];
-    const brokers = [...new Set(dealsHere.map(d=>d.broker).filter(Boolean))];
-    const donos   = [...new Set(dealsHere.map(d=>d.dono).filter(Boolean))];
-    stats.push({ edificio: n.label, edId: id, deals: dealsHere, nucleos, brokers, donos });
+/* ============================================================
+   FILTRO POR NÚCLEO
+   ============================================================ */
+const nucleoSel = document.getElementById('nucleo-select');
+const nucleos = [...new Set(DEALS.map(d=>d.nucleo))].sort();
+nucleoSel.innerHTML = `<option value="">Todos os núcleos</option>` + nucleos.map(n=>`<option value="${n}">${n}</option>`).join('');
+let nucleoFilter = '';
+nucleoSel.onchange = ()=>{ nucleoFilter = nucleoSel.value; };
+
+/* ============================================================
+   INSIGHTS UI
+   ============================================================ */
+const insightsEl = document.getElementById('insights');
+if(overlaps.length===0){
+  insightsEl.innerHTML = `<div class="detail-empty">Nenhum prédio com brokers ou núcleos concorrentes.</div>`;
+} else {
+  overlaps.forEach(o=>{
+    const el=document.createElement('div');
+    el.className='insight';
+    const bits=[];
+    if(o.brokers.length>1) bits.push(`<b>${o.brokers.length} brokers diferentes</b> (${o.brokers.join(', ')})`);
+    if(o.nucleos.length>1) bits.push(`<b>${o.nucleos.length} núcleos</b> (${o.nucleos.join(', ')})`);
+    const floors = o.deals.map(d=>`${d.andar?d.andar:'—'}: ${d.cliente}/${d.broker||'s/ broker'}`).join(' · ');
+    el.innerHTML=`<div class="it">▲ ${o.edificio}</div>
+      <div class="id">${bits.join(' · ')}, por conta de andares distintos.</div>
+      <div class="im">${floors}</div>`;
+    el.onclick=()=>selectNode(o.edId, true);
+    insightsEl.appendChild(el);
   });
-  buildingStats = stats;
-  overlaps = stats.filter(b => b.nucleos.length>1 || b.brokers.length>1);
 }
 
 /* ============================================================
-   CANVAS / FÍSICA
+   CANVAS / FÍSICA / RENDER
    ============================================================ */
-const canvas = document.getElementById('cv');
-const ctx = canvas.getContext('2d');
-const stage = canvas.parentElement;
-let W=0, H=0, DPR=Math.min(window.devicePixelRatio||1,2);
-const cam = { x:0, y:0, scale:1 };
+const canvas=document.getElementById('cv');
+const ctx=canvas.getContext('2d');
+const stage=canvas.parentElement;
+let W=0,H=0,DPR=Math.min(window.devicePixelRatio||1,2);
+const cam={ x:0, y:0, scale:1 };
 const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-let running = true;
-let NODES = [], ADJ = {};
-const visibleTypes = new Set(Object.keys(TYPES));
-let nucleoFilter = '';
-let selected = null, hovered = null, selNeighbors = new Set();
+let running=true, settleFrames=0;
 
-function resize() { W=stage.clientWidth; H=stage.clientHeight; canvas.width=W*DPR; canvas.height=H*DPR; }
+function resize(){
+  W=stage.clientWidth; H=stage.clientHeight;
+  canvas.width=W*DPR; canvas.height=H*DPR;
+}
 resize();
-window.addEventListener('resize', resize);
+window.addEventListener('resize', ()=>{ resize(); });
 
-function tick() {
-  for (let i=0;i<NODES.length;i++) {
-    const a=NODES[i];
-    for (let j=i+1;j<NODES.length;j++) {
-      const b=NODES[j];
-      let dx=a.x-b.x, dy=a.y-b.y, d2=dx*dx+dy*dy; if(d2<.01)d2=.01;
-      const d=Math.sqrt(d2), f=2600/d2;
-      a.vx+=dx/d*f; a.vy+=dy/d*f; b.vx-=dx/d*f; b.vy-=dy/d*f;
+/* --- forças --- */
+function tick(){
+  const nodes = NODES;
+  // repulsão
+  for(let i=0;i<nodes.length;i++){
+    const a=nodes[i];
+    for(let j=i+1;j<nodes.length;j++){
+      const b=nodes[j];
+      let dx=a.x-b.x, dy=a.y-b.y;
+      let d2=dx*dx+dy*dy; if(d2<0.01)d2=0.01;
+      const d=Math.sqrt(d2);
+      const force = 2600 / d2;
+      const fx=dx/d*force, fy=dy/d*force;
+      a.vx+=fx; a.vy+=fy; b.vx-=fx; b.vy-=fy;
     }
   }
-  edges.forEach(e => {
+  // molas (arestas)
+  edges.forEach(e=>{
     const a=nodesMap.get(e.a), b=nodesMap.get(e.b);
-    if(!a||!b) return;
-    let dx=b.x-a.x, dy=b.y-a.y, d=Math.sqrt(dx*dx+dy*dy)||.01;
-    const f=(d-96)*.015;
-    a.vx+=dx/d*f; a.vy+=dy/d*f; b.vx-=dx/d*f; b.vy-=dy/d*f;
+    let dx=b.x-a.x, dy=b.y-a.y;
+    let d=Math.sqrt(dx*dx+dy*dy)||0.01;
+    const rest = 96;
+    const k=0.015;
+    const f=(d-rest)*k;
+    const fx=dx/d*f, fy=dy/d*f;
+    a.vx+=fx; a.vy+=fy; b.vx-=fx; b.vy-=fy;
   });
-  NODES.forEach(n => {
-    n.vx+=-n.x*.0018; n.vy+=-n.y*.0018;
-    if(n.fixed){n.vx=0;n.vy=0;return;}
-    n.vx*=.86; n.vy*=.86;
-    const sp=Math.hypot(n.vx,n.vy); if(sp>6){n.vx=n.vx/sp*6;n.vy=n.vy/sp*6;}
+  // gravidade central + integração
+  nodes.forEach(n=>{
+    n.vx += -n.x*0.0018;
+    n.vy += -n.y*0.0018;
+    if(n.fixed){ n.vx=0; n.vy=0; return; }
+    n.vx*=0.86; n.vy*=0.86;
+    // limite de velocidade
+    const sp=Math.hypot(n.vx,n.vy); const max=6;
+    if(sp>max){ n.vx=n.vx/sp*max; n.vy=n.vy/sp*max; }
     n.x+=n.vx; n.y+=n.vy;
   });
 }
-function toScreen(x,y){return[(x-cam.x)*cam.scale+W/2,(y-cam.y)*cam.scale+H/2];}
-function toWorld(sx,sy){return[(sx-W/2)/cam.scale+cam.x,(sy-H/2)/cam.scale+cam.y];}
-function nodeVisible(n){return visibleTypes.has(n.type);}
+
+/* --- transforms --- */
+function toScreen(x,y){ return [ (x-cam.x)*cam.scale+W/2, (y-cam.y)*cam.scale+H/2 ]; }
+function toWorld(sx,sy){ return [ (sx-W/2)/cam.scale+cam.x, (sy-H/2)/cam.scale+cam.y ]; }
+
+/* --- estado de seleção --- */
+let selected=null;      // node id
+let hovered=null;
+let selNeighbors=new Set();
+
+function nodeVisible(n){
+  if(!visibleTypes.has(n.type)) return false;
+  return true;
+}
 function nodeInNucleo(n){
   if(!nucleoFilter) return true;
-  return [...n.deals].some(did=>{const d=DEALS.find(x=>x.id===did);return d&&d.nucleo===nucleoFilter;});
+  // um nó é "do núcleo" se toca algum deal daquele núcleo
+  return [...n.deals].some(did=>{
+    const dd=DEALS.find(x=>x.id===did); return dd && dd.nucleo===nucleoFilter;
+  });
 }
 
-function draw() {
+function draw(){
   ctx.setTransform(DPR,0,0,DPR,0,0);
   ctx.clearRect(0,0,W,H);
-  const hasSel=!!selected, hasNucleo=!!nucleoFilter;
+
+  const hasSel = !!selected;
+  const hasNucleo = !!nucleoFilter;
+
+  // ---- arestas ----
   edges.forEach(e=>{
-    const a=nodesMap.get(e.a),b=nodesMap.get(e.b);
-    if(!a||!b||!nodeVisible(a)||!nodeVisible(b)) return;
-    const [ax,ay]=toScreen(a.x,a.y),[bx,by]=toScreen(b.x,b.y);
-    let active=true,strong=false;
-    if(hasSel){strong=(e.a===selected||e.b===selected);active=strong;}
-    if(hasNucleo){const inN=nodeInNucleo(a)&&nodeInNucleo(b);active=active&&inN;if(!hasSel)strong=inN;}
-    ctx.beginPath();ctx.moveTo(ax,ay);ctx.lineTo(bx,by);
-    ctx.lineWidth=strong?1.6:1;
-    ctx.strokeStyle=strong?'rgba(0,88,92,.6)':(hasSel||hasNucleo)?'rgba(14,26,26,.045)':'rgba(14,26,26,.12)';
+    const a=nodesMap.get(e.a), b=nodesMap.get(e.b);
+    if(!nodeVisible(a)||!nodeVisible(b)) return;
+    const [ax,ay]=toScreen(a.x,a.y);
+    const [bx,by]=toScreen(b.x,b.y);
+
+    let active=true, strong=false;
+    if(hasSel){
+      strong = (e.a===selected||e.b===selected);
+      active = strong;
+    }
+    if(hasNucleo){
+      const inN = nodeInNucleo(a)&&nodeInNucleo(b);
+      active = active && inN;
+      if(!hasSel) strong = inN;
+    }
+    ctx.beginPath();
+    ctx.moveTo(ax,ay); ctx.lineTo(bx,by);
+    ctx.lineWidth = strong?1.6:1;
+    ctx.strokeStyle = strong ? 'rgba(0,88,92,.6)'
+                    : (hasSel||hasNucleo) ? 'rgba(14,26,26,.045)'
+                    : 'rgba(14,26,26,.12)';
     ctx.stroke();
-    if(strong&&hasSel&&cam.scale>.75){
-      const mx=(ax+bx)/2,my=(ay+by)/2;
-      ctx.font='9px "Segoe UI",Calibri,sans-serif';ctx.fillStyle='rgba(0,88,92,.9)';ctx.textAlign='center';
-      ctx.fillText(e.label,mx,my-4);
+
+    // rótulo da aresta (só quando selecionado e forte, e zoom suficiente)
+    if(strong && hasSel && cam.scale>0.75){
+      const mx=(ax+bx)/2, my=(ay+by)/2;
+      ctx.font='9px "Segoe UI", Calibri, sans-serif';
+      ctx.fillStyle='rgba(0,88,92,.9)';
+      ctx.textAlign='center';
+      ctx.fillText(e.label, mx, my-4);
     }
   });
+
+  // ---- nós ----
   NODES.forEach(n=>{
     if(!nodeVisible(n)) return;
-    const t=TYPES[n.type],[sx,sy]=toScreen(n.x,n.y);
-    let r=(t.r+Math.min(n.deg,6)*1.1)*cam.scale;
-    let dim=false,focus=false;
-    if(hasSel){focus=(n.id===selected)||selNeighbors.has(n.id);dim=!focus;}
-    if(hasNucleo){const inN=nodeInNucleo(n);if(!inN)dim=true;else if(!hasSel)focus=true;}
-    ctx.globalAlpha=dim?.16:1;
-    if(n.id===selected){ctx.beginPath();ctx.arc(sx,sy,r+8,0,Math.PI*2);ctx.fillStyle='rgba(0,88,92,.13)';ctx.fill();}
+    const t=TYPES[n.type];
+    const [sx,sy]=toScreen(n.x,n.y);
+    let r=(t.r + Math.min(n.deg,6)*1.1) * cam.scale;
+
+    let dim=false, focus=false;
+    if(hasSel){
+      focus = (n.id===selected) || selNeighbors.has(n.id);
+      dim = !focus;
+    }
+    if(hasNucleo){
+      const inN = nodeInNucleo(n);
+      if(!inN) dim = true;
+      else if(!hasSel) focus=true;
+    }
+    const alpha = dim?0.16:1;
+
+    ctx.globalAlpha=alpha;
+    // halo do selecionado
+    if(n.id===selected){
+      ctx.beginPath(); ctx.arc(sx,sy,r+8,0,Math.PI*2);
+      ctx.fillStyle='rgba(0,88,92,.13)'; ctx.fill();
+    }
+    // desenho
     ctx.beginPath();
-    if(t.shape==='sq'){ctx.save();ctx.translate(sx,sy);ctx.rotate(Math.PI/4);ctx.rect(-r,-r,r*2,r*2);ctx.restore();}
-    else ctx.arc(sx,sy,r,0,Math.PI*2);
-    ctx.fillStyle=t.color;ctx.fill();
-    if(t.ring){ctx.lineWidth=2;ctx.strokeStyle=t.ring;ctx.stroke();}
-    if(n.id===hovered&&!dim){ctx.lineWidth=2;ctx.strokeStyle='#0E1A1A';ctx.stroke();}
-    const showLabel=!dim&&(focus||n.type==='edificio'||n.type==='cliente'||n.id===hovered||cam.scale>1.15||(!hasSel&&!hasNucleo&&n.deg>=3));
-    if(showLabel&&(n.type!=='andar'||(focus||n.id===hovered))){
-      ctx.globalAlpha=dim?.3:1;
-      ctx.font=(n.type==='deal'?'600 ':'')+(n.type==='cliente'||n.type==='edificio'?'11px':'10px')+' "Segoe UI",Calibri,sans-serif';
-      ctx.fillStyle='rgba(14,26,26,.92)';ctx.textAlign='center';
-      ctx.fillText(n.label,sx,sy+r+12);
+    if(t.shape==='sq'){
+      ctx.save(); ctx.translate(sx,sy); ctx.rotate(Math.PI/4);
+      ctx.rect(-r,-r,r*2,r*2); ctx.restore();
+    } else {
+      ctx.arc(sx,sy,r,0,Math.PI*2);
+    }
+    ctx.fillStyle=t.color; ctx.fill();
+    if(t.ring){ ctx.lineWidth=2; ctx.strokeStyle=t.ring; ctx.stroke(); }
+    if(n.id===hovered && !dim){ ctx.lineWidth=2; ctx.strokeStyle='#0E1A1A'; ctx.stroke(); }
+
+    // rótulo
+    const showLabel = !dim && (focus || n.type==='edificio' || n.type==='cliente' || n.id===hovered || cam.scale>1.15 || (!hasSel&&!hasNucleo&&n.deg>=3));
+    if(showLabel && n.type!=='andar' || (n.type==='andar'&&(focus||n.id===hovered))){
+      ctx.globalAlpha=alpha;
+      ctx.font=(n.type==='deal'?'600 ':'')+(n.type==='cliente'||n.type==='edificio'?'11px':'10px')+' "Segoe UI", Calibri, sans-serif';
+      ctx.fillStyle= dim?'rgba(14,26,26,.3)':'rgba(14,26,26,.92)';
+      ctx.textAlign='center';
+      ctx.fillText(n.label, sx, sy+r+12);
     }
   });
   ctx.globalAlpha=1;
 }
 
 function loop(){
-  if(running&&!reduceMotion) tick();
+  if(running && !reduceMotion){ tick(); }
+  else if(settleFrames>0){ tick(); settleFrames--; }
   draw();
   requestAnimationFrame(loop);
 }
@@ -440,260 +650,265 @@ loop();
 /* ============================================================
    SELEÇÃO / DETALHE
    ============================================================ */
-function selectNode(id, center) {
-  selected=id; selNeighbors=ADJ[id]?new Set(ADJ[id]):new Set();
+function selectNode(id, center){
+  selected=id;
+  selNeighbors = adj[id] ? new Set(adj[id]) : new Set();
   renderDetail(id);
-  if(center){const n=nodesMap.get(id);cam.x=n.x;cam.y=n.y;if(cam.scale<.95)cam.scale=1.05;}
+  if(center){
+    const n=nodesMap.get(id);
+    cam.x=n.x; cam.y=n.y;
+    if(cam.scale<0.95) cam.scale=1.05;
+  }
 }
-function clearSelection(){selected=null;selNeighbors.clear();renderDetail(null);}
+function clearSelection(){ selected=null; selNeighbors.clear(); renderDetail(null); }
 
 const detailPanel=document.getElementById('detail-panel');
 function renderDetail(id){
   if(!id){
-    detailPanel.innerHTML=`<div class="panel-h">Detalhe</div><div class="detail-empty">Clique num nó para inspecionar suas conexões.</div>`;
+    detailPanel.innerHTML=`<div class="panel-h">Detalhe</div>
+      <div class="detail-empty">Nenhum nó selecionado.<br>Clique num ponto da teia para inspecionar suas conexões — ou comece por uma das sobreposições ao lado.</div>`;
     return;
   }
-  const n=nodesMap.get(id),t=TYPES[n.type];
+  const n=nodesMap.get(id);
+  const t=TYPES[n.type];
   let html=`<div class="panel-h">Detalhe</div>`;
   html+=`<span class="node-badge" style="background:${hexA(t.color,.16)};color:${t.color==='#FFFFFF'?'#00585C':t.color}">
     <span class="dot ${t.shape==='sq'?'sq':''}" style="width:9px;height:9px;background:${t.color}"></span>${t.label}</span>`;
   html+=`<div class="detail-name">${n.label}</div>`;
+
   if(n.type==='deal'){
     html+=`<div class="detail-meta"><span class="chip n">${n.meta.nucleo}</span><span class="chip s">${n.meta.stage}</span></div>`;
-    const conns=edges.filter(e=>e.a===id||e.b===id).map(e=>{const other=e.a===id?e.b:e.a;return{id:other,label:e.label,node:nodesMap.get(other)};});
-    html+=connGroup('Atores conectados',conns);
+    // atores do deal, agrupados por rótulo
+    const conns = edges.filter(e=>e.a===id||e.b===id).map(e=>{
+      const other = e.a===id? e.b : e.a; return { id:other, label:e.label, node:nodesMap.get(other) };
+    });
+    html+=connGroup('Atores conectados', conns);
   } else if(n.type==='edificio'){
-    const b=buildingStats.find(x=>x.edId===id)||{deals:[],nucleos:[],brokers:[],donos:[]};
+    const b = buildingStats.find(x=>x.edId===id);
+    const dealsHere = b.deals;
+    // resumo
     html+=`<div class="sumchips">`;
-    html+=`<span class="sumchip nu">${b.nucleos.length} núcleo${b.nucleos.length!==1?'s':''}</span>`;
-    html+=`<span class="sumchip br">${b.brokers.length} broker${b.brokers.length!==1?'s':''}</span>`;
-    html+=`<span class="sumchip do">${b.donos.length} dono${b.donos.length!==1?'s':''}</span>`;
+    html+=`<span class="sumchip nu">${b.nucleos.length} núcleo${b.nucleos.length>1?'s':''}</span>`;
+    html+=`<span class="sumchip br">${b.brokers.length} broker${b.brokers.length>1?'s':''}</span>`;
+    html+=`<span class="sumchip do">${b.donos.length} dono${b.donos.length>1?'s':''}</span>`;
     html+=`</div>`;
-    if(b.brokers.length>1||b.nucleos.length>1){
+    if(b.brokers.length>1 || b.nucleos.length>1){
       const parts=[];
-      if(b.brokers.length>1)parts.push(`<b>${b.brokers.length} brokers diferentes</b> (${b.brokers.join(', ')})`);
-      if(b.nucleos.length>1)parts.push(`<b>${b.nucleos.length} núcleos</b> (${b.nucleos.join(', ')})`);
-      html+=`<div class="overlap-warn"><div class="ot">▲ O que a teia revela</div><div class="od">${parts.join(' · ')}.</div></div>`;
+      if(b.brokers.length>1) parts.push(`<b>${b.brokers.length} brokers diferentes</b> atuando em andares distintos deste prédio (${b.brokers.join(', ')})`);
+      if(b.nucleos.length>1) parts.push(`<b>${b.nucleos.length} núcleos</b> da ATIE com deals aqui (${b.nucleos.join(', ')}) — possivelmente sem visibilidade cruzada`);
+      html+=`<div class="overlap-warn"><div class="ot">▲ O que a teia revela</div>
+        <div class="od">${parts.join('. ')}. Cada linha abaixo é um andar com seu próprio broker e dono.</div></div>`;
     }
-    html+=`<div class="conn-group"><div class="conn-lbl">Deals neste prédio (${b.deals.length})</div>`;
-    html+=`<table class="ftable"><thead><tr><th>Deal</th><th>Broker</th><th>Núcleo</th></tr></thead><tbody>`;
-    b.deals.forEach(d=>{html+=`<tr data-goto="${d.id}"><td class="andar">${d.nome}</td><td class="broker">${d.broker||'—'}</td><td class="nuc">${d.nucleo||'—'}</td></tr>`;});
+    // tabela por andar
+    html+=`<div class="conn-group"><div class="conn-lbl">Andares mapeados (${dealsHere.length})</div>`;
+    html+=`<table class="ftable"><thead><tr><th>Andar</th><th>Cliente</th><th>Broker</th><th>Dono</th></tr></thead><tbody>`;
+    dealsHere.forEach(d=>{
+      html+=`<tr data-goto="${d.id}">
+        <td class="andar">${d.andar||'—'}</td>
+        <td>${d.cliente}<div class="nuc">${d.nucleo}</div></td>
+        <td class="broker">${d.broker||'—'}</td>
+        <td class="dono">${d.dono||'—'}</td>
+      </tr>`;
+    });
     html+=`</tbody></table></div>`;
   } else {
+    // ator genérico (cliente, broker, gerenciadora, dono, escritorio, andar)
     const dealIds=[...n.deals];
-    html+=`<div class="detail-meta">${n.deg} conexões · ${dealIds.length} deal(s)</div>`;
+    const dealRows = dealIds.map(did=>{ const d=DEALS.find(x=>x.id===did);
+      // qual rótulo esse ator tem nesse deal?
+      const e = edges.find(e=>(e.a===id&&nodesMap.get(e.b).deals.has(did))||(e.b===id&&nodesMap.get(e.a).deals.has(did))|| ((e.a===id||e.b===id)));
+      const lbl = (edges.find(e=> (e.a===id||e.b===id) )||{}).label;
+      return { id:did, label:d.nome, sub:d.nucleo, node:nodesMap.get(did) };
+    });
+    html+=`<div class="detail-meta">${n.deg} conexões · presente em ${dealIds.length} deal(s)</div>`;
     html+=`<div class="conn-group"><div class="conn-lbl">Deals em que aparece</div>`;
-    dealIds.forEach(did=>{const d=DEALS.find(x=>x.id===did);if(!d)return;html+=`<div class="conn-row" data-goto="${did}"><span class="cn">${d.nome}</span><span class="cr">${d.nucleo||'—'}</span></div>`;});
+    dealRows.forEach(r=>{ html+=`<div class="conn-row" data-goto="${r.id}"><span class="cn">${r.label}</span><span class="cr">${r.sub}</span></div>`; });
     html+=`</div>`;
-    const others=[...selNeighbors].map(nid=>nodesMap.get(nid)).filter(x=>x&&x.type!=='deal');
+    // vizinhos diretos não-deal
+    const others = [...selNeighbors].map(nid=>nodesMap.get(nid)).filter(x=>x.type!=='deal');
     if(others.length){
       html+=`<div class="conn-group"><div class="conn-lbl">Ligações diretas</div>`;
-      others.forEach(o=>{html+=`<div class="conn-row" data-goto="${o.id}"><span class="cn">${o.label}</span><span class="cr">${TYPES[o.type].label}</span></div>`;});
+      others.forEach(o=>{ html+=`<div class="conn-row" data-goto="${o.id}"><span class="cn">${o.label}</span><span class="cr">${TYPES[o.type].label}</span></div>`; });
       html+=`</div>`;
     }
   }
   detailPanel.innerHTML=html;
-  detailPanel.querySelectorAll('[data-goto]').forEach(r=>{r.onclick=()=>selectNode(r.dataset.goto,true);});
+  detailPanel.querySelectorAll('[data-goto]').forEach(r=>{
+    r.onclick=()=>selectNode(r.dataset.goto, true);
+  });
 }
-function connGroup(title,conns){
-  const by={};conns.forEach(c=>{(by[c.label]=by[c.label]||[]).push(c);});
+function connGroup(title, conns){
+  // agrupa por label
+  const by={};
+  conns.forEach(c=>{ (by[c.label]=by[c.label]||[]).push(c); });
   let h=`<div class="conn-group"><div class="conn-lbl">${title}</div>`;
   Object.entries(by).forEach(([lbl,arr])=>{
-    arr.forEach(c=>{const t=TYPES[c.node.type];h+=`<div class="conn-row" data-goto="${c.id}">
-      <span class="dot ${t.shape==='sq'?'sq':''}" style="width:9px;height:9px;background:${t.color}"></span>
-      <span class="cn">${c.node.label}</span><span class="cr">${lbl}</span></div>`;});
+    arr.forEach(c=>{
+      const t=TYPES[c.node.type];
+      h+=`<div class="conn-row" data-goto="${c.id}">
+        <span class="dot ${t.shape==='sq'?'sq':''}" style="width:9px;height:9px;background:${t.color}"></span>
+        <span class="cn">${c.node.label}</span><span class="cr">${lbl}</span></div>`;
+    });
   });
   return h+`</div>`;
 }
 function hexA(hex,a){
-  if(hex==='#FFFFFF')return`rgba(0,88,92,${a})`;
-  const h=hex.replace('#','');const r=parseInt(h.substr(0,2),16),g=parseInt(h.substr(2,2),16),b=parseInt(h.substr(4,2),16);
-  return`rgba(${r},${g},${b},${a})`;
+  if(hex==='#FFFFFF') return `rgba(0,88,92,${a})`;
+  const h=hex.replace('#',''); const r=parseInt(h.substr(0,2),16),g=parseInt(h.substr(2,2),16),b=parseInt(h.substr(4,2),16);
+  return `rgba(${r},${g},${b},${a})`;
 }
 
 /* ============================================================
-   INTERAÇÃO (mouse)
+   INTERAÇÃO (mouse) — drag nó, pan, zoom, hover, click
    ============================================================ */
-let dragNode=null,panning=false;
-let last={x:0,y:0},downAt={x:0,y:0};
+let dragNode=null, panning=false, moved=false;
+let last={x:0,y:0}, downAt={x:0,y:0};
+
 function pickNode(sx,sy){
-  let best=null,bestD=Infinity;
+  // itera do fim (nós desenhados por cima) buscando o mais próximo dentro do raio
+  let best=null, bestD=Infinity;
   NODES.forEach(n=>{
-    if(!nodeVisible(n))return;
-    const [nx,ny]=toScreen(n.x,n.y),t=TYPES[n.type];
-    const r=(t.r+Math.min(n.deg,6)*1.1)*cam.scale+4;
+    if(!nodeVisible(n)) return;
+    const [nx,ny]=toScreen(n.x,n.y);
+    const t=TYPES[n.type];
+    const r=(t.r+Math.min(n.deg,6)*1.1)*cam.scale + 4;
     const d=Math.hypot(sx-nx,sy-ny);
-    if(d<r&&d<bestD){best=n;bestD=d;}
+    if(d<r && d<bestD){ best=n; bestD=d; }
   });
   return best;
 }
-function evt(e){const rect=canvas.getBoundingClientRect(),t=e.touches?e.touches[0]:e;return{x:t.clientX-rect.left,y:t.clientY-rect.top};}
-canvas.addEventListener('mousedown',e=>{const p=evt(e);downAt=p;last=p;const n=pickNode(p.x,p.y);if(n){dragNode=n;n.fixed=true;}else{panning=true;canvas.classList.add('grabbing');}});
-window.addEventListener('mousemove',e=>{
+function evt(e){
+  const rect=canvas.getBoundingClientRect();
+  const t=e.touches?e.touches[0]:e;
+  return { x:t.clientX-rect.left, y:t.clientY-rect.top };
+}
+canvas.addEventListener('mousedown', e=>{
+  const p=evt(e); downAt=p; last=p; moved=false;
+  const n=pickNode(p.x,p.y);
+  if(n){ dragNode=n; n.fixed=true; }
+  else { panning=true; canvas.classList.add('grabbing'); }
+});
+window.addEventListener('mousemove', e=>{
   const p=evt(e);
-  if(dragNode){const [wx,wy]=toWorld(p.x,p.y);dragNode.x=wx;dragNode.y=wy;dragNode.vx=0;dragNode.vy=0;}
-  else if(panning){cam.x-=(p.x-last.x)/cam.scale;cam.y-=(p.y-last.y)/cam.scale;}
-  else{const n=pickNode(p.x,p.y);const id=n?n.id:null;if(id!==hovered){hovered=id;canvas.style.cursor=n?'pointer':'grab';}}
+  if(dragNode){
+    const [wx,wy]=toWorld(p.x,p.y);
+    dragNode.x=wx; dragNode.y=wy; dragNode.vx=0; dragNode.vy=0;
+    moved=true;
+    if(running===false) draw();
+  } else if(panning){
+    cam.x -= (p.x-last.x)/cam.scale;
+    cam.y -= (p.y-last.y)/cam.scale;
+    moved=true; if(!running) draw();
+  } else {
+    const n=pickNode(p.x,p.y);
+    const id=n?n.id:null;
+    if(id!==hovered){ hovered=id; canvas.style.cursor=n?'pointer':'grab'; if(!running)draw(); }
+  }
   last=p;
 });
-window.addEventListener('mouseup',e=>{
-  const p=evt(e),dist=Math.hypot(p.x-downAt.x,p.y-downAt.y);
-  if(dragNode){dragNode.fixed=false;if(dist<4){selected===dragNode.id?clearSelection():selectNode(dragNode.id,false);}dragNode=null;}
-  else if(panning&&dist<4)clearSelection();
-  panning=false;canvas.classList.remove('grabbing');
+window.addEventListener('mouseup', e=>{
+  const p=evt(e);
+  const dist=Math.hypot(p.x-downAt.x,p.y-downAt.y);
+  if(dragNode){
+    dragNode.fixed=false;
+    if(dist<4){ // clique = seleção
+      selected===dragNode.id ? clearSelection() : selectNode(dragNode.id,false);
+    }
+    dragNode=null;
+  } else if(panning && dist<4){
+    clearSelection();
+  }
+  panning=false; canvas.classList.remove('grabbing');
 });
-canvas.addEventListener('wheel',e=>{
-  e.preventDefault();const p=evt(e);const [wx,wy]=toWorld(p.x,p.y);
-  const f=e.deltaY<0?1.12:1/1.12;cam.scale=Math.max(.4,Math.min(3,cam.scale*f));
-  const [nx,ny]=toWorld(p.x,p.y);cam.x+=wx-nx;cam.y+=wy-ny;
+canvas.addEventListener('wheel', e=>{
+  e.preventDefault();
+  const p=evt(e);
+  const [wx,wy]=toWorld(p.x,p.y);
+  const factor = e.deltaY<0 ? 1.12 : 1/1.12;
+  cam.scale=Math.max(0.4,Math.min(3, cam.scale*factor));
+  // zoom em direção ao cursor
+  const [nx,ny]=toWorld(p.x,p.y);
+  cam.x += wx-nx; cam.y += wy-ny;
+  if(!running) draw();
 },{passive:false});
 
 /* ============================================================
    CONTROLES
    ============================================================ */
 const btnPause=document.getElementById('btn-pause');
-btnPause.onclick=()=>{running=!running;btnPause.textContent=running?'⏸ Pausar':'▶ Retomar';};
-document.getElementById('btn-reset').onclick=()=>{NODES.forEach(n=>{n.x=(Math.random()-.5)*600;n.y=(Math.random()-.5)*400;n.vx=0;n.vy=0;});running=true;btnPause.textContent='⏸ Pausar';};
+btnPause.onclick=()=>{ running=!running; btnPause.textContent= running?'⏸ Pausar':'▶ Retomar'; };
+document.getElementById('btn-reset').onclick=()=>{
+  NODES.forEach(n=>{ n.x=(Math.random()-.5)*600; n.y=(Math.random()-.5)*400; n.vx=0; n.vy=0; });
+  running=true; btnPause.textContent='⏸ Pausar';
+};
 document.getElementById('btn-fit').onclick=fitView;
-document.getElementById('zin').onclick=()=>{cam.scale=Math.min(3,cam.scale*1.2);};
-document.getElementById('zout').onclick=()=>{cam.scale=Math.max(.4,cam.scale/1.2);};
+document.getElementById('zin').onclick=()=>{ cam.scale=Math.min(3,cam.scale*1.2); if(!running)draw(); };
+document.getElementById('zout').onclick=()=>{ cam.scale=Math.max(0.4,cam.scale/1.2); if(!running)draw(); };
+
 function fitView(){
-  const vis=NODES.filter(nodeVisible);if(!vis.length)return;
+  const vis=NODES.filter(nodeVisible);
+  if(!vis.length) return;
   let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
-  vis.forEach(n=>{minX=Math.min(minX,n.x);minY=Math.min(minY,n.y);maxX=Math.max(maxX,n.x);maxY=Math.max(maxY,n.y);});
-  const w=maxX-minX+120,h=maxY-minY+120;
-  cam.x=(minX+maxX)/2;cam.y=(minY+maxY)/2;
-  cam.scale=Math.max(.4,Math.min(1.6,Math.min(W/w,H/h)));
+  vis.forEach(n=>{ minX=Math.min(minX,n.x); minY=Math.min(minY,n.y); maxX=Math.max(maxX,n.x); maxY=Math.max(maxY,n.y); });
+  const w=maxX-minX+120, h=maxY-minY+120;
+  cam.x=(minX+maxX)/2; cam.y=(minY+maxY)/2;
+  cam.scale=Math.max(0.4,Math.min(1.6, Math.min(W/w, H/h)));
+  if(!running) draw();
 }
 
 /* ============================================================
    BUSCA
    ============================================================ */
-document.getElementById('search').addEventListener('keydown',e=>{
-  if(e.key==='Enter'){const q=e.target.value.trim().toLowerCase();if(!q)return;const hit=NODES.find(n=>n.label.toLowerCase().includes(q));if(hit)selectNode(hit.id,true);}
+const searchEl=document.getElementById('search');
+searchEl.addEventListener('keydown', e=>{
+  if(e.key==='Enter'){
+    const q=searchEl.value.trim().toLowerCase();
+    if(!q) return;
+    const hit=NODES.find(n=>n.label.toLowerCase().includes(q));
+    if(hit){ selectNode(hit.id,true); }
+  }
 });
 
-/* ============================================================
-   FILTROS (legenda + núcleo)
-   ============================================================ */
-function buildLegend(){
-  const el=document.getElementById('legend');el.innerHTML='';
-  Object.entries(TYPES).forEach(([key,t])=>{
-    const cnt=NODES.filter(n=>n.type===key).length;
-    const row=document.createElement('div');row.className='legend-item';row.dataset.type=key;
-    row.innerHTML=`<span class="dot ${t.shape==='sq'?'sq':''}" style="background:${t.color};${t.ring?`box-shadow:0 0 0 2px ${t.ring}`:''}"></span>
-      <span class="ln">${t.label}</span><span class="cnt">${cnt}</span>`;
-    row.onclick=()=>{if(visibleTypes.has(key)){visibleTypes.delete(key);row.classList.add('off');}else{visibleTypes.add(key);row.classList.remove('off');}};
-    el.appendChild(row);
-  });
-}
-function buildNucleoFilter(){
-  const sel=document.getElementById('nucleo-select');
-  const nucleos=[...new Set(DEALS.map(d=>d.nucleo).filter(Boolean))].sort();
-  sel.innerHTML=`<option value="">Todos os núcleos</option>`+nucleos.map(n=>`<option value="${n}">${n}</option>`).join('');
-  sel.onchange=()=>{nucleoFilter=sel.value;};
-}
-function buildKPIs(){
-  const el=document.getElementById('kpis');el.innerHTML='';
-  const brokerCount={};DEALS.forEach(d=>{if(d.broker)brokerCount[d.broker]=(brokerCount[d.broker]||0)+1;});
-  const top=Object.entries(brokerCount).sort((a,b)=>b[1]-a[1])[0];
-  const kpis=[
-    {v:DEALS.length,l:'Deals'},
-    {v:buildingStats.length,l:'Edifícios mapeados'},
-    {v:buildingStats.filter(b=>b.brokers.length>1).length,l:'Prédios multi-broker',hot:true,x:'brokers diferentes'},
-    {v:overlaps.filter(b=>b.nucleos.length>1).length,l:'Sobreposições núcleo',hot:true,x:'2+ núcleos no prédio'},
-    ...(top?[{v:top[0],l:'Broker mais recorrente',x:top[1]+' deals'}]:[]),
-  ];
-  kpis.forEach(k=>{
-    const d=document.createElement('div');d.className='kpi'+(k.hot?' hot':'');
-    d.innerHTML=`<div class="kv">${k.v}</div><div class="kl">${k.l}</div>${k.x?`<div class="kx">${k.x}</div>`:''}`;
-    el.appendChild(d);
-  });
-}
-function buildInsights(){
-  const el=document.getElementById('insights');
-  if(!overlaps.length){el.innerHTML=`<div class="detail-empty">Nenhuma sobreposição detectada nos dados atuais.</div>`;return;}
-  el.innerHTML='';
-  overlaps.forEach(o=>{
-    const div=document.createElement('div');div.className='insight';
-    const bits=[];
-    if(o.brokers.length>1)bits.push(`<b>${o.brokers.length} brokers</b> (${o.brokers.join(', ')})`);
-    if(o.nucleos.length>1)bits.push(`<b>${o.nucleos.length} núcleos</b> (${o.nucleos.join(', ')})`);
-    div.innerHTML=`<div class="it">▲ ${o.edificio}</div><div class="id">${bits.join(' · ')}</div>`;
-    div.onclick=()=>selectNode(o.edId,true);
-    el.appendChild(div);
-  });
-}
+/* enquadrar após assentar */
+setTimeout(fitView, reduceMotion?100:2600);
+
+} // ---- fim de start() ----
 
 /* ============================================================
-   RENDER FINAL (após dados carregados)
+   BOOT — busca dados reais em /api/teia (função serverless que
+   fala com o HubSpot). Se falhar por qualquer motivo, cai para
+   os dados simulados e deixa isso visível na tela.
    ============================================================ */
-function renderAll(deals) {
-  DEALS = deals;
-  const graph = buildGraph(deals);
-  NODES = graph.NODES;
-  ADJ = graph.adj;
-  computeInsights(deals);
-  buildLegend();
-  buildNucleoFilter();
-  buildKPIs();
-  buildInsights();
-  setTimeout(fitView, 2600);
-}
-
-/* ============================================================
-   DEBUG
-   ============================================================ */
-function toggleDebug(){
-  const el=document.getElementById('debug-content');
-  el.classList.toggle('open');
-  el.previousElementSibling.textContent=el.classList.contains('open')?'▼ esconder dados brutos':'▶ ver dados brutos (debug)';
-}
-
-/* ============================================================
-   CARREGAMENTO DOS DADOS
-   ============================================================ */
-async function loadData() {
-  const badge = document.getElementById('status-badge');
-  const overlay = document.getElementById('overlay');
-  const footer = document.getElementById('footer-note');
-
-  try {
-    const res = await fetch('/api/teia');
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
-
-    if (data.error) throw new Error(data.error);
-
-    // Exibe dados brutos no painel de debug
-    document.getElementById('debug-content').textContent = JSON.stringify(data, null, 2);
-
-    const deals = data.deals || [];
-
-    if (deals.length === 0) {
-      badge.className='status-badge mock';badge.textContent='Sem dados';
-      overlay.innerHTML=`<div style="font-size:13px;color:#555;text-align:center;padding:20px">Nenhum deal retornou da API.<br><small>Verifique os filtros e propriedades no HubSpot.</small></div>`;
-      return;
+(async function boot(){
+  const badge = document.querySelector('.mock-badge');
+  const setBadge = (text, live)=>{
+    if(!badge) return;
+    badge.textContent = text;
+    badge.style.color = live ? 'var(--green)' : '';
+    badge.style.borderColor = live ? 'rgba(0,88,92,.4)' : '';
+    badge.style.background = live ? 'rgba(0,222,219,.14)' : '';
+  };
+  setBadge('Carregando HubSpot…', false);
+  try{
+    const res = await fetch('/api/teia', { cache:'no-store' });
+    if(!res.ok){
+      const body = await res.json().catch(()=>({}));
+      throw new Error(body.error || ('HTTP '+res.status));
     }
-
-    overlay.classList.add('hidden');
-    badge.className='status-badge live';badge.textContent=`Live · ${deals.length} deals`;
-    footer.innerHTML=`Dados ao vivo do <b>HubSpot</b> · ${deals.length} deals · atualizado agora`;
-
-    renderAll(deals);
-
-  } catch (err) {
-    console.error(err);
-    badge.className='status-badge error';badge.textContent='Erro na API';
-    overlay.innerHTML=`<div style="font-size:13px;color:#a00;text-align:center;padding:20px">
-      Erro ao carregar: <b>${err.message}</b><br>
-      <small>Veja o console e o painel de debug.</small>
-    </div>`;
-    footer.textContent = 'Erro: ' + err.message;
+    const json = await res.json();
+    if(!Array.isArray(json.deals) || !json.deals.length) throw new Error('A API respondeu sem deals utilizáveis.');
+    DEALS = json.deals;
+    DATA_META = json.meta || null;
+    DATA_SOURCE = 'hubspot';
+    setBadge('Dados HubSpot (ao vivo)', true);
+  }catch(err){
+    console.warn('[A Teia] Não consegui buscar /api/teia — usando dados simulados. Motivo:', err.message);
+    DEALS = SIMULATED_DEALS;
+    DATA_SOURCE = 'simulado';
+    setBadge('Dados simulados (fallback) — ver console', false);
   }
-}
-
-loadData();
+  start();
+})();
 </script>
 </body>
 </html>
