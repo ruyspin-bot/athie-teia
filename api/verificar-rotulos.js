@@ -46,11 +46,13 @@ async function rotularClientesFinal(hs, dealIds) {
   }
 
   const companyAssoc = await getAssociations(hs, 'deals', 'companies', dealIds);
+  console.log('[rotularClientesFinal] assoc raw:', JSON.stringify(companyAssoc));
   let rotulados = 0;
 
   for (const [dealId, companies] of Object.entries(companyAssoc)) {
     // Aplica somente na empresa principal (isPrimary) que ainda não tem rótulo customizado
     const candidatas = companies.filter((c) => c.isPrimary && !c.hasCustomLabel);
+    console.log(`[rotularClientesFinal] deal ${dealId}: companies=${JSON.stringify(companies)} candidatas=${candidatas.length}`);
     for (const company of candidatas) {
       await createAssociation(
         hs,
