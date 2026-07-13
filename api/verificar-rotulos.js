@@ -36,8 +36,18 @@ const TAG_PROPERTY = process.env.HUBSPOT_PROP_ROTULO_PENDENTE || 'aw_rotulo_pend
  * não possuem nenhum rótulo. Roda antes de verificarDeals para que a
  * tag aw_rotulo_pendente seja limpa na mesma passagem.
  * ------------------------------------------------------------------ */
-async function rotularClientesFinal(hs, dealIds) {
-  if (!dealIds.length) return { rotulados: 0 };
+/* ------------------------------------------------------------------
+ * eventos = array de eventos HubSpot deal.associationChange
+ * Aplica "Cliente Final" apenas nas associações onde:
+ *   - isPrimaryAssociation === true  (empresa principal do deal)
+ *   - associationRemoved === false   (sendo adicionada, não removida)
+ *   - empresa ainda não tem rótulo customizado (USER_DEFINED)
+ * ------------------------------------------------------------------ */
+async function rotularClientesFinal(hs, eventos) {
+  const primarios = (eventos || []).filter(
+    (e) => e.isPrimaryAssociation === true && e.associationRemoved === false && e.fromObjectId && e.toObjectId,
+  );
+  if (!primarios.length) return { rotulados: 0 };
 
   const labelInfo = await findAssociationTypeId(hs, 'deals', 'companies', /cliente\s*final/i);
   if (!labelInfo) {
@@ -45,24 +55,19 @@ async function rotularClientesFinal(hs, dealIds) {
     return { rotulados: 0 };
   }
 
+  // Verifica quais empresas já têm rótulo customizado para não sobrescrever
+  const dealIds = [...new Set(primarios.map((e) => String(e.fromObjectId)))];
   const companyAssoc = await getAssociations(hs, 'deals', 'companies', dealIds);
-  console.log('[rotularClientesFinal] dealIds:', dealIds, 'assoc raw:', JSON.stringify(companyAssoc));
-  let rotulados = 0;
 
-  for (const [dealId, companies] of Object.entries(companyAssoc)) {
-    // Aplica somente na empresa principal (isPrimary) que ainda não tem rótulo customizado
-    const candidatas = companies.filter((c) => c.isPrimary && !c.hasCustomLabel);
-    console.log(`[rotularClientesFinal] deal ${dealId}: companies=${JSON.stringify(companies)} candidatas=${candidatas.length}`);
-    for (const company of candidatas) {
-      await createAssociation(
-        hs,
-        'deals', dealId,
-        'companies', company.toId,
-        labelInfo.typeId,
-        labelInfo.category,
-      );
-      rotulados++;
-    }
+  let rotulados = 0;
+  for (const e of primarios) {
+    const dealId    = String(e.fromObjectId);
+    const companyId = String(e.toObjectId);
+    const existente = (companyAssoc[dealId] || []).find((c) => c.toId === companyId);
+    if (existente && existente.hasCustomLabel) continue;
+
+    await createAssociation(hs, 'deals', dealId, 'companies', companyId, labelInfo.typeId, labelInfo.category);
+    rotulados++;
   }
 
   return { rotulados };

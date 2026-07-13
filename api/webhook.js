@@ -61,32 +61,34 @@ module.exports = async (req, res) => {
     }
 
     // ── deal.associationChange → rotular → verificar-rotulos + associar-contatos
+    // Nota: para associationChange, o deal está em fromObjectId (não objectId)
     const dealAssoc = porTipo['deal.associationChange'] || [];
     if (dealAssoc.length) {
-      console.log('[webhook] deal.associationChange eventos:', JSON.stringify(dealAssoc.slice(0, 3)));
-      const dealIds = [...new Set(dealAssoc.map((e) => String(e.objectId)).filter(Boolean))];
-      console.log('[webhook] dealIds extraídos:', dealIds);
+      const dealIds = [...new Set(dealAssoc.map((e) => String(e.fromObjectId)).filter((id) => id && id !== 'undefined'))];
+      if (dealIds.length) {
+        // 1. Aplica "Cliente Final" nas empresas primárias (usa isPrimaryAssociation do evento)
+        resultados.rotulados = await rotularClientesFinal(hs, dealAssoc);
 
-      // 1. Aplica "Cliente Final" em empresas sem rótulo (síncrono — precisa estar
-      //    completo antes de verificarDeals para que a tag seja limpa já nesta passagem)
-      resultados.rotulados = await rotularClientesFinal(hs, dealIds);
-
-      // 2. Verifica tags e sincroniza contatos em paralelo
-      const dealsById = await getObjectsById(hs, 'deals', dealIds, ['dealname', 'dealstage', 'aw_rotulo_pendente']);
-      const deals = Object.values(dealsById);
-      const [rotulos, contatos] = await Promise.all([
-        verificarDeals(hs, deals),
-        syncPorDeals(hs, dealIds),
-      ]);
-      resultados.rotulos  = rotulos;
-      resultados.contatos = contatos;
+        // 2. Verifica tags e sincroniza contatos em paralelo
+        const dealsById = await getObjectsById(hs, 'deals', dealIds, ['dealname', 'dealstage', 'aw_rotulo_pendente']);
+        const deals = Object.values(dealsById);
+        const [rotulos, contatos] = await Promise.all([
+          verificarDeals(hs, deals),
+          syncPorDeals(hs, dealIds),
+        ]);
+        resultados.rotulos  = rotulos;
+        resultados.contatos = contatos;
+      }
     }
 
     // ── contact.associationChange → associar-contatos ───────────────
+    // Nota: para associationChange, o contato está em fromObjectId
     const contactAssoc = porTipo['contact.associationChange'] || [];
     if (contactAssoc.length) {
-      const contactIds = [...new Set(contactAssoc.map((e) => String(e.objectId)).filter(Boolean))];
-      resultados.contatos_empresa = await syncPorContatos(hs, contactIds);
+      const contactIds = [...new Set(contactAssoc.map((e) => String(e.fromObjectId)).filter((id) => id && id !== 'undefined'))];
+      if (contactIds.length) {
+        resultados.contatos_empresa = await syncPorContatos(hs, contactIds);
+      }
     }
 
     res.status(200).json({ recebido: true, ...resultados, rodado_em: new Date().toISOString() });
