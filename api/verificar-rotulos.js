@@ -50,10 +50,7 @@ async function rotularClientesFinal(hs, eventos) {
   if (!primarios.length) return { rotulados: 0 };
 
   const labelInfo = await findAssociationTypeId(hs, 'deals', 'companies', /cliente\s*final/i);
-  if (!labelInfo) {
-    console.warn('[rotularClientesFinal] rótulo "Cliente Final" não encontrado na conta HubSpot');
-    return { rotulados: 0 };
-  }
+  if (!labelInfo) return { rotulados: 0 };
 
   // Verifica quais empresas já têm rótulo customizado para não sobrescrever
   const dealIds = [...new Set(primarios.map((e) => String(e.fromObjectId)))];
