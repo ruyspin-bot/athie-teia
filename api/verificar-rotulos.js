@@ -49,8 +49,9 @@ async function rotularClientesFinal(hs, dealIds) {
   let rotulados = 0;
 
   for (const [dealId, companies] of Object.entries(companyAssoc)) {
-    const semRotulo = companies.filter((c) => !c.label || !c.label.trim());
-    for (const company of semRotulo) {
+    // Aplica somente na empresa principal (isPrimary) que ainda não tem rótulo customizado
+    const candidatas = companies.filter((c) => c.isPrimary && !c.hasCustomLabel);
+    for (const company of candidatas) {
       await createAssociation(
         hs,
         'deals', dealId,
