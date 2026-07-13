@@ -63,7 +63,9 @@ module.exports = async (req, res) => {
     // ── deal.associationChange → rotular → verificar-rotulos + associar-contatos
     const dealAssoc = porTipo['deal.associationChange'] || [];
     if (dealAssoc.length) {
+      console.log('[webhook] deal.associationChange eventos:', JSON.stringify(dealAssoc.slice(0, 3)));
       const dealIds = [...new Set(dealAssoc.map((e) => String(e.objectId)).filter(Boolean))];
+      console.log('[webhook] dealIds extraídos:', dealIds);
 
       // 1. Aplica "Cliente Final" em empresas sem rótulo (síncrono — precisa estar
       //    completo antes de verificarDeals para que a tag seja limpa já nesta passagem)

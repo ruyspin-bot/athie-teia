@@ -46,7 +46,7 @@ async function rotularClientesFinal(hs, dealIds) {
   }
 
   const companyAssoc = await getAssociations(hs, 'deals', 'companies', dealIds);
-  console.log('[rotularClientesFinal] assoc raw:', JSON.stringify(companyAssoc));
+  console.log('[rotularClientesFinal] dealIds:', dealIds, 'assoc raw:', JSON.stringify(companyAssoc));
   let rotulados = 0;
 
   for (const [dealId, companies] of Object.entries(companyAssoc)) {
