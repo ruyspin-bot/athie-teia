@@ -22,9 +22,9 @@
  */
 
 const { makeClient, getObjectsById } = require('../lib/hubspot');
-const { handleWebhookPost }          = require('./criar-andares');
-const { verificarDeals }             = require('./verificar-rotulos');
-const { syncPorDeals, syncPorContatos } = require('./associar-contatos');
+const { handleWebhookPost }                        = require('./criar-andares');
+const { verificarDeals, rotularClientesFinal }     = require('./verificar-rotulos');
+const { syncPorDeals, syncPorContatos }            = require('./associar-contatos');
 
 const OBJ_EDIFICIO          = process.env.HUBSPOT_OBJECT_EDIFICIO || '2-65603861';
 const PROP_EDIFICIO_ANDARES = process.env.HUBSPOT_PROP_EDIFICIO_ANDARES || 'andares_ocupados_pelo_cliente';
@@ -60,10 +60,16 @@ module.exports = async (req, res) => {
       resultados.andares = await handleWebhookPost(hs, edificioIds);
     }
 
-    // ── deal.associationChange → verificar-rotulos + associar-contatos
+    // ── deal.associationChange → rotular → verificar-rotulos + associar-contatos
     const dealAssoc = porTipo['deal.associationChange'] || [];
     if (dealAssoc.length) {
       const dealIds = [...new Set(dealAssoc.map((e) => String(e.objectId)).filter(Boolean))];
+
+      // 1. Aplica "Cliente Final" em empresas sem rótulo (síncrono — precisa estar
+      //    completo antes de verificarDeals para que a tag seja limpa já nesta passagem)
+      resultados.rotulados = await rotularClientesFinal(hs, dealIds);
+
+      // 2. Verifica tags e sincroniza contatos em paralelo
       const dealsById = await getObjectsById(hs, 'deals', dealIds, ['dealname', 'dealstage', 'aw_rotulo_pendente']);
       const deals = Object.values(dealsById);
       const [rotulos, contatos] = await Promise.all([

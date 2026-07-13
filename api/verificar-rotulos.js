@@ -22,11 +22,48 @@ const {
   getClosedStageIds,
   getActiveDeals,
   getObjectsById,
+  getAssociations,
   getDealCompanyAssociations,
   batchUpdateDeals,
+  findAssociationTypeId,
+  createAssociation,
 } = require('../lib/hubspot');
 
 const TAG_PROPERTY = process.env.HUBSPOT_PROP_ROTULO_PENDENTE || 'aw_rotulo_pendente';
+
+/* ------------------------------------------------------------------
+ * Para cada deal, aplica "Cliente Final" em todas as empresas que ainda
+ * não possuem nenhum rótulo. Roda antes de verificarDeals para que a
+ * tag aw_rotulo_pendente seja limpa na mesma passagem.
+ * ------------------------------------------------------------------ */
+async function rotularClientesFinal(hs, dealIds) {
+  if (!dealIds.length) return { rotulados: 0 };
+
+  const labelInfo = await findAssociationTypeId(hs, 'deals', 'companies', /cliente\s*final/i);
+  if (!labelInfo) {
+    console.warn('[rotularClientesFinal] rótulo "Cliente Final" não encontrado na conta HubSpot');
+    return { rotulados: 0 };
+  }
+
+  const companyAssoc = await getAssociations(hs, 'deals', 'companies', dealIds);
+  let rotulados = 0;
+
+  for (const [dealId, companies] of Object.entries(companyAssoc)) {
+    const semRotulo = companies.filter((c) => !c.label || !c.label.trim());
+    for (const company of semRotulo) {
+      await createAssociation(
+        hs,
+        'deals', dealId,
+        'companies', company.toId,
+        labelInfo.typeId,
+        labelInfo.category,
+      );
+      rotulados++;
+    }
+  }
+
+  return { rotulados };
+}
 
 async function verificarDeals(hs, deals) {
   if (!deals.length) return { verificados: 0, marcados: 0, desmarcados: 0, sem_mudanca: 0 };
@@ -98,4 +135,5 @@ module.exports = async (req, res) => {
   }
 };
 
-module.exports.verificarDeals = verificarDeals;
+module.exports.verificarDeals        = verificarDeals;
+module.exports.rotularClientesFinal  = rotularClientesFinal;
