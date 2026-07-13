@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Protótipo — Vista de Prédio · A Teia</title>
+<style>
+  :root {
+    --green:#00585C; --tiffany:#00DEDB; --blue:#3278DC;
+    --ink:#0E1A1A; --ink-2:#3a4a4a; --ink-3:#6b7878;
+    --bg:#F4F6F6; --white:#fff; --divider:#E6E6E6;
+    --font:"Segoe UI",Calibri,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:var(--font);background:var(--bg);color:var(--ink);font-size:13px;height:100vh;display:flex;flex-direction:column;overflow:hidden;}
+
+  /* TOPBAR */
+  .topbar{background:var(--white);border-bottom:1px solid var(--divider);padding:12px 28px;display:flex;align-items:center;gap:16px;flex-shrink:0;}
+  .back{font-size:11px;color:var(--ink-3);text-decoration:none;display:flex;align-items:center;gap:5px;padding:5px 10px;border:1px solid var(--divider);border-radius:3px;transition:all .12s;}
+  .back:hover{background:rgba(14,26,26,.05);}
+  .topbar-title{font-size:15px;font-weight:700;letter-spacing:-.2px;}
+  .topbar-sub{font-size:11px;color:var(--ink-3);margin-top:1px;}
+  .badge{font-size:9px;font-weight:600;letter-spacing:1px;text-transform:uppercase;padding:4px 9px;border-radius:2px;background:rgba(0,222,219,.12);color:var(--green);border:1px solid rgba(0,222,219,.3);}
+  .spacer{flex:1;}
+  .proto-tag{font-size:9px;font-weight:600;letter-spacing:1px;text-transform:uppercase;padding:4px 9px;border-radius:2px;background:rgba(224,168,0,.12);color:#7a5a00;border:1px solid rgba(224,168,0,.3);}
+
+  /* PIPELINE DE ETAPAS */
+  .stage-pipeline{background:var(--white);border-bottom:1px solid var(--divider);padding:0 20px;display:flex;align-items:stretch;overflow-x:auto;flex-shrink:0;gap:0;}
+  .stage-pipeline::-webkit-scrollbar{height:4px;}
+  .stage-pipeline::-webkit-scrollbar-thumb{background:rgba(14,26,26,.12);}
+  .stage-step{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px 16px;gap:4px;cursor:pointer;border-bottom:3px solid transparent;transition:all .15s;white-space:nowrap;position:relative;min-width:0;}
+  .stage-step:hover{background:rgba(14,26,26,.025);}
+  .stage-step.active{border-bottom-color:var(--green);}
+  .stage-step .ss-name{font-size:10px;font-weight:500;color:var(--ink-3);transition:color .15s;}
+  .stage-step.active .ss-name{color:var(--ink);font-weight:600;}
+  .stage-step .ss-count{font-size:13px;font-weight:700;line-height:1;transition:color .15s;}
+  .stage-step .ss-dot{width:8px;height:8px;border-radius:50%;margin-bottom:2px;}
+  .stage-step.has-deals .ss-name{color:var(--ink-2);}
+  .stage-arrow{display:flex;align-items:center;color:rgba(14,26,26,.18);font-size:14px;padding:0 2px;flex-shrink:0;}
+
+  /* LAYOUT */
+  .layout{display:flex;flex:1;min-height:0;}
+
+  /* PRÉDIO */
+  .building-wrap{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:24px;overflow-y:auto;min-width:0;}
+  .building-wrap::-webkit-scrollbar{width:6px;}
+  .building-wrap::-webkit-scrollbar-thumb{background:rgba(14,26,26,.12);border-radius:3px;}
+
+  .building-card{background:var(--white);border:1px solid var(--divider);border-radius:6px;width:100%;max-width:580px;overflow:hidden;}
+  .building-header{padding:16px 20px;border-bottom:1px solid var(--divider);display:flex;align-items:flex-start;gap:14px;}
+  .building-icon{width:36px;height:36px;background:rgba(0,88,92,.1);border-radius:4px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:18px;}
+  .building-name{font-size:15px;font-weight:700;letter-spacing:-.2px;line-height:1.2;}
+  .building-meta{font-size:11px;color:var(--ink-3);margin-top:3px;}
+  .building-chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px;}
+  .bchip{font-size:9px;font-weight:600;padding:3px 8px;border-radius:2px;letter-spacing:.3px;}
+
+  /* LEGENDA BROKER */
+  .legend{padding:12px 20px;border-bottom:1px solid var(--divider);display:flex;flex-wrap:wrap;gap:12px;flex-shrink:0;align-items:center;}
+  .legend-label{font-size:9px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--ink-3);margin-right:4px;}
+  .legend-item{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--ink-2);}
+  .legend-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+
+  /* FLOORS */
+  .floors-container{padding:0;}
+  .floor-row{display:flex;align-items:stretch;border-bottom:1px solid rgba(14,26,26,.05);cursor:pointer;transition:background .1s;position:relative;}
+  .floor-row:last-child{border-bottom:none;}
+  .floor-row:hover{background:rgba(14,26,26,.025);}
+  .floor-row.selected{background:rgba(0,222,219,.07);}
+  .floor-row.dimmed{opacity:.3;}
+  .floor-row.selected .floor-num{color:var(--green);font-weight:700;}
+
+  .floor-num{width:52px;flex-shrink:0;display:flex;align-items:center;justify-content:flex-end;padding:0 12px 0 8px;font-size:10px;color:var(--ink-3);font-weight:500;font-family:Consolas,"Segoe UI",monospace;border-right:1px solid rgba(14,26,26,.06);}
+  .floor-bar{flex:1;padding:7px 12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-height:40px;}
+
+  /* DEAL PILL */
+  .deal-pill{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:20px;font-size:11px;font-weight:500;transition:transform .1s,opacity .15s;}
+  .deal-pill:hover{transform:scale(1.02);}
+  .deal-pill .pill-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+  .deal-pill .pill-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:160px;}
+  .deal-pill .pill-stage-tag{font-size:8px;font-weight:700;padding:2px 6px;border-radius:10px;white-space:nowrap;flex-shrink:0;letter-spacing:.3px;}
+
+  .multi-badge{font-size:9px;font-weight:700;color:#a04000;background:rgba(224,100,0,.12);border:1px solid rgba(224,100,0,.25);padding:2px 7px;border-radius:10px;flex-shrink:0;}
+
+  /* PAINEL LATERAL */
+  .side{width:320px;flex-shrink:0;background:var(--white);border-left:1px solid var(--divider);display:flex;flex-direction:column;overflow-y:auto;}
+  .side::-webkit-scrollbar{width:6px;}
+  .side::-webkit-scrollbar-thumb{background:rgba(14,26,26,.12);border-radius:3px;}
+  .side-empty{flex:1;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px;color:rgba(14,26,26,.3);padding:24px;text-align:center;}
+  .side-empty .hint{font-size:28px;}
+  .side-empty p{font-size:12px;line-height:1.6;}
+
+  .side-header{padding:16px 20px;border-bottom:1px solid var(--divider);}
+  .side-floor-label{font-size:9px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink-3);margin-bottom:5px;}
+  .side-floor-num{font-size:22px;font-weight:700;color:var(--green);letter-spacing:-.5px;line-height:1;}
+  .side-floor-sub{font-size:11px;color:var(--ink-3);margin-top:3px;}
+
+  .deal-card{margin:12px 16px 0;border:1px solid var(--divider);border-radius:5px;overflow:hidden;}
+  .deal-card-header{padding:11px 14px;display:flex;align-items:flex-start;gap:10px;}
+  .deal-color-bar{width:4px;align-self:stretch;border-radius:2px;flex-shrink:0;}
+  .deal-card-name{font-size:13px;font-weight:600;line-height:1.3;flex:1;}
+  .deal-card-body{padding:0 14px 11px 28px;}
+  .deal-row{display:flex;align-items:baseline;gap:6px;padding:3px 0;border-bottom:1px solid rgba(14,26,26,.04);}
+  .deal-row:last-child{border-bottom:none;}
+  .deal-row .dr-label{font-size:9px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;color:var(--ink-3);width:72px;flex-shrink:0;}
+  .deal-row .dr-val{font-size:11px;color:var(--ink);}
+  .stage-inline{display:inline-flex;align-items:center;gap:5px;}
+  .stage-inline .si-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+
+  .overlap-alert{margin:12px 16px 0;background:rgba(224,100,0,.07);border:1px solid rgba(224,100,0,.25);border-left:3px solid #E06420;border-radius:4px;padding:11px 13px;}
+  .overlap-alert .oa-title{font-size:11px;font-weight:700;color:#7a3000;margin-bottom:4px;}
+  .overlap-alert .oa-body{font-size:11px;color:#5a2800;line-height:1.55;}
+
+  .hs-link-btn{display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--blue);text-decoration:none;padding:6px 11px;border:1px solid rgba(50,120,220,.25);border-radius:3px;margin:10px 16px 0;transition:all .12s;font-weight:500;}
+  .hs-link-btn:hover{background:rgba(50,120,220,.08);}
+  .side-spacer{height:20px;}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <a class="back" href="/">← Voltar à Teia</a>
+  <div>
+    <div class="topbar-title">Vista de Prédio</div>
+    <div class="topbar-sub">Andares em negociação</div>
+  </div>
+  <span class="badge">A Teia · Athié Wohnrath</span>
+  <div class="spacer"></div>
+  <span class="proto-tag">Protótipo</span>
+</div>
+
+<!-- PIPELINE DE ETAPAS -->
+<div class="stage-pipeline" id="stage-pipeline"></div>
+
+<div class="layout">
+  <div class="building-wrap">
+    <div class="building-card">
+      <div class="building-header">
+        <div class="building-icon">🏢</div>
+        <div>
+          <div class="building-name">Torre Faria Lima · Torre B</div>
+          <div class="building-meta">Av. Brigadeiro Faria Lima, 4300 — São Paulo, SP</div>
+          <div class="building-chips">
+            <span class="bchip" style="background:rgba(0,88,92,.1);color:var(--green)">30 andares</span>
+            <span class="bchip" style="background:rgba(50,120,220,.1);color:var(--blue)" id="chip-count">8 em negociação</span>
+            <span class="bchip" style="background:rgba(224,100,0,.1);color:#7a3000">2 andares com sobreposição</span>
+          </div>
+        </div>
+      </div>
+      <div class="legend" id="legend"></div>
+      <div class="floors-container" id="floors"></div>
+    </div>
+  </div>
+
+  <aside class="side" id="side-panel">
+    <div class="side-empty">
+      <span class="hint">🏢</span>
+      <p>Clique num andar para ver os deals em negociação naquele espaço.</p>
+    </div>
+  </aside>
+</div>
+
+<script>
+/* ============================================================
+   ETAPAS — ordem do pipeline ATIE
+   ============================================================ */
+const STAGES = [
+  { key:'Recebido no Núcleo',       short:'Recebido',    color:'#AAAAAA', bg:'rgba(170,170,170,.13)' },
+  { key:'Diagnóstico',              short:'Diagnóstico', color:'#5BAEF0', bg:'rgba(91,174,240,.13)' },
+  { key:'Estratégia Definida',      short:'Estratégia',  color:'#3278DC', bg:'rgba(50,120,220,.13)' },
+  { key:'Proposta em Elaboração',   short:'Proposta',    color:'#E0A800', bg:'rgba(224,168,0,.13)' },
+  { key:'Proposta Apresentada',     short:'Apresentada', color:'#E06420', bg:'rgba(224,100,32,.13)' },
+  { key:'Em Negociação',            short:'Negociação',  color:'#9650DC', bg:'rgba(150,80,220,.13)' },
+  { key:'Contrato Assinado',        short:'Contrato ✓',  color:'#00AA50', bg:'rgba(0,170,80,.13)' },
+];
+const stageMap = {};
+STAGES.forEach(s => stageMap[s.key] = s);
+
+/* ============================================================
+   BROKERS
+   ============================================================ */
+const BROKERS = {
+  JLL:          { color:'#00AA50', bg:'rgba(0,170,80,.1)' },
+  CBRE:         { color:'#3278DC', bg:'rgba(50,120,220,.1)' },
+  Cushman:      { color:'#9650DC', bg:'rgba(150,80,220,.1)' },
+  'Sem broker': { color:'#AAAAAA', bg:'rgba(14,26,26,.06)' },
+};
+
+/* ============================================================
+   DADOS MOCK
+   ============================================================ */
+const DEALS = [
+  { id:'1', nome:'Nubank — Expansão HQ',  andar:'8',  broker:'JLL',        cliente:'Nubank',  nucleo:'Corporativo', stage:'Em Negociação' },
+  { id:'2', nome:'iFood Tech Hub',         andar:'8',  broker:'CBRE',       cliente:'iFood',   nucleo:'Tech',        stage:'Proposta Apresentada' },
+  { id:'3', nome:'Mercado Livre Suite',    andar:'12', broker:'JLL',        cliente:'MELI',    nucleo:'Corporativo', stage:'Estratégia Definida' },
+  { id:'4', nome:'Itaú Private HQ',        andar:'15', broker:'Cushman',    cliente:'Itaú',    nucleo:'Financeiro',  stage:'Contrato Assinado' },
+  { id:'5', nome:'XP Investimentos',       andar:'15', broker:'CBRE',       cliente:'XP Inc.', nucleo:'Financeiro',  stage:'Em Negociação' },
+  { id:'6', nome:'Ambev Corporate',        andar:'18', broker:'JLL',        cliente:'Ambev',   nucleo:'Corporativo', stage:'Proposta em Elaboração' },
+  { id:'7', nome:'Vivo Telecom',           andar:'22', broker:'Cushman',    cliente:'Vivo',    nucleo:'Telecom',     stage:'Diagnóstico' },
+  { id:'8', nome:'Stone Pagamentos',       andar:'25', broker:'Sem broker', cliente:'Stone',   nucleo:'Tech',        stage:'Recebido no Núcleo' },
+];
+
+const floorMap = {};
+DEALS.forEach(d => { if(!floorMap[d.andar]) floorMap[d.andar]=[]; floorMap[d.andar].push(d); });
+
+let selectedFloor = null;
+let activeStageFilter = null;
+
+/* ============================================================
+   PIPELINE DE ETAPAS (topo)
+   ============================================================ */
+function buildStagePipeline() {
+  const el = document.getElementById('stage-pipeline');
+  el.innerHTML = '';
+  STAGES.forEach((s, i) => {
+    const count = DEALS.filter(d => d.stage === s.key).length;
+    const step = document.createElement('div');
+    step.className = 'stage-step' + (count ? ' has-deals' : '');
+    step.dataset.stage = s.key;
+    step.innerHTML = `
+      <span class="ss-dot" style="background:${count ? s.color : '#DDD'}"></span>
+      <span class="ss-count" style="color:${count ? s.color : '#CCC'}">${count}</span>
+      <span class="ss-name">${s.short}</span>`;
+    step.addEventListener('click', () => toggleStageFilter(s.key, step));
+    el.appendChild(step);
+    if (i < STAGES.length - 1) {
+      const arr = document.createElement('div');
+      arr.className = 'stage-arrow';
+      arr.textContent = '›';
+      el.appendChild(arr);
+    }
+  });
+}
+
+function toggleStageFilter(key, el) {
+  if (activeStageFilter === key) {
+    activeStageFilter = null;
+    document.querySelectorAll('.stage-step').forEach(s => s.classList.remove('active'));
+  } else {
+    activeStageFilter = key;
+    document.querySelectorAll('.stage-step').forEach(s => s.classList.toggle('active', s.dataset.stage === key));
+  }
+  buildFloors();
+  if (selectedFloor) renderSide(selectedFloor);
+}
+
+/* ============================================================
+   LEGENDA BROKER
+   ============================================================ */
+function buildLegend() {
+  const el = document.getElementById('legend');
+  el.innerHTML = '<span class="legend-label">Broker</span>';
+  Object.entries(BROKERS).forEach(([name, b]) => {
+    if (!DEALS.some(d => d.broker === name)) return;
+    el.innerHTML += `<div class="legend-item">
+      <span class="legend-dot" style="background:${b.color}"></span>${name}
+    </div>`;
+  });
+}
+
+/* ============================================================
+   FLOORS
+   ============================================================ */
+function buildFloors() {
+  const container = document.getElementById('floors');
+  container.innerHTML = '';
+  const visibleDeals = activeStageFilter ? DEALS.filter(d => d.stage === activeStageFilter) : DEALS;
+  const activeFloors = new Set(visibleDeals.map(d => d.andar));
+
+  for (let f = 30; f >= 1; f--) {
+    const allDeals = floorMap[String(f)] || [];
+    if (!allDeals.length) continue;
+
+    const label = f === 1 ? 'Térreo' : `${f}º`;
+    const row = document.createElement('div');
+    row.className = 'floor-row';
+    row.dataset.floor = f;
+    if (activeStageFilter && !activeFloors.has(String(f))) row.classList.add('dimmed');
+    if (f === selectedFloor) row.classList.add('selected');
+
+    let barContent = '';
+    allDeals.forEach(d => {
+      const b = BROKERS[d.broker] || BROKERS['Sem broker'];
+      const s = stageMap[d.stage];
+      const isDimmed = activeStageFilter && d.stage !== activeStageFilter;
+      barContent += `<div class="deal-pill" style="background:${b.bg};color:${b.color};opacity:${isDimmed?.35:1}">
+        <span class="pill-dot" style="background:${b.color}"></span>
+        <span class="pill-name">${d.nome}</span>
+        <span class="pill-stage-tag" style="background:${s?.bg||'rgba(14,26,26,.07)'};color:${s?.color||'#888'}">${s?.short||d.stage}</span>
+      </div>`;
+    });
+    if (allDeals.length > 1) {
+      barContent += `<span class="multi-badge">⚠ ${allDeals.length} deals</span>`;
+    }
+
+    row.innerHTML = `<div class="floor-num">${label}</div><div class="floor-bar">${barContent}</div>`;
+    row.addEventListener('click', () => selectFloor(f));
+    container.appendChild(row);
+  }
+}
+
+/* ============================================================
+   SELEÇÃO DE ANDAR
+   ============================================================ */
+function selectFloor(f) {
+  selectedFloor = f;
+  document.querySelectorAll('.floor-row').forEach(r => r.classList.toggle('selected', Number(r.dataset.floor) === f));
+  renderSide(f);
+}
+
+function renderSide(f) {
+  const allDeals = floorMap[String(f)] || [];
+  const deals = activeStageFilter ? allDeals.filter(d => d.stage === activeStageFilter) : allDeals;
+  const label = f === 1 ? 'Térreo' : `${f}º Andar`;
+  const panel = document.getElementById('side-panel');
+
+  let html = `<div class="side-header">
+    <div class="side-floor-label">Andar selecionado</div>
+    <div class="side-floor-num">${label}</div>
+    <div class="side-floor-sub">${deals.length} deal${deals.length!==1?'s':''} em negociação${activeStageFilter?` · filtrado por "${stageMap[activeStageFilter]?.short}"`:''}</div>
+  </div>`;
+
+  if (allDeals.length > 1) {
+    const brokers = [...new Set(allDeals.map(d=>d.broker).filter(b=>b!=='Sem broker'))];
+    const nucleos = [...new Set(allDeals.map(d=>d.nucleo))];
+    const parts = [];
+    if (brokers.length > 1) parts.push(`<b>${brokers.length} brokers</b>: ${brokers.join(', ')}`);
+    if (nucleos.length > 1) parts.push(`<b>${nucleos.length} núcleos</b>: ${nucleos.join(', ')}`);
+    if (parts.length) html += `<div class="overlap-alert">
+      <div class="oa-title">⚠ Sobreposição detectada</div>
+      <div class="oa-body">${parts.join(' · ')}.</div>
+    </div>`;
+  }
+
+  deals.forEach(d => {
+    const b = BROKERS[d.broker] || BROKERS['Sem broker'];
+    const s = stageMap[d.stage];
+    html += `<div class="deal-card">
+      <div class="deal-card-header">
+        <div class="deal-color-bar" style="background:${b.color}"></div>
+        <div class="deal-card-name">${d.nome}</div>
+      </div>
+      <div class="deal-card-body">
+        <div class="deal-row"><span class="dr-label">Cliente</span><span class="dr-val">${d.cliente}</span></div>
+        <div class="deal-row"><span class="dr-label">Broker</span><span class="dr-val" style="color:${b.color};font-weight:600">${d.broker}</span></div>
+        <div class="deal-row"><span class="dr-label">Núcleo</span><span class="dr-val">${d.nucleo}</span></div>
+        <div class="deal-row"><span class="dr-label">Etapa</span><span class="dr-val">
+          <span class="stage-inline"><span class="si-dot" style="background:${s?.color||'#888'}"></span>${d.stage}</span>
+        </span></div>
+      </div>
+    </div>
+    <a class="hs-link-btn" href="#" onclick="return false">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+      Abrir no HubSpot
+    </a>`;
+  });
+
+  html += '<div class="side-spacer"></div>';
+  panel.innerHTML = html;
+}
+
+/* ============================================================
+   INIT
+   ============================================================ */
+buildStagePipeline();
+buildLegend();
+buildFloors();
+const firstOverlap = Object.entries(floorMap).find(([,d]) => d.length > 1);
+if (firstOverlap) selectFloor(Number(firstOverlap[0]));
+</script>
+</body>
+</html>
