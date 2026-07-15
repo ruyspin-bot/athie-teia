@@ -28,20 +28,20 @@ const DEAL = {
   aw_id_interno:                    '65968',
   aw_id_projeto_pai:                '65967',
   aw_numero_projeto:                '4703/24',
-  aw_tipo_de_negocio:               'Obra',
+  aw_tipo_de_negocio:               'obra_only',          // Focus 'Obra' → HubSpot enum
   aw_area_m2:                       '11478',
   aw_valor_m2_projeto:              '3500',
   aw_natureza_valor:                'Estimado',
   aw_budget_declarado_total:        '0',
-  aw_lucratividade_estimada_pct:    '1406055',
-  aw_fonte_de_origem:               'AW',
-  aw_setor_cliente:                 'telecomunicações',
-  aw_envolvimento_comercial:        'M - médio envolvimento',
-  aw_responsabilidade_den:          '0',
+  // aw_lucratividade_estimada_pct omitido — propriedade não existe no HubSpot ATIE
+  aw_fonte_de_origem:               'outros',             // Focus 'AW' (origem interna) → outros
+  aw_setor_cliente:                 'outro',              // Focus 'telecomunicações' → outro
+  // aw_envolvimento_comercial omitido — única opção HubSpot é 'A definir', não adequada
+  aw_responsabilidade_den:          'false',              // Focus '0' → boolean false
   aw_apalavrado_com_cliente:        'false',
-  aw_probabilidade_negocio_existir: 'Alta',
+  // aw_probabilidade_negocio_existir omitido — sem opções enum definidas no HubSpot
   aw_den:                           'Daniel Giannella',
-  aw_local:                         'Interiores Escritório SP',
+  aw_local:                         'aw_sao_paulo',       // Focus 'Interiores Escritório SP'
   aw_gerente_comercial_conta:       'Luisa Zerbini',
   aw_funcionario_abertura:          'Leonardo Peliz',
   aw_gerenciadoras_obs:             'BINSWANGER',
