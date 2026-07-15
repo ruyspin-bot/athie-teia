@@ -14,9 +14,12 @@
 
 const { makeClient } = require('../lib/hubspot');
 
-const DEAL_ID      = '62656148027';
+const DEAL_ID       = '62656148027';
 const EDIFICIO_NOME = 'Quota Corporate';
-const OBJ_EDIFICIO = 'p51253038_edificios';
+const OBJ_EDIFICIO  = 'p51253038_edificios';
+const OBJ_ANDAR     = 'p51253038_andares';
+// Propriedade no deal usada como fallback pela Teia quando não há andar associado
+const PROP_EDIFICIO = 'aw_edificio_id';
 
 module.exports = async (req, res) => {
   if (req.headers['x-import-secret'] !== 'atie-linha47') {
@@ -75,45 +78,15 @@ module.exports = async (req, res) => {
       log.push({ etapa: 'edificio_criado', id: edificioId });
     }
 
-    // ── 4. Descobrir typeId correto via /crm/v3/associations ───
-    let assocTypeId   = null;
-    let assocCategory = 'HUBSPOT_DEFINED';
-    try {
-      // v3: lista TODOS os tipos de associação entre deals e edificios
-      const types = await hs(`/crm/v3/associations/deals/${OBJ_EDIFICIO}/types`);
-      log.push({ etapa: 'assoc_types_v3', types: types.results || types });
-      const first = (types.results || types)?.[0];
-      if (first) assocTypeId = first.id ?? first.typeId ?? first;
-    } catch (e) {
-      log.push({ etapa: 'assoc_types_v3_erro', msg: e.message });
-    }
-
-    // fallback: tentar labels v4 (user-defined)
-    if (!assocTypeId) {
-      try {
-        const labelDefs = await hs(`/crm/v4/associations/deals/${OBJ_EDIFICIO}/labels`);
-        log.push({ etapa: 'assoc_labels_v4', results: labelDefs.results });
-        const first = (labelDefs.results || [])[0];
-        if (first) { assocTypeId = first.typeId; assocCategory = 'USER_DEFINED'; }
-      } catch (e) {
-        log.push({ etapa: 'assoc_labels_v4_erro', msg: e.message });
-      }
-    }
-
-    if (!assocTypeId) {
-      return res.status(502).json({
-        error: 'Não foi possível descobrir o typeId de associação deal→edificio. Veja log.',
-        edificio_criado: edificioId,
-        log,
-      });
-    }
-
-    // ── 5. Associar deal → edificio ────────────────────────────
-    await hs(`/crm/v4/objects/deals/${DEAL_ID}/associations/${OBJ_EDIFICIO}/${edificioId}`, {
-      method: 'PUT',
-      body: JSON.stringify([{ associationCategory: assocCategory, associationTypeId: assocTypeId }]),
+    // ── 4. Setar aw_edificio_id no deal (fallback que a Teia usa) ─
+    // O modelo da Teia: Deal→Andar→Edificio (via custom objects).
+    // Como este deal não tem andar definido, usa o fallback:
+    //   deal.aw_edificio_id = nome do edifício → a Teia resolve o nome diretamente.
+    await hs(`/crm/v3/objects/deals/${DEAL_ID}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ properties: { [PROP_EDIFICIO]: EDIFICIO_NOME } }),
     });
-    log.push({ etapa: 'associado', deal: DEAL_ID, edificio: edificioId, typeId: assocTypeId });
+    log.push({ etapa: 'deal_atualizado', prop: PROP_EDIFICIO, valor: EDIFICIO_NOME });
 
     return res.status(200).json({
       status: 'ok',
@@ -121,6 +94,7 @@ module.exports = async (req, res) => {
       deal_id: DEAL_ID,
       deal_url: `https://app.hubspot.com/contacts/51253038/deal/${DEAL_ID}`,
       edificio_url: `https://app.hubspot.com/contacts/51253038/objects/${OBJ_EDIFICIO}/${edificioId}`,
+      nota: `aw_edificio_id="${EDIFICIO_NOME}" setado no deal. Edifício custom object criado (${edificioId}) para uso futuro quando andar/conjunto estiver disponível.`,
       log,
     });
 
