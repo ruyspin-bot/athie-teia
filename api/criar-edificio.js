@@ -75,21 +75,37 @@ module.exports = async (req, res) => {
       log.push({ etapa: 'edificio_criado', id: edificioId });
     }
 
-    // ── 4. Buscar rótulos de associação deal → edificio ────────
-    let assocTypeId = 2;
+    // ── 4. Descobrir typeId correto via /crm/v3/associations ───
+    let assocTypeId   = null;
     let assocCategory = 'HUBSPOT_DEFINED';
     try {
-      const labelDefs = await hs(`/crm/v4/associations/deals/${OBJ_EDIFICIO}/labels`);
-      const first = (labelDefs.results || [])[0];
-      if (first) {
-        assocTypeId  = first.typeId;
-        assocCategory = 'USER_DEFINED';
-        log.push({ etapa: 'assoc_label', typeId: assocTypeId, label: first.label });
-      } else {
-        log.push({ etapa: 'assoc_label', aviso: 'sem rótulos — usando default typeId=2' });
-      }
+      // v3: lista TODOS os tipos de associação entre deals e edificios
+      const types = await hs(`/crm/v3/associations/deals/${OBJ_EDIFICIO}/types`);
+      log.push({ etapa: 'assoc_types_v3', types: types.results || types });
+      const first = (types.results || types)?.[0];
+      if (first) assocTypeId = first.id ?? first.typeId ?? first;
     } catch (e) {
-      log.push({ etapa: 'assoc_label_erro', msg: e.message });
+      log.push({ etapa: 'assoc_types_v3_erro', msg: e.message });
+    }
+
+    // fallback: tentar labels v4 (user-defined)
+    if (!assocTypeId) {
+      try {
+        const labelDefs = await hs(`/crm/v4/associations/deals/${OBJ_EDIFICIO}/labels`);
+        log.push({ etapa: 'assoc_labels_v4', results: labelDefs.results });
+        const first = (labelDefs.results || [])[0];
+        if (first) { assocTypeId = first.typeId; assocCategory = 'USER_DEFINED'; }
+      } catch (e) {
+        log.push({ etapa: 'assoc_labels_v4_erro', msg: e.message });
+      }
+    }
+
+    if (!assocTypeId) {
+      return res.status(502).json({
+        error: 'Não foi possível descobrir o typeId de associação deal→edificio. Veja log.',
+        edificio_criado: edificioId,
+        log,
+      });
     }
 
     // ── 5. Associar deal → edificio ────────────────────────────
@@ -97,7 +113,7 @@ module.exports = async (req, res) => {
       method: 'PUT',
       body: JSON.stringify([{ associationCategory: assocCategory, associationTypeId: assocTypeId }]),
     });
-    log.push({ etapa: 'associado', deal: DEAL_ID, edificio: edificioId });
+    log.push({ etapa: 'associado', deal: DEAL_ID, edificio: edificioId, typeId: assocTypeId });
 
     return res.status(200).json({
       status: 'ok',
