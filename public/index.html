@@ -6,19 +6,15 @@
 <title>A Teia — Athié Wohnrath</title>
 <style>
   :root{
-    /* Identidade Athié Wohnrath — tema claro */
     --tiffany:#00DEDB; --dark-tiffany:#00585C; --preto:#000000;
     --prata:#BFBFBF; --prata2:#D9D9D9; --white:#FFFFFF;
-    /* nomes de variáveis mantidos, remapeados para a marca (tema claro) */
     --blue:#3278DC; --blue-light:#00585C; --blue-pale:#DDEBFA;
     --dark1:#000000; --dark3:#FFFFFF; --dark2:#F4F6F6;
     --gray:#585858; --divider:#E6E6E6; --green:#00585C;
-    /* paleta categórica dos papéis (cores secundárias da marca) */
     --c-cliente:#3278DC; --c-broker:#00AA50; --c-gerenciadora:#9650DC;
     --c-dono:#E0A800; --c-edificio:#00585C; --c-andar:#5CC4C0;
-    --c-escritorio:#E63232; --c-deal:#00585C;
+    --c-escritorio:#E63232; --c-deal:#3278DC;
     --warn:#B8860B; --warn-bg:#FFF6D0;
-    /* texto */
     --ink:#0E1A1A; --ink-2:#3a4a4a; --ink-3:#6b7878;
     --font-head:"Segoe UI","Segoe UI Semibold",Frutiger,"Helvetica Neue",Arial,sans-serif;
     --font-body:Calibri,"Segoe UI",Candara,"Trebuchet MS",sans-serif;
@@ -26,115 +22,125 @@
   }
   *{box-sizing:border-box;margin:0;padding:0;}
   html,body{height:100%;}
-  body{
-    font-family:var(--font-body);color:var(--ink);background:var(--dark2);
-    font-size:13px;line-height:1.6;overflow:hidden;
-  }
+  body{font-family:var(--font-body);color:var(--ink);background:var(--dark2);font-size:13px;line-height:1.6;overflow:hidden;}
   .app{display:flex;flex-direction:column;height:100vh;}
 
-  /* ===== TOPBAR ===== */
-  .topbar{
-    background:var(--dark3);padding:14px 24px;display:flex;align-items:center;
-    gap:20px;border-bottom:1px solid rgba(14,26,26,.08);flex-shrink:0;
-  }
-  .brand{display:flex;flex-direction:column;gap:2px;padding-right:20px;border-right:1px solid rgba(14,26,26,.1);}
+  /* TOPBAR */
+  .topbar{background:var(--dark3);padding:10px 20px;display:flex;align-items:center;gap:12px;border-bottom:1px solid rgba(14,26,26,.08);flex-shrink:0;z-index:10;}
+  .brand{display:flex;flex-direction:column;gap:2px;padding-right:16px;border-right:1px solid rgba(14,26,26,.1);flex-shrink:0;}
   .brand .wm{font-size:9px;font-weight:600;letter-spacing:3px;color:var(--green);text-transform:uppercase;}
   .brand .cli{font-family:var(--font-head);font-size:13px;font-weight:600;color:var(--ink);}
-  .title-block{display:flex;flex-direction:column;gap:1px;}
+  .title-block{display:flex;flex-direction:column;gap:1px;flex-shrink:0;}
   .title-block h1{font-family:var(--font-head);font-size:17px;font-weight:700;letter-spacing:-.2px;}
   .title-block .sub{font-size:10.5px;color:rgba(14,26,26,.4);font-weight:300;}
   .topbar-spacer{flex:1;}
-  .mock-badge{
-    font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--warn);
-    border:1px solid rgba(255,200,0,.45);background:rgba(255,200,0,.10);
-    padding:5px 10px;border-radius:2px;font-weight:600;
-  }
-  .search{
-    display:flex;align-items:center;background:var(--dark2);border:1px solid rgba(14,26,26,.12);
-    border-radius:3px;padding:0 10px;height:34px;width:230px;transition:border-color .15s;
-  }
+  .mock-badge{font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--warn);border:1px solid rgba(255,200,0,.45);background:rgba(255,200,0,.10);padding:5px 10px;border-radius:2px;font-weight:600;white-space:nowrap;flex-shrink:0;}
+
+  /* SEARCH */
+  .search-wrap{position:relative;flex-shrink:0;}
+  .search{display:flex;align-items:center;background:var(--dark2);border:1px solid rgba(14,26,26,.12);border-radius:3px;padding:0 10px;height:34px;width:220px;transition:border-color .15s;}
   .search:focus-within{border-color:var(--blue-light);}
   .search svg{opacity:.4;flex-shrink:0;}
-  .search input{
-    background:none;border:none;outline:none;color:var(--ink);font-family:inherit;
-    font-size:12px;width:100%;padding-left:8px;
-  }
+  .search input{background:none;border:none;outline:none;color:var(--ink);font-family:inherit;font-size:12px;width:100%;padding-left:8px;}
   .search input::placeholder{color:rgba(14,26,26,.3);}
 
-  /* ===== KPI STRIP ===== */
-  .kpis{display:flex;background:var(--dark3);border-bottom:1px solid rgba(14,26,26,.08);flex-shrink:0;}
-  .kpi{padding:14px 24px;border-right:1px solid rgba(14,26,26,.06);min-width:150px;}
-  .kpi .kv{font-family:var(--font-head);font-size:24px;font-weight:700;line-height:1;letter-spacing:-.5px;}
-  .kpi .kl{font-size:9px;letter-spacing:1.2px;text-transform:uppercase;color:rgba(14,26,26,.35);margin-top:6px;}
+  /* SEARCH DROPDOWN */
+  .search-drop{display:none;position:absolute;top:calc(100% + 4px);left:0;width:310px;background:#fff;border:1px solid rgba(14,26,26,.15);border-radius:4px;box-shadow:0 8px 24px rgba(14,26,26,.14);z-index:200;max-height:320px;overflow-y:auto;}
+  .sdi-head{font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:rgba(14,26,26,.32);padding:7px 12px 3px;pointer-events:none;}
+  .sdi{display:flex;align-items:center;gap:9px;padding:8px 12px;cursor:pointer;border-bottom:1px solid rgba(14,26,26,.04);}
+  .sdi:last-child{border-bottom:none;}
+  .sdi:hover,.sdi.focused{background:rgba(0,222,219,.08);}
+  .sdi-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
+  .sdi-name{font-size:12.5px;flex:1;font-weight:500;}
+  .sdi-star{color:var(--dark-tiffany);font-weight:700;font-size:13px;}
+  .sdi-type{font-size:10px;color:rgba(14,26,26,.4);white-space:nowrap;}
+  .sdi-empty{font-size:12px;color:rgba(14,26,26,.4);padding:12px;font-style:italic;text-align:center;}
+
+  /* NUCLEUS FILTER */
+  .nucleo-sel{height:34px;background:var(--dark2);border:1px solid rgba(14,26,26,.12);border-radius:3px;padding:0 26px 0 10px;font-family:inherit;font-size:12px;color:var(--ink);cursor:pointer;outline:none;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%236b7878'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center;transition:border-color .15s;flex-shrink:0;max-width:170px;}
+  .nucleo-sel:focus{border-color:var(--blue-light);}
+  .nucleo-sel.filtered{border-color:var(--green);background-color:rgba(0,88,92,.06);}
+
+  /* VIEW TOGGLE */
+  .view-toggle{display:flex;border:1px solid rgba(14,26,26,.15);border-radius:3px;overflow:hidden;flex-shrink:0;}
+  .view-toggle button{background:#fff;border:none;padding:7px 12px;font-family:inherit;font-size:11px;cursor:pointer;color:rgba(14,26,26,.55);transition:all .12s;white-space:nowrap;}
+  .view-toggle button:not(:last-child){border-right:1px solid rgba(14,26,26,.1);}
+  .view-toggle button.active{background:var(--dark-tiffany);color:#fff;}
+
+  /* KPI STRIP */
+  .kpis{display:flex;background:var(--dark3);border-bottom:1px solid rgba(14,26,26,.08);flex-shrink:0;overflow-x:auto;}
+  .kpi{padding:11px 22px;border-right:1px solid rgba(14,26,26,.06);min-width:130px;flex-shrink:0;}
+  .kpi.clickable{cursor:pointer;transition:background .12s;}
+  .kpi.clickable:hover{background:rgba(0,222,219,.07);}
+  .kpi.kpi-active{background:rgba(0,222,219,.13);border-bottom:2px solid var(--tiffany);}
+  .kpi .kv{font-family:var(--font-head);font-size:20px;font-weight:700;line-height:1;letter-spacing:-.5px;}
+  .kpi .kl{font-size:9px;letter-spacing:1.2px;text-transform:uppercase;color:rgba(14,26,26,.35);margin-top:5px;}
   .kpi.hot .kv{color:var(--green);}
   .kpi.hot{background:rgba(0,222,219,.07);}
   .kpi .kx{font-size:10px;color:rgba(14,26,26,.4);font-weight:300;margin-top:2px;}
 
-  /* ===== BODY ===== */
+  /* BODY */
   .body{display:flex;flex:1;min-height:0;}
-  .stage{position:relative;flex:1;min-width:0;background:
-    radial-gradient(ellipse at 50% 40%, #F7FBFB 0%, #E4F3F2 72%);}
-  canvas{display:block;width:100%;height:100%;cursor:grab;}
+  .stage{position:relative;flex:1;min-width:0;display:flex;flex-direction:column;}
+  canvas{display:block;width:100%;height:100%;cursor:grab;flex:1;}
   canvas.grabbing{cursor:grabbing;}
-
-  /* floating controls on canvas */
   .stage-controls{position:absolute;left:16px;bottom:16px;display:flex;gap:8px;z-index:5;}
-  .ctrl-btn{
-    background:rgba(28,28,28,.85);border:1px solid rgba(14,26,26,.14);color:#fff;
-    font-family:inherit;font-size:11px;padding:8px 12px;border-radius:3px;cursor:pointer;
-    display:flex;align-items:center;gap:6px;backdrop-filter:blur(6px);transition:all .15s;
-  }
-  .ctrl-btn:hover{background:rgba(0,88,92,.55);border-color:var(--blue-light);}
-  .stage-hint{
-    position:absolute;left:16px;top:16px;z-index:5;font-size:10.5px;color:rgba(14,26,26,.35);
-    font-weight:300;max-width:260px;line-height:1.5;pointer-events:none;
-  }
-  .stage-hint b{color:rgba(14,26,26,.6);font-weight:500;}
-
-  /* zoom controls */
+  .ctrl-btn{background:rgba(255,255,255,.88);border:1px solid rgba(14,26,26,.14);color:var(--ink);font-family:inherit;font-size:11px;padding:8px 12px;border-radius:4px;cursor:pointer;display:flex;align-items:center;gap:6px;backdrop-filter:blur(8px);transition:all .15s;box-shadow:0 1px 4px rgba(14,26,26,.08);}
+  .ctrl-btn:hover{background:rgba(0,88,92,.12);border-color:var(--dark-tiffany);}
+  .stage-hint{position:absolute;left:16px;top:16px;z-index:5;font-size:10.5px;color:rgba(14,26,26,.45);font-weight:300;max-width:290px;line-height:1.5;pointer-events:none;background:rgba(255,255,255,.72);padding:8px 12px;border-radius:4px;backdrop-filter:blur(4px);}
+  .stage-hint b{color:rgba(14,26,26,.7);font-weight:500;}
   .zoom{position:absolute;right:16px;bottom:16px;display:flex;flex-direction:column;gap:2px;z-index:5;}
-  .zoom button{
-    width:32px;height:32px;background:rgba(28,28,28,.85);border:1px solid rgba(14,26,26,.14);
-    color:#fff;font-size:16px;cursor:pointer;backdrop-filter:blur(6px);
-  }
-  .zoom button:first-child{border-radius:3px 3px 0 0;}
-  .zoom button:last-child{border-radius:0 0 3px 3px;}
-  .zoom button:hover{background:rgba(0,88,92,.55);}
+  .zoom button{width:32px;height:32px;background:rgba(255,255,255,.88);border:1px solid rgba(14,26,26,.14);color:var(--ink);font-size:16px;cursor:pointer;backdrop-filter:blur(8px);box-shadow:0 1px 4px rgba(14,26,26,.08);}
+  .zoom button:first-child{border-radius:4px 4px 0 0;}
+  .zoom button:last-child{border-radius:0 0 4px 4px;}
+  .zoom button:hover{background:rgba(0,88,92,.12);border-color:var(--dark-tiffany);}
 
-  /* ===== SIDE PANEL ===== */
-  .side{
-    width:340px;flex-shrink:0;background:var(--dark3);border-left:1px solid rgba(14,26,26,.08);
-    overflow-y:auto;display:flex;flex-direction:column;
-  }
-  .side::-webkit-scrollbar{width:8px;}
-  .side::-webkit-scrollbar-thumb{background:rgba(14,26,26,.12);border-radius:4px;}
+  /* TABLE VIEW */
+  .table-view{display:none;flex-direction:column;flex:1;overflow:hidden;background:var(--dark2);}
+  .tv-bar{padding:10px 18px;display:flex;align-items:center;gap:10px;background:#fff;border-bottom:1px solid var(--divider);flex-shrink:0;flex-wrap:wrap;}
+  .tv-title{font-size:12px;font-weight:700;color:var(--ink);white-space:nowrap;}
+  .tv-cnt{font-size:11px;color:rgba(14,26,26,.45);white-space:nowrap;}
+  .tv-total{font-size:11px;font-weight:700;color:var(--green);white-space:nowrap;margin-left:4px;}
+  .tv-spacer{flex:1;}
+  .tv-fsel{height:30px;background:var(--dark2);border:1px solid rgba(14,26,26,.12);border-radius:3px;padding:0 22px 0 8px;font-family:inherit;font-size:11.5px;color:var(--ink);cursor:pointer;outline:none;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%236b7878'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 6px center;}
+  .tv-wrap{flex:1;overflow-y:auto;}
+  .tv-wrap::-webkit-scrollbar{width:6px;}
+  .tv-wrap::-webkit-scrollbar-thumb{background:rgba(14,26,26,.12);border-radius:3px;}
+  table.tvt{width:100%;border-collapse:collapse;font-size:12.5px;background:#fff;}
+  table.tvt thead th{position:sticky;top:0;background:var(--ink);color:#fff;text-align:left;padding:9px 13px;font-weight:600;font-size:10.5px;letter-spacing:.3px;white-space:nowrap;z-index:2;}
+  table.tvt tbody tr{cursor:pointer;transition:background .1s;}
+  table.tvt tbody tr:hover td{background:rgba(0,222,219,.07);}
+  table.tvt tbody tr.tv-selected td{background:rgba(0,222,219,.12);}
+  table.tvt td{padding:8px 13px;border-bottom:1px solid rgba(14,26,26,.06);vertical-align:middle;white-space:nowrap;}
+  .tv-stage-pill{display:inline-block;font-size:8.5px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;padding:2px 7px;border-radius:2px;white-space:nowrap;}
+  .tv-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:5px;vertical-align:middle;}
+  .tv-valor{font-weight:600;font-family:var(--font-mono);font-size:11px;color:var(--green);}
+  .tv-nucleo{font-size:10px;color:var(--blue);font-weight:600;background:rgba(50,120,220,.1);padding:2px 7px;border-radius:2px;}
+  .tv-star{color:var(--dark-tiffany);font-weight:700;margin-left:4px;}
+  .tv-nf{display:flex;align-items:center;gap:8px;padding:7px 18px;background:rgba(0,88,92,.07);border-bottom:1px solid rgba(0,88,92,.18);font-size:11.5px;flex-shrink:0;}
+  .tv-nf-label{color:var(--green);font-weight:600;}
+  .tv-nf-clr{background:none;border:1px solid rgba(0,88,92,.3);border-radius:2px;padding:3px 8px;font-family:inherit;font-size:10px;color:var(--green);cursor:pointer;margin-left:auto;}
+  .tv-nf-clr:hover{background:rgba(0,88,92,.1);}
+
+  /* SIDE PANEL */
+  .side{width:330px;flex-shrink:0;background:var(--dark3);border-left:1px solid rgba(14,26,26,.08);overflow-y:auto;display:flex;flex-direction:column;}
+  .side::-webkit-scrollbar{width:6px;}
+  .side::-webkit-scrollbar-thumb{background:rgba(14,26,26,.12);border-radius:3px;}
   .panel{padding:18px 20px;border-bottom:1px solid rgba(14,26,26,.06);}
   .panel-h{font-size:9px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:rgba(14,26,26,.4);margin-bottom:14px;display:flex;align-items:center;gap:8px;}
   .panel-h::after{content:'';flex:1;height:1px;background:rgba(14,26,26,.08);}
-
-  /* legend / filters */
-  .legend-item{display:flex;align-items:center;gap:10px;padding:6px 8px;border-radius:3px;cursor:pointer;transition:background .12s;user-select:none;}
+  .legend-item{display:flex;align-items:center;gap:10px;padding:6px 8px;border-radius:4px;cursor:pointer;transition:background .12s;user-select:none;}
   .legend-item:hover{background:rgba(14,26,26,.04);}
   .legend-item.off{opacity:.3;}
-  .dot{width:12px;height:12px;border-radius:50%;flex-shrink:0;}
-  .dot.sq{border-radius:2px;transform:rotate(45deg);width:10px;height:10px;}
+  .dot{width:11px;height:11px;border-radius:50%;flex-shrink:0;}
   .legend-item .ln{font-size:11.5px;flex:1;}
   .legend-item .cnt{font-size:10px;color:rgba(14,26,26,.35);font-family:var(--font-mono);}
-
-  .nucleo-select{width:100%;background:var(--dark2);border:1px solid rgba(14,26,26,.12);color:var(--ink);font-family:inherit;font-size:12px;padding:9px 10px;border-radius:3px;outline:none;cursor:pointer;}
-  .nucleo-select:focus{border-color:var(--blue-light);}
-
-  /* insights */
-  .insight{
-    background:rgba(0,222,219,.08);border:1px solid rgba(0,222,219,.28);border-left:3px solid var(--green);
-    border-radius:3px;padding:12px 14px;margin-bottom:10px;cursor:pointer;transition:all .15s;
-  }
+  .insight{background:rgba(0,222,219,.08);border:1px solid rgba(0,222,219,.28);border-left:3px solid var(--green);border-radius:3px;padding:12px 14px;margin-bottom:10px;cursor:pointer;transition:all .15s;}
   .insight:hover{background:rgba(0,222,219,.15);}
-  .insight .it{font-size:12px;font-weight:600;color:var(--green);margin-bottom:4px;display:flex;align-items:center;gap:6px;}
+  .insight.active{background:rgba(0,222,219,.22);border-color:var(--tiffany);box-shadow:0 0 0 2px rgba(0,222,219,.28);}
+  .insight .it{font-size:12px;font-weight:600;color:var(--green);margin-bottom:4px;}
   .insight .id{font-size:11px;color:rgba(14,26,26,.7);line-height:1.55;font-weight:300;}
   .insight .im{font-size:10px;color:rgba(14,26,26,.4);margin-top:6px;font-family:var(--font-mono);}
-
-  /* detail */
   .detail-empty{font-size:11.5px;color:rgba(14,26,26,.3);font-weight:300;line-height:1.6;}
   .node-badge{display:inline-flex;align-items:center;gap:7px;font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;padding:5px 10px;border-radius:2px;margin-bottom:12px;}
   .detail-name{font-family:var(--font-head);font-size:19px;font-weight:700;line-height:1.2;margin-bottom:4px;letter-spacing:-.3px;}
@@ -147,46 +153,70 @@
   .conn-row .cr{font-size:9px;color:rgba(14,26,26,.4);text-transform:uppercase;letter-spacing:.5px;}
   .overlap-warn{background:var(--warn-bg);border-left:3px solid var(--warn);border-radius:3px;padding:11px 13px;margin-bottom:14px;}
   .overlap-warn .ot{font-size:11px;font-weight:600;color:#6b5200;margin-bottom:3px;}
-  .overlap-warn .od{font-size:11px;color:#4a3a08;line-height:1.5;font-weight:400;}
-
+  .overlap-warn .od{font-size:11px;color:#4a3a08;line-height:1.5;}
   .ftable{width:100%;border-collapse:collapse;margin-top:4px;}
   .ftable th{text-align:left;font-weight:600;color:rgba(14,26,26,.4);font-size:8px;letter-spacing:.6px;text-transform:uppercase;padding:5px 6px;border-bottom:1px solid rgba(14,26,26,.12);}
   .ftable td{padding:6px 6px;border-bottom:1px solid rgba(14,26,26,.06);vertical-align:top;font-size:10.5px;}
   .ftable tr{cursor:pointer;}
   .ftable tbody tr:hover td{background:rgba(14,26,26,.05);}
-  .ftable .andar{font-weight:600;color:var(--ink);white-space:nowrap;}
+  .ftable .andar{font-weight:600;white-space:nowrap;}
   .ftable .broker{color:var(--c-broker);}
   .ftable .dono{color:var(--c-dono);}
-  .ftable .nuc{color:#A9CBF5;font-size:9px;}
   .sumchips{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:12px;}
   .sumchip{font-size:9px;font-weight:600;padding:4px 9px;border-radius:2px;letter-spacing:.4px;}
   .sumchip.br{background:rgba(0,170,80,.16);color:var(--c-broker);}
   .sumchip.do{background:rgba(255,200,0,.16);color:var(--c-dono);}
-  .sumchip.nu{background:rgba(50,120,220,.22);color:#A9CBF5;}
-
-  /* stage chip when nucleo/stage */
+  .sumchip.nu{background:rgba(50,120,220,.18);color:var(--blue);}
   .chip{display:inline-block;font-size:9px;font-weight:600;padding:3px 8px;border-radius:2px;letter-spacing:.5px;text-transform:uppercase;margin-right:5px;}
-  .chip.n{background:rgba(50,120,220,.25);color:#A9CBF5;}
+  .chip.n{background:rgba(50,120,220,.18);color:var(--blue);}
   .chip.s{background:rgba(14,26,26,.08);color:rgba(14,26,26,.6);}
-
   .footer-note{padding:16px 20px;font-size:10px;color:rgba(14,26,26,.28);font-weight:300;line-height:1.6;}
   .footer-note b{color:rgba(14,26,26,.45);font-weight:500;}
 
-  @media (max-width:920px){
-    body{overflow:auto;}
-    .app{height:auto;}
-    .body{flex-direction:column;}
-    .stage{height:60vh;}
-    .side{width:100%;}
-    .kpis{overflow-x:auto;}
-    .search{display:none;}
-  }
+  /* VISTA MULTI-PRÉDIO */
+  .vista-drawer{width:720px;flex-shrink:0;background:#fff;border-left:1px solid rgba(14,26,26,.1);display:none;flex-direction:column;overflow-y:auto;}
+  .vd-head{padding:13px 20px;border-bottom:1px solid var(--divider);display:flex;align-items:center;gap:14px;flex-shrink:0;}
+  #vd-back{background:none;border:1px solid rgba(14,26,26,.18);border-radius:3px;padding:7px 12px;font-family:inherit;font-size:11px;color:var(--ink);cursor:pointer;white-space:nowrap;transition:all .15s;}
+  #vd-back:hover{border-color:var(--dark-tiffany);background:rgba(0,222,219,.08);}
+  .vd-title{flex:1;min-width:0;}
+  #vd-nome{font-family:var(--font-head);font-size:16px;font-weight:700;letter-spacing:-.2px;line-height:1.25;}
+  #vd-meta{font-size:10.5px;color:rgba(14,26,26,.45);font-weight:300;}
+  .vd-styles{display:flex;border:1px solid rgba(14,26,26,.15);border-radius:3px;overflow:hidden;}
+  .vd-styles button{background:#fff;border:none;border-right:1px solid rgba(14,26,26,.1);padding:6px 11px;font-family:inherit;font-size:10px;cursor:pointer;color:rgba(14,26,26,.55);}
+  .vd-styles button:last-child{border-right:none;}
+  .vd-styles button.on{background:var(--dark-tiffany);color:#fff;}
+  #vd-host{position:relative;flex-shrink:0;}
+  .vd-tip{display:none;position:absolute;left:0;top:0;width:258px;max-height:290px;overflow-y:auto;background:#fff;border:1px solid rgba(14,26,26,.15);box-shadow:0 10px 26px rgba(14,26,26,.2);border-radius:3px;padding:12px 14px;pointer-events:none;z-index:20;}
+  .vd-stage{font-size:8.5px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;padding:3px 8px;border-radius:2px;display:inline-block;}
+  .vd-tr{display:flex;align-items:center;gap:8px;margin-bottom:7px;}
+  .vd-tf{font-size:9px;color:rgba(14,26,26,.4);font-family:var(--font-mono);}
+  .vd-td{font-family:var(--font-head);font-size:13.5px;font-weight:700;line-height:1.25;}
+  .vd-tm{font-size:10px;color:rgba(14,26,26,.45);margin-bottom:8px;}
+  .vd-tg{display:grid;grid-template-columns:auto 1fr;gap:3px 14px;font-size:10.5px;}
+  .vd-tg span{color:rgba(14,26,26,.4);}
+  .vd-tn{margin-top:7px;font-size:9.5px;font-family:var(--font-mono);color:#6b5200;background:rgba(255,200,0,.14);border-left:2px solid #B8860B;padding:4px 8px;}
+  .vd-th{margin-top:8px;padding-top:7px;border-top:1px solid rgba(14,26,26,.08);font-size:9.5px;color:rgba(14,26,26,.4);}
+  .vd-pinbox{border-top:1px solid var(--divider);background:#FAFBFB;padding:14px 20px;display:flex;gap:26px;align-items:flex-start;}
+  .vd-pinl{min-width:180px;}
+  .vd-pind{font-family:var(--font-head);font-size:14.5px;font-weight:700;margin-top:7px;line-height:1.25;}
+  .vd-pinm{font-size:10.5px;color:rgba(14,26,26,.45);}
+  .vd-kv{display:grid;grid-template-columns:repeat(3,minmax(0,auto));gap:8px 26px;flex:1;padding-top:2px;}
+  .vd-kl{font-size:8.5px;letter-spacing:1px;text-transform:uppercase;color:rgba(14,26,26,.38);}
+  .vd-kvv{font-size:12px;font-weight:600;}
+  .vd-pinbtns{display:flex;flex-direction:column;gap:6px;}
+  .vd-hs{background:var(--dark-tiffany);color:#fff;border:none;border-radius:3px;padding:8px 14px;font-family:inherit;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;}
+  .vd-hs:hover{background:#00706F;}
+  .vd-x{background:none;border:none;font-family:inherit;font-size:10px;color:rgba(14,26,26,.45);cursor:pointer;text-decoration:underline;}
+  .vd-legend{display:flex;align-items:center;gap:18px;padding:9px 20px;border-top:1px solid var(--divider);font-size:10px;color:rgba(14,26,26,.55);flex-wrap:wrap;}
+  .vd-legend span{display:inline-flex;align-items:center;gap:6px;}
+  .vd-legend i{width:9px;height:9px;border-radius:50%;display:inline-block;}
+  .vd-dim{color:rgba(14,26,26,.4);}
+  @media (max-width:1280px){.vista-drawer{width:560px;}}
 </style>
 </head>
 <body>
 <div class="app">
 
-  <!-- TOPBAR -->
   <div class="topbar">
     <div class="brand">
       <span class="wm">SCIENT</span>
@@ -194,25 +224,34 @@
     </div>
     <div class="title-block">
       <h1>A Teia</h1>
-      <span class="sub">Mapa de interconexões · deals ativos · protótipo de visualização</span>
+      <span class="sub">Mapa de interconexões · deals ativos</span>
     </div>
     <div class="topbar-spacer"></div>
-    <div class="search">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6b7878" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-      <input id="search" type="text" placeholder="Buscar cliente, prédio, broker…" autocomplete="off">
+    <div class="search-wrap">
+      <div class="search">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6b7878" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input id="search" type="text" placeholder="Broker, prédio, cliente, gerenciadora…" autocomplete="off">
+      </div>
+      <div id="search-drop" class="search-drop"></div>
     </div>
-    <span class="mock-badge">Dados simulados</span>
+    <select id="nucleo-sel" class="nucleo-sel" title="Filtrar por núcleo">
+      <option value="">Todos os núcleos</option>
+    </select>
+    <div class="view-toggle">
+      <button id="btn-grafo" class="active">🕸 Grafo</button>
+      <button id="btn-table">📊 Tabela</button>
+    </div>
+    <span class="mock-badge" id="data-badge">Carregando…</span>
   </div>
 
-  <!-- KPIs -->
   <div class="kpis" id="kpis"></div>
 
-  <!-- BODY -->
   <div class="body">
     <div class="stage">
       <canvas id="cv"></canvas>
+      <div id="table-view" class="table-view"></div>
       <div class="stage-hint">
-        <b>Clique</b> num nó para ver a rede dele · <b>arraste</b> os nós · <b>scroll</b> pra zoom · arraste o fundo pra mover
+        <b>Clique</b> em qualquer nó · <b>Edifício</b> abre a vista de prédios · <b>scroll</b> zoom
       </div>
       <div class="stage-controls">
         <button class="ctrl-btn" id="btn-pause">⏸ Pausar</button>
@@ -225,30 +264,33 @@
       </div>
     </div>
 
-    <!-- SIDE -->
+    <!-- VISTA MULTI-PRÉDIO -->
+    <div id="vista-drawer" class="vista-drawer">
+      <div class="vd-head">
+        <button id="vd-back">← Voltar à Teia</button>
+        <div class="vd-title"><div id="vd-nome"></div><div id="vd-meta"></div></div>
+        <div class="vd-styles" id="vd-styles"></div>
+      </div>
+      <div id="vd-host"></div>
+      <div id="vd-pin"></div>
+      <div class="vd-legend" id="vd-legend"></div>
+    </div>
+
     <aside class="side">
       <div class="panel" id="detail-panel">
         <div class="panel-h">Detalhe</div>
-        <div class="detail-empty">Nenhum nó selecionado.<br>Clique num ponto da teia para inspecionar suas conexões — ou comece por uma das sobreposições ao lado.</div>
+        <div class="detail-empty">Nenhum nó selecionado.<br>Clique num ponto da teia para inspecionar.</div>
       </div>
-
       <div class="panel">
         <div class="panel-h">O que a teia revela</div>
         <div id="insights"></div>
       </div>
-
-      <div class="panel">
-        <div class="panel-h">Filtrar por núcleo</div>
-        <select class="nucleo-select" id="nucleo-select"></select>
-      </div>
-
       <div class="panel">
         <div class="panel-h">Camadas / Legenda</div>
         <div id="legend"></div>
       </div>
-
       <div class="footer-note">
-        <b>A Teia</b> · deals ativos do HubSpot da ATIE, lidos via <b>CRM Associations API v4</b> — sem Custom Objects. Se o badge acima disser "fallback", a função serverless não respondeu (confira o token na Vercel e o console do navegador) e você está vendo dados simulados.
+        <b>A Teia</b> · deals ativos HubSpot ATIE via <b>CRM Associations API v4</b>.
       </div>
     </aside>
   </div>
@@ -256,659 +298,786 @@
 
 <script>
 /* ============================================================
-   DADOS SIMULADOS — baseados nos exemplos do briefing
-   Cada deal gera nós (atores) + arestas rotuladas, espelhando
-   a estrutura real do HubSpot (Deal <-(rótulo)-> Company).
+   HELPERS
    ============================================================ */
-const SIMULATED_DEALS = [
-  { id:'D1', nome:'Anthropic · Infinity One', nucleo:'Núcleo 2', stage:'Test Fit',
-    cliente:'Anthropic', broker:'CBRE', gerenciadora:'Cushman & Wakefield',
-    edificio:'Infinity One', andar:'7º andar', dono:'Brookfield' },
-  { id:'D2', nome:'Bradesco Ômega L.', nucleo:'Núcleo 1', stage:'Proposta',
-    cliente:'Bradesco', broker:'CB', gerenciadora:'Cushman & Wakefield',
-    edificio:'Bradesco Paulista', andar:null, dono:null },
-  { id:'D3', nome:'Adidas · Faria Lima', nucleo:'Núcleo 3', stage:'Obra',
-    cliente:'Adidas', broker:'CBRE', gerenciadora:'JLL',
-    edificio:'Faria Lima Plaza', andar:'10º andar', dono:'Fundo XP', parceiro:'PITAR' },
-  { id:'D4', nome:'TechCo · Infinity One', nucleo:'Núcleo 5', stage:'RFP',
-    cliente:'TechCo', broker:'Colliers', gerenciadora:'Cushman & Wakefield',
-    edificio:'Infinity One', andar:'12º andar', dono:'Fundo Kinea', concorrente:'PITAR' },
-  { id:'D9', nome:'Stripe · Infinity One', nucleo:'Núcleo 8', stage:'Proposta',
-    cliente:'Stripe', broker:'CB', gerenciadora:null,
-    edificio:'Infinity One', andar:'3º andar', dono:'Brookfield' },
-  { id:'D5', nome:'Nubank · Água Branca', nucleo:'Núcleo 2', stage:'Proposta',
-    cliente:'Nubank', broker:'CB', gerenciadora:'Cushman & Wakefield',
-    edificio:'Água Branca', andar:'3º andar', dono:'Brookfield' },
-  { id:'D6', nome:'iFood · Água Branca', nucleo:'Núcleo 7', stage:'Test Fit',
-    cliente:'iFood', broker:'CBRE', gerenciadora:null,
-    edificio:'Água Branca', andar:'8º andar', dono:'Fundo XP' },
-  { id:'D7', nome:'Itaú · JK Iguatemi', nucleo:'Núcleo 4', stage:'Obra',
-    cliente:'Itaú', broker:'CBRE', gerenciadora:'JLL',
-    edificio:'JK Iguatemi', andar:null, dono:'Brookfield' },
-  { id:'D8', nome:'Ambev · Faria Lima', nucleo:'Núcleo 3', stage:'Proposta',
-    cliente:'Ambev', broker:'CB', gerenciadora:null,
-    edificio:'Faria Lima Plaza', andar:'4º andar', dono:'Fundo Kinea', parceiro:'PITAR' },
-];
+function esc(s){ return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function fmtBRL(v){ if(!v&&v!==0) return '—'; return 'R$ '+Number(v).toLocaleString('pt-BR',{minimumFractionDigits:0,maximumFractionDigits:0}); }
+function fmtBRLShort(v){ if(!v) return '—'; if(v>=1000000) return 'R$ '+(v/1000000).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})+'M'; return 'R$ '+(v/1000).toFixed(0)+'k'; }
+
+const STAGE_COL={
+  'Recebido no Núcleo':             '#AACCE0',
+  'Diagnóstico / Briefing / Test Fit':'#5BAEF0',
+  'Estratégia Definida':            '#9650DC',
+  'Proposta em Elaboração':         '#E0A800',
+  'Proposta Apresentada':           '#E07800',
+  'Em Negociação / Short List':     '#DC5028',
+  'Go/No-Go 2 — Aprovação (Ivo)':  '#B83060',
+  'Ganho — Preparo do Processo':    '#00AA50',
+  'Contrato Assinado':              '#00585C',
+  'Perdido':                        '#888888',
+  'Declinado':                      '#BBBBBB',
+};
+function ink(hex){ const n=parseInt(hex.slice(1),16),r=n>>16,g=(n>>8)&255,b=n&255; return (r*.299+g*.587+b*.114)>150?'#0E1A1A':'#FFF'; }
 
 /* ============================================================
-   FONTE DE DADOS — HubSpot (via função serverless) com fallback
-   para os dados simulados acima, caso a API não responda.
+   DADOS SIMULADOS
    ============================================================ */
+const SIMULATED_DEALS = [
+  { id:'D1',  nome:'Anthropic · Infinity One',     stage:'Diagnóstico / Briefing / Test Fit', cliente:'Anthropic',    broker:'CBRE',    gerenciadora:'Cushman & Wakefield', edificio:'Infinity One',      andar:'7º andar',  conjunto:'701',  dono:'Brookfield',  tipo:'Projeto',        nucleo:'Lucas',   valor:2200000, contatos:[{nome:'Sarah Chen',cargo:'Head of Real Estate'},{nome:'Marcus Lee',cargo:'CFO'}] },
+  { id:'D12', nome:'Goldman Sachs · Infinity One', stage:'Recebido no Núcleo',                cliente:'Goldman Sachs',broker:'JLL',     gerenciadora:null,                  edificio:'Infinity One',      andar:'7º andar',  conjunto:'702',  dono:'Fundo Kinea', tipo:'Projeto e Obra', nucleo:'Mariana', valor:4500000, contatos:[{nome:'Peter Walsh',cargo:'RE Manager'}] },
+  { id:'D2',  nome:'Bradesco · Ômega L.',          stage:'Proposta Apresentada',              cliente:'Bradesco',     broker:'CB',      gerenciadora:'Cushman & Wakefield', edificio:'Bradesco Paulista', andar:null,        conjunto:null,   dono:null,          tipo:'Projeto',        nucleo:'Lucas',   valor:1800000, contatos:[{nome:'Ricardo Alves',cargo:'Gerente Corporativo'}] },
+  { id:'D3',  nome:'Adidas · Faria Lima',          stage:'Ganho — Preparo do Processo',      cliente:'Adidas',       broker:'CBRE',    gerenciadora:'JLL',                 edificio:'Faria Lima Plaza',  andar:'10º andar', conjunto:'1001', dono:'Fundo XP',    tipo:'Projeto',        nucleo:'Pedro',   valor:3100000, contatos:[{nome:'Felipe Nunes',cargo:'Diretor de Facilities'}], parceiro:'PITAR' },
+  { id:'D4',  nome:'TechCo · Infinity One',        stage:'Em Negociação / Short List',       cliente:'TechCo',       broker:'Colliers',gerenciadora:'Cushman & Wakefield', edificio:'Infinity One',      andar:'12º andar', conjunto:'1201', dono:'Fundo Kinea', tipo:'Projeto e Obra', nucleo:'Mariana', valor:2700000, contatos:[{nome:'Ana Rodrigues',cargo:'VP Operations'},{nome:'Bruno Maia',cargo:'Legal'}], concorrente:'PITAR' },
+  { id:'D9',  nome:'Stripe · Infinity One',        stage:'Proposta em Elaboração',           cliente:'Stripe',       broker:'CB',      gerenciadora:null,                  edificio:'Infinity One',      andar:'3º andar',  conjunto:'301',  dono:'Brookfield',  tipo:'Obra',           nucleo:'Lucas',   valor:1500000, contatos:[{nome:'Julia Martins',cargo:'Finance Lead'}] },
+  { id:'D5',  nome:'Nubank · Água Branca',         stage:'Proposta Apresentada',             cliente:'Nubank',       broker:'CB',      gerenciadora:'Cushman & Wakefield', edificio:'Água Branca',       andar:'3º andar',  conjunto:'302',  dono:'Brookfield',  tipo:'Projeto',        nucleo:'Pedro',   valor:2900000, contatos:[{nome:'Pedro Souza',cargo:'Real Estate Director'}] },
+  { id:'D6',  nome:'iFood · Água Branca',          stage:'Diagnóstico / Briefing / Test Fit',cliente:'iFood',        broker:'CBRE',    gerenciadora:null,                  edificio:'Água Branca',       andar:'8º andar',  conjunto:'801',  dono:'Fundo XP',    tipo:'Projeto e Obra', nucleo:'Mariana', valor:2100000, contatos:[{nome:'Camila Torres',cargo:'Head of Workplace'}] },
+  { id:'D7',  nome:'Itaú · JK Iguatemi',          stage:'Contrato Assinado',                cliente:'Itaú',         broker:'CBRE',    gerenciadora:'JLL',                 edificio:'JK Iguatemi',       andar:null,        conjunto:null,   dono:'Brookfield',  tipo:'Projeto',        nucleo:'Pedro',   valor:5800000, contatos:[{nome:'Carlos Mendes',cargo:'Corporate RE Manager'}] },
+  { id:'D8',  nome:'Ambev · Faria Lima',           stage:'Estratégia Definida',              cliente:'Ambev',        broker:'CB',      gerenciadora:null,                  edificio:'Faria Lima Plaza',  andar:'4º andar',  conjunto:'401',  dono:'Fundo Kinea', tipo:'Obra',           nucleo:'Lucas',   valor:3400000, contatos:[{nome:'Thiago Oliveira',cargo:'Diretor Administrativo'}], parceiro:'PITAR' },
+  { id:'D10', nome:'Anthropic · JK Iguatemi',     stage:'Em Negociação / Short List',       cliente:'Anthropic',    broker:'CBRE',    gerenciadora:null,                  edificio:'JK Iguatemi',       andar:'11º andar', conjunto:'1101', dono:'Brookfield',  tipo:'Projeto',        nucleo:'Mariana', valor:2300000, contatos:[{nome:'Sarah Chen',cargo:'Head of Real Estate'}] },
+  { id:'D11', nome:'TechCo · Faria Lima',         stage:'Em Negociação / Short List',       cliente:'TechCo',       broker:'Colliers',gerenciadora:null,                  edificio:'Faria Lima Plaza',  andar:'6º andar',  conjunto:'601',  dono:'Fundo XP',    tipo:'Obra',           nucleo:'Pedro',   valor:1900000, contatos:[{nome:'Ana Rodrigues',cargo:'VP Operations'}] },
+  { id:'D13', nome:'CLARO · Quota Corporate',     stage:'Proposta Apresentada',             cliente:'CLARO',        broker:null,      gerenciadora:'Binswanger',          edificio:'Quota Corporate',   andar:null,        conjunto:null,   dono:null,          tipo:'Obra',           nucleo:'Luisa Zerbini', valor:40173000, area:11478, contatos:[], aw_id_focus:'65968', aw_numero_projeto:'4703/24' },
+];
+
+let ALL_DEALS = SIMULATED_DEALS;
 let DEALS = SIMULATED_DEALS;
 let DATA_SOURCE = 'simulado';
 let DATA_META = null;
+let activeNucleo = '';
+let tableMode = false;
+let kpiFilter = null;
 
-function start(){
-
-/* ---- Tipos e estilo dos nós ---- */
 const TYPES = {
-  deal:        { label:'Deal',           color:'#FFFFFF', ring:'#3278DC', shape:'sq', r:9 },
-  cliente:     { label:'Cliente Final',  color:'#3278DC', r:13 },
-  broker:      { label:'Broker',         color:'#00AA50', r:11 },
-  gerenciadora:{ label:'Gerenciadora',   color:'#9650DC', r:11 },
-  dono:        { label:'Dono / Incorporador', color:'#FFC800', r:11 },
-  edificio:    { label:'Edifício',       color:'#00585C', ring:'#00DEDB', shape:'sq', r:14 },
-  andar:       { label:'Andar',          color:'#86D9D6', r:6 },
-  escritorio:  { label:'Escritório (parceiro/concorrente)', color:'#E63232', r:10 },
+  deal:        { label:'Negócio',            color:'#DCE8E8', ic:'rgba(0,88,92,0.50)',   r:11, icon:'deal'     },
+  cliente:     { label:'Cliente Final',      color:'#00DEDB', ic:'rgba(14,26,26,0.75)',  r:14, icon:'none'     },
+  broker:      { label:'Broker',             color:'#00585C', ic:'rgba(255,255,255,0.9)',r:11, icon:'none'     },
+  gerenciadora:{ label:'Gerenciadora',       color:'#9650DC', ic:'rgba(255,255,255,0.9)',r:11, icon:'none'     },
+  dono:        { label:'Dono / Incorporador',color:'#C8940A', ic:'rgba(255,255,255,0.9)',r:11, icon:'none'     },
+  edificio:    { label:'Edifício',           color:'#E4EDED', ic:'rgba(0,88,92,0.55)',   r:15, icon:'building' },
+  andar:       { label:'Andar',              color:'#5CC4C0', ic:'rgba(255,255,255,0.9)',r:6,  icon:'none'     },
+  escritorio:  { label:'Escritório',         color:'#E63232', ic:'rgba(255,255,255,0.9)',r:10, icon:'none'     },
 };
 
 /* ============================================================
-   CONSTRUÇÃO DO GRAFO
+   ESTADO DO GRAFO
    ============================================================ */
-const nodesMap = new Map();
-const edges = [];
-function ensure(id, type, extra={}){
-  if(!nodesMap.has(id)){
-    nodesMap.set(id, { id, type, label:extra.label||id,
-      x:(Math.random()-.5)*600, y:(Math.random()-.5)*400, vx:0, vy:0,
-      fixed:false, deals:new Set(), meta:extra.meta||{} });
-  }
-  return nodesMap.get(id);
-}
-function link(a,b,label){ edges.push({ a, b, label }); }
+let nodesMap = new Map();
+let edges    = [];
+let NODES    = [];
+let adj      = {};
+let buildingStats = [];
+let overlaps      = [];
 
-DEALS.forEach(d=>{
-  const deal = ensure(d.id,'deal',{ label:d.nome, meta:{ nucleo:d.nucleo, stage:d.stage } });
-  const client = ensure('C:'+d.cliente,'cliente',{ label:d.cliente });
-  client.deals.add(d.id); deal.deals.add(d.id);
-  link('C:'+d.cliente, d.id, 'Cliente Final');
-
-  if(d.broker){ ensure('B:'+d.broker,'broker',{label:d.broker}).deals.add(d.id); link(d.id,'B:'+d.broker,'Broker'); }
-  if(d.gerenciadora){ ensure('G:'+d.gerenciadora,'gerenciadora',{label:d.gerenciadora}).deals.add(d.id); link(d.id,'G:'+d.gerenciadora,'Gerenciadora'); }
-  if(d.parceiro){ ensure('E:'+d.parceiro,'escritorio',{label:d.parceiro}).deals.add(d.id); link(d.id,'E:'+d.parceiro,'Parceiro'); }
-  if(d.concorrente){ ensure('E:'+d.concorrente,'escritorio',{label:d.concorrente}).deals.add(d.id); link(d.id,'E:'+d.concorrente,'Concorrente'); }
-
-  if(Array.isArray(d.andares) && d.andares.length){
-    // Fase 2: Custom Objects de verdade — 1 nó de Edifício + 1 nó de Andar
-    // (com seu próprio dono) por item. É isso que resolve "dono variando
-    // por andar dentro do mesmo negócio".
-    d.andares.forEach(a=>{
-      const ed = ensure('ED:'+a.edificio,'edificio',{label:a.edificio});
-      ed.deals.add(d.id);
-      const anKey = 'AN:'+a.edificio+':'+(a.nome||a.id);
-      const an = ensure(anKey,'andar',{label:a.nome||('Andar '+a.id), meta:{edificio:a.edificio}});
-      an.deals.add(d.id);
-      link(d.id, anKey, 'Local do Deal');
-      link(anKey, 'ED:'+a.edificio, 'Andar de');
-      if(a.dono){ ensure('DO:'+a.dono,'dono',{label:a.dono}).deals.add(d.id); link(anKey,'DO:'+a.dono,'Dono do andar'); }
-    });
-  } else {
-    // Fallback Fase 1 (texto livre no Deal) — usado pelos dados simulados
-    // e caso a API não consiga ler os Custom Objects.
-    const ed = ensure('ED:'+d.edificio,'edificio',{label:d.edificio});
-    ed.deals.add(d.id);
-    if(d.andar){
-      const an = ensure('AN:'+d.edificio+':'+d.andar,'andar',{label:d.andar, meta:{edificio:d.edificio}});
-      an.deals.add(d.id);
-      link(d.id,'AN:'+d.edificio+':'+d.andar,'Local do Deal');
-      link('AN:'+d.edificio+':'+d.andar,'ED:'+d.edificio,'Andar de');
-      if(d.dono){ ensure('DO:'+d.dono,'dono',{label:d.dono}).deals.add(d.id); link('AN:'+d.edificio+':'+d.andar,'DO:'+d.dono,'Dono do andar'); }
-    } else {
-      link(d.id,'ED:'+d.edificio,'Local do Deal');
-      if(d.dono){ ensure('DO:'+d.dono,'dono',{label:d.dono}).deals.add(d.id); link('ED:'+d.edificio,'DO:'+d.dono,'Dono'); }
+function buildGraph(){
+  nodesMap = new Map();
+  edges    = [];
+  function ensure(id, type, extra={}){
+    if(!nodesMap.has(id)){
+      const a=Math.random()*Math.PI*2, d=80+Math.random()*320;
+      nodesMap.set(id,{ id, type, label:extra.label||id,
+        x:Math.cos(a)*d, y:Math.sin(a)*d,
+        vx:0, vy:0, fixed:false, deals:new Set(), meta:extra.meta||{} });
     }
+    return nodesMap.get(id);
   }
-});
+  function link(a,b,label){ edges.push({ a, b, label }); }
 
-const NODES = [...nodesMap.values()];
-// grau (nº de conexões) -> tamanho
-const degree = {};
-edges.forEach(e=>{ degree[e.a]=(degree[e.a]||0)+1; degree[e.b]=(degree[e.b]||0)+1; });
-NODES.forEach(n=>{ n.deg = degree[n.id]||0; });
+  DEALS.forEach(d=>{
+    const deal  = ensure(d.id,'deal',{label:d.nome, meta:{stage:d.stage}});
+    const cli   = ensure('C:'+d.cliente,'cliente',{label:d.cliente});
+    cli.deals.add(d.id); deal.deals.add(d.id);
+    link('C:'+d.cliente, d.id, 'Cliente Final');
+    if(d.broker)      { ensure('B:'+d.broker,'broker',{label:d.broker}).deals.add(d.id);                  link(d.id,'B:'+d.broker,'Broker'); }
+    if(d.gerenciadora){ ensure('G:'+d.gerenciadora,'gerenciadora',{label:d.gerenciadora}).deals.add(d.id);link(d.id,'G:'+d.gerenciadora,'Gerenciadora'); }
+    if(d.parceiro)    { ensure('E:'+d.parceiro,'escritorio',{label:d.parceiro}).deals.add(d.id);           link(d.id,'E:'+d.parceiro,'Parceiro'); }
+    if(d.concorrente) { ensure('E:'+d.concorrente,'escritorio',{label:d.concorrente}).deals.add(d.id);     link(d.id,'E:'+d.concorrente,'Concorrente'); }
 
-// adjacência para seleção
-const adj = {};
-NODES.forEach(n=> adj[n.id]=new Set());
-edges.forEach(e=>{ adj[e.a].add(e.b); adj[e.b].add(e.a); });
+    if(Array.isArray(d.andares)&&d.andares.length){
+      d.andares.forEach(a=>{
+        const ed=ensure('ED:'+a.edificio,'edificio',{label:a.edificio}); ed.deals.add(d.id);
+        const ak='AN:'+a.edificio+':'+(a.nome||a.id);
+        const an=ensure(ak,'andar',{label:a.nome||('Andar '+a.id),meta:{edificio:a.edificio}}); an.deals.add(d.id);
+        link(d.id,ak,'Local do Deal'); link(ak,'ED:'+a.edificio,'Andar de');
+        if(a.dono){ ensure('DO:'+a.dono,'dono',{label:a.dono}).deals.add(d.id); link(ak,'DO:'+a.dono,'Dono do andar'); }
+      });
+    } else {
+      const ed=ensure('ED:'+d.edificio,'edificio',{label:d.edificio}); ed.deals.add(d.id);
+      if(d.andar){
+        const ak='AN:'+d.edificio+':'+d.andar;
+        const an=ensure(ak,'andar',{label:d.andar,meta:{edificio:d.edificio}}); an.deals.add(d.id);
+        link(d.id,ak,'Local do Deal'); link(ak,'ED:'+d.edificio,'Andar de');
+        if(d.dono){ ensure('DO:'+d.dono,'dono',{label:d.dono}).deals.add(d.id); link(ak,'DO:'+d.dono,'Dono do andar'); }
+      } else {
+        link(d.id,'ED:'+d.edificio,'Local do Deal');
+        if(d.dono){ ensure('DO:'+d.dono,'dono',{label:d.dono}).deals.add(d.id); link('ED:'+d.edificio,'DO:'+d.dono,'Dono'); }
+      }
+    }
+  });
 
-/* ============================================================
-   INSIGHTS: prédios com deals de mais de um núcleo
-   ============================================================ */
-const buildingStats = [];
-NODES.filter(n=>n.type==='edificio').forEach(ed=>{
-  const dealsHere = DEALS.filter(d=>('ED:'+d.edificio)===ed.id);
-  const nucleos = [...new Set(dealsHere.map(d=>d.nucleo))];
-  const brokers = [...new Set(dealsHere.map(d=>d.broker).filter(Boolean))];
-  const donos   = [...new Set(dealsHere.map(d=>d.dono).filter(Boolean))];
-  buildingStats.push({ edificio:ed.label, edId:ed.id, deals:dealsHere, nucleos, brokers, donos });
-});
-// "issues" = prédios que a teia revela: 2+ núcleos OU 2+ brokers no mesmo prédio
-const overlaps = buildingStats.filter(b => b.nucleos.length>1 || b.brokers.length>1);
+  NODES=[...nodesMap.values()];
+  const deg={};
+  edges.forEach(e=>{ deg[e.a]=(deg[e.a]||0)+1; deg[e.b]=(deg[e.b]||0)+1; });
+  NODES.forEach(n=>{ n.deg=deg[n.id]||0; });
+  adj={};
+  NODES.forEach(n=>{ adj[n.id]=new Set(); });
+  edges.forEach(e=>{ adj[e.a].add(e.b); adj[e.b].add(e.a); });
 
-/* ============================================================
-   KPIs
-   ============================================================ */
-function computeKPIs(){
-  const brokerCount = {};
-  DEALS.forEach(d=>{ if(d.broker) brokerCount[d.broker]=(brokerCount[d.broker]||0)+1; });
-  const topBroker = Object.entries(brokerCount).sort((a,b)=>b[1]-a[1])[0];
-  return [
-    { v:DEALS.length, l:'Deals ativos' },
-    { v:NODES.filter(n=>n.type==='edificio').length, l:'Edifícios' },
-    { v:buildingStats.filter(b=>b.brokers.length>1).length, l:'Prédios multi-broker', x:'brokers diferentes por andar', hot:true },
-    { v:buildingStats.filter(b=>b.nucleos.length>1).length, l:'Sobreposições de núcleo', x:'2+ núcleos no mesmo prédio', hot:true },
-    { v:topBroker?topBroker[0]:'—', l:'Broker mais recorrente', x:topBroker? topBroker[1]+' deals':'' },
-  ];
+  buildingStats=[];
+  NODES.filter(n=>n.type==='edificio').forEach(ed=>{
+    const dh=DEALS.filter(d=>('ED:'+d.edificio)===ed.id);
+    buildingStats.push({ edificio:ed.label, edId:ed.id, deals:dh,
+      brokers:[...new Set(dh.map(d=>d.broker).filter(Boolean))],
+      donos:  [...new Set(dh.map(d=>d.dono).filter(Boolean))] });
+  });
+  overlaps=buildingStats.filter(b=>b.brokers.length>1||b.deals.length>1);
 }
-const kpiEl = document.getElementById('kpis');
-computeKPIs().forEach(k=>{
-  const d=document.createElement('div');
-  d.className='kpi'+(k.hot?' hot':'');
-  d.innerHTML=`<div class="kv">${k.v}</div><div class="kl">${k.l}</div>${k.x?`<div class="kx">${k.x}</div>`:''}`;
-  kpiEl.appendChild(d);
-});
 
 /* ============================================================
-   LEGENDA / FILTROS DE CAMADA
+   KPIs + UI
    ============================================================ */
-const visibleTypes = new Set(Object.keys(TYPES));
-const legendEl = document.getElementById('legend');
-Object.entries(TYPES).forEach(([key,t])=>{
-  const cnt = NODES.filter(n=>n.type===key).length;
-  const row=document.createElement('div');
-  row.className='legend-item';
-  row.dataset.type=key;
-  row.innerHTML=`<span class="dot ${t.shape==='sq'?'sq':''}" style="background:${t.color};${t.ring?`box-shadow:0 0 0 2px ${t.ring}`:''}"></span>
-    <span class="ln">${t.label}</span><span class="cnt">${cnt}</span>`;
-  row.onclick=()=>{
-    if(visibleTypes.has(key)){ visibleTypes.delete(key); row.classList.add('off'); }
-    else { visibleTypes.add(key); row.classList.remove('off'); }
-  };
-  legendEl.appendChild(row);
-});
+const kpiEl=document.getElementById('kpis');
+const legendEl=document.getElementById('legend');
+const insightsEl=document.getElementById('insights');
+const visibleTypes=new Set(Object.keys(TYPES));
 
-/* ============================================================
-   FILTRO POR NÚCLEO
-   ============================================================ */
-const nucleoSel = document.getElementById('nucleo-select');
-const nucleos = [...new Set(DEALS.map(d=>d.nucleo))].sort();
-nucleoSel.innerHTML = `<option value="">Todos os núcleos</option>` + nucleos.map(n=>`<option value="${n}">${n}</option>`).join('');
-let nucleoFilter = '';
-nucleoSel.onchange = ()=>{ nucleoFilter = nucleoSel.value; };
+function buildUI(){
+  kpiEl.innerHTML='';
+  const totalValor = DEALS.reduce((a,d)=>a+(d.valor||0),0);
+  const bc={}; DEALS.forEach(d=>{ if(d.broker) bc[d.broker]=(bc[d.broker]||0)+1; });
+  const top=Object.entries(bc).sort((a,b)=>b[1]-a[1])[0];
+  const disputados=buildingStats.filter(b=>b.deals.length>1);
+  const multibroker=buildingStats.filter(b=>b.brokers.length>1);
 
-/* ============================================================
-   INSIGHTS UI
-   ============================================================ */
-const insightsEl = document.getElementById('insights');
-if(overlaps.length===0){
-  insightsEl.innerHTML = `<div class="detail-empty">Nenhum prédio com brokers ou núcleos concorrentes.</div>`;
-} else {
+  const kpis=[
+    { v:DEALS.length,             l:'Deals'+(activeNucleo?' · '+activeNucleo:''), cls:'' },
+    { v:fmtBRLShort(totalValor),  l:'Valor total', cls:'hot' },
+    { v:disputados.length,        l:'Prédios em disputa', x:'2+ deals no mesmo edifício', cls:'hot', filter:'disputados' },
+    { v:multibroker.length,       l:'Multi-broker',       x:'brokers diferentes no mesmo prédio', cls:'hot', filter:'multibroker' },
+    { v:top?top[0]:'—',           l:'Broker mais recorrente', x:top?top[1]+' deals':'', cls:'' },
+  ];
+  kpis.forEach(k=>{
+    const d=document.createElement('div');
+    const isActive=kpiFilter===k.filter;
+    d.className='kpi'+(k.cls?' '+k.cls:'')+(k.filter?' clickable':'')+(isActive?' kpi-active':'');
+    d.innerHTML=`<div class="kv">${k.v}</div><div class="kl">${k.l}</div>${k.x?`<div class="kx">${k.x}</div>`:''}`;
+    if(k.filter){
+      d.onclick=()=>{
+        kpiFilter = isActive ? null : k.filter;
+        buildUI();
+        highlightKpiFilter();
+      };
+    }
+    kpiEl.appendChild(d);
+  });
+
+  visibleTypes.clear(); Object.keys(TYPES).forEach(k=>visibleTypes.add(k));
+  legendEl.innerHTML='';
+  Object.entries(TYPES).forEach(([key,t])=>{
+    const cnt=NODES.filter(n=>n.type===key).length;
+    const row=document.createElement('div'); row.className='legend-item'; row.dataset.type=key;
+    row.innerHTML=`<span class="dot" style="background:${t.color}"></span><span class="ln">${t.label}</span><span class="cnt">${cnt}</span>`;
+    row.onclick=()=>{ if(visibleTypes.has(key)){ visibleTypes.delete(key); row.classList.add('off'); } else { visibleTypes.add(key); row.classList.remove('off'); } };
+    legendEl.appendChild(row);
+  });
+
+  insightsEl.innerHTML='';
+  if(!overlaps.length){ insightsEl.innerHTML=`<div class="detail-empty">Nenhum conflito detectado.</div>`; return; }
   overlaps.forEach(o=>{
-    const el=document.createElement('div');
-    el.className='insight';
+    const el=document.createElement('div'); el.className='insight';
     const bits=[];
-    if(o.brokers.length>1) bits.push(`<b>${o.brokers.length} brokers diferentes</b> (${o.brokers.join(', ')})`);
-    if(o.nucleos.length>1) bits.push(`<b>${o.nucleos.length} núcleos</b> (${o.nucleos.join(', ')})`);
-    const floors = o.deals.map(d=>`${d.andar?d.andar:'—'}: ${d.cliente}/${d.broker||'s/ broker'}`).join(' · ');
-    el.innerHTML=`<div class="it">▲ ${o.edificio}</div>
-      <div class="id">${bits.join(' · ')}, por conta de andares distintos.</div>
-      <div class="im">${floors}</div>`;
-    el.onclick=()=>selectNode(o.edId, true);
+    if(o.brokers.length>1) bits.push(`<b>${o.brokers.length} brokers</b> (${o.brokers.join(', ')})`);
+    if(o.deals.length>1)   bits.push(`<b>${o.deals.length} deals</b> em disputa`);
+    el.innerHTML=`<div class="it">▲ ${esc(o.edificio)}</div><div class="id">${bits.join(' · ')}</div>
+      <div class="im">${o.deals.map(d=>`${esc(d.andar||'—')}: ${esc(d.cliente)}/${esc(d.broker||'s/br')}`).join(' · ')}</div>`;
+    el.onclick=()=>{
+      insightsEl.querySelectorAll('.insight').forEach(x=>x.classList.remove('active'));
+      el.classList.add('active');
+      document.getElementById('vista-drawer').style.display='none';
+      window.dispatchEvent(new Event('resize'));
+      if(!running){ running=true; btnPause.textContent='⏸ Pausar'; }
+      selectNode(o.edId, true, true);
+    };
     insightsEl.appendChild(el);
   });
 }
 
+function highlightKpiFilter(){
+  if(!kpiFilter){ clearSelection(); return; }
+  const targets = kpiFilter==='disputados'
+    ? buildingStats.filter(b=>b.deals.length>1).map(b=>b.edId)
+    : buildingStats.filter(b=>b.brokers.length>1).map(b=>b.edId);
+  if(!targets.length) return;
+  // Highlight all matching nodes simultaneously
+  selected=targets[0]; selNeighbors=new Set();
+  targets.forEach(id=>{ selNeighbors.add(id); if(adj[id]) adj[id].forEach(nb=>selNeighbors.add(nb)); });
+  selected=null; // show all matching as neighbors (no single selection)
+  // Actually: select first and show all as neighbors
+  selected=targets[0];
+  targets.slice(1).forEach(id=>selNeighbors.add(id));
+  if(adj[targets[0]]) adj[targets[0]].forEach(nb=>selNeighbors.add(nb));
+  targets.forEach(id=>{ if(adj[id]) adj[id].forEach(nb=>selNeighbors.add(nb)); });
+  renderDetail(targets[0]);
+  const n=nodesMap.get(targets[0]); if(n){ cam.x=n.x; cam.y=n.y; if(cam.scale<0.9)cam.scale=1; }
+}
+
+buildGraph();
+buildUI();
+buildNucleoSelect();
+
 /* ============================================================
-   CANVAS / FÍSICA / RENDER
+   NUCLEUS FILTER
+   ============================================================ */
+function buildNucleoSelect(){
+  const sel=document.getElementById('nucleo-sel');
+  const nucleos=[...new Set(ALL_DEALS.map(d=>d.nucleo).filter(Boolean))].sort();
+  sel.innerHTML='<option value="">Todos os núcleos</option>'+
+    nucleos.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('');
+  sel.value=activeNucleo;
+}
+
+function applyFilter(){
+  DEALS = activeNucleo ? ALL_DEALS.filter(d=>d.nucleo===activeNucleo) : ALL_DEALS;
+  buildGraph(); buildUI();
+  NODES.forEach(n=>{ const a=Math.random()*Math.PI*2,d=80+Math.random()*320; n.x=Math.cos(a)*d; n.y=Math.sin(a)*d; n.vx=0; n.vy=0; });
+  running=true; btnPause.textContent='⏸ Pausar';
+  setTimeout(fitView,1200);
+  if(tableMode) renderTable();
+}
+
+document.getElementById('nucleo-sel').addEventListener('change',e=>{
+  activeNucleo=e.target.value;
+  e.target.classList.toggle('filtered', !!activeNucleo);
+  applyFilter();
+});
+
+/* ============================================================
+   VIEW TOGGLE
+   ============================================================ */
+function setView(mode){
+  tableMode = mode==='table';
+  const canvas=document.getElementById('cv');
+  const tv=document.getElementById('table-view');
+  const hint=document.querySelector('.stage-hint');
+  const controls=document.querySelector('.stage-controls');
+  const zoom=document.querySelector('.zoom');
+  document.getElementById('btn-grafo').classList.toggle('active',!tableMode);
+  document.getElementById('btn-table').classList.toggle('active',tableMode);
+  if(tableMode){
+    canvas.style.display='none';
+    hint.style.display='none';
+    controls.style.display='none';
+    zoom.style.display='none';
+    tv.style.display='flex';
+    renderTable();
+  } else {
+    canvas.style.display='block';
+    hint.style.display='';
+    controls.style.display='';
+    zoom.style.display='';
+    tv.style.display='none';
+    if(!running)draw();
+  }
+}
+document.getElementById('btn-grafo').onclick=()=>setView('grafo');
+document.getElementById('btn-table').onclick=()=>setView('table');
+
+/* ============================================================
+   TABLE VIEW
+   ============================================================ */
+let tvFilterBroker='', tvFilterEd='', tvFilterStage='';
+let tvNodeFilter=null; // { type, label } — set by graph navigation
+
+function renderTable(){
+  const tv=document.getElementById('table-view');
+  const brokers=[...new Set(DEALS.map(d=>d.broker).filter(Boolean))].sort();
+  const edificios=[...new Set(DEALS.map(d=>d.edificio).filter(Boolean))].sort();
+  const stages=[...new Set(DEALS.map(d=>d.stage).filter(Boolean))].sort();
+  const filtered=DEALS.filter(d=>{
+    if(tvFilterBroker && d.broker!==tvFilterBroker) return false;
+    if(tvFilterEd && d.edificio!==tvFilterEd) return false;
+    if(tvFilterStage && d.stage!==tvFilterStage) return false;
+    if(tvNodeFilter){
+      if(tvNodeFilter.type==='edificio' && d.edificio!==tvNodeFilter.label) return false;
+      if(tvNodeFilter.type==='broker' && d.broker!==tvNodeFilter.label) return false;
+      if(tvNodeFilter.type==='gerenciadora' && d.gerenciadora!==tvNodeFilter.label) return false;
+      if(tvNodeFilter.type==='cliente' && d.cliente!==tvNodeFilter.label) return false;
+      if(tvNodeFilter.type==='deal' && d.id!==tvNodeFilter.id) return false;
+    }
+    return true;
+  });
+  const totalFil=filtered.reduce((a,d)=>a+(d.valor||0),0);
+  const _typeNames={edificio:'Prédio',broker:'Broker',gerenciadora:'Gerenciadora',cliente:'Cliente',deal:'Deal'};
+  const nfBar=tvNodeFilter?`<div class="tv-nf">
+    <span class="tv-nf-label">● ${_typeNames[tvNodeFilter.type]||tvNodeFilter.type}: ${esc(tvNodeFilter.label)}</span>
+    <button class="tv-nf-clr" id="tv-nf-clr">× ver todos</button>
+  </div>`:'';
+
+  tv.innerHTML=`${nfBar}
+    <div class="tv-bar">
+      <span class="tv-title">Deals</span>
+      <span class="tv-cnt">${filtered.length} de ${DEALS.length}</span>
+      <span class="tv-total">${fmtBRL(totalFil)}</span>
+      <div class="tv-spacer"></div>
+      <select id="tvf-broker" class="tv-fsel">
+        <option value="">Todos os brokers</option>
+        ${brokers.map(b=>`<option value="${esc(b)}"${tvFilterBroker===b?' selected':''}>${esc(b)}</option>`).join('')}
+      </select>
+      <select id="tvf-ed" class="tv-fsel">
+        <option value="">Todos os prédios</option>
+        ${edificios.map(e=>`<option value="${esc(e)}"${tvFilterEd===e?' selected':''}>${esc(e)}</option>`).join('')}
+      </select>
+      <select id="tvf-stage" class="tv-fsel">
+        <option value="">Todas as etapas</option>
+        ${stages.map(s=>`<option value="${esc(s)}"${tvFilterStage===s?' selected':''}>${esc(s)}</option>`).join('')}
+      </select>
+    </div>
+    <div class="tv-wrap">
+      <table class="tvt">
+        <thead><tr>
+          <th>Negócio</th><th>Cliente</th><th>Prédio</th><th>Broker</th>
+          <th>Gerenciadora</th><th>Etapa</th><th>Valor</th><th>Núcleo</th>
+        </tr></thead>
+        <tbody>
+          ${filtered.map(d=>{
+            const col=STAGE_COL[d.stage]||'#5BAEF0';
+            const bs=buildingStats.find(b=>b.edificio===d.edificio);
+            const star=bs&&bs.deals.length>1?'<span class="tv-star">*</span>':'';
+            return `<tr data-id="${d.id}">
+              <td>${esc(d.nome)}</td>
+              <td><span class="tv-dot" style="background:var(--c-cliente)"></span>${esc(d.cliente)}</td>
+              <td>${esc(d.edificio||'—')}${star}</td>
+              <td style="color:var(--c-broker);font-weight:600">${esc(d.broker||'—')}</td>
+              <td style="color:var(--c-gerenciadora)">${esc(d.gerenciadora||'—')}</td>
+              <td><span class="tv-stage-pill" style="background:${col};color:${ink(col)}">${esc(d.stage)}</span></td>
+              <td class="tv-valor">${fmtBRL(d.valor)}</td>
+              <td>${d.nucleo?`<span class="tv-nucleo">${esc(d.nucleo)}</span>`:'—'}</td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>`;
+
+  const _clrBtn=document.getElementById('tv-nf-clr');
+  if(_clrBtn) _clrBtn.onclick=()=>{ tvNodeFilter=null; renderTable(); };
+  tv.querySelectorAll('tbody tr[data-id]').forEach(r=>{
+    r.onclick=()=>{ setView('grafo'); selectNode(r.dataset.id,true); };
+  });
+  document.getElementById('tvf-broker').onchange=e=>{ tvFilterBroker=e.target.value; renderTable(); };
+  document.getElementById('tvf-ed').onchange=e=>{ tvFilterEd=e.target.value; renderTable(); };
+  document.getElementById('tvf-stage').onchange=e=>{ tvFilterStage=e.target.value; renderTable(); };
+}
+
+/* ============================================================
+   CANVAS
    ============================================================ */
 const canvas=document.getElementById('cv');
 const ctx=canvas.getContext('2d');
 const stage=canvas.parentElement;
-let W=0,H=0,DPR=Math.min(window.devicePixelRatio||1,2);
+let W=0, H=0, DPR=Math.min(window.devicePixelRatio||1,2);
 const cam={ x:0, y:0, scale:1 };
-const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-let running=true, settleFrames=0;
+const reduceMotion=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+let running=true;
 
-function resize(){
-  W=stage.clientWidth; H=stage.clientHeight;
-  canvas.width=W*DPR; canvas.height=H*DPR;
-}
+function resize(){ W=stage.clientWidth; H=stage.clientHeight; canvas.width=W*DPR; canvas.height=H*DPR; }
 resize();
-window.addEventListener('resize', ()=>{ resize(); });
+window.addEventListener('resize',()=>{ resize(); if(!running)draw(); });
 
-/* --- forças --- */
 function tick(){
-  const nodes = NODES;
-  // repulsão
-  for(let i=0;i<nodes.length;i++){
-    const a=nodes[i];
-    for(let j=i+1;j<nodes.length;j++){
-      const b=nodes[j];
+  for(let i=0;i<NODES.length;i++){
+    const a=NODES[i];
+    for(let j=i+1;j<NODES.length;j++){
+      const b=NODES[j];
       let dx=a.x-b.x, dy=a.y-b.y;
-      let d2=dx*dx+dy*dy; if(d2<0.01)d2=0.01;
+      let d2=dx*dx+dy*dy; if(d2<1)d2=1;
       const d=Math.sqrt(d2);
-      const force = 2600 / d2;
-      const fx=dx/d*force, fy=dy/d*force;
-      a.vx+=fx; a.vy+=fy; b.vx-=fx; b.vy-=fy;
+      const f=Math.min(5000/d2,90);
+      a.vx+=dx/d*f; a.vy+=dy/d*f;
+      b.vx-=dx/d*f; b.vy-=dy/d*f;
     }
   }
-  // molas (arestas)
   edges.forEach(e=>{
-    const a=nodesMap.get(e.a), b=nodesMap.get(e.b);
-    let dx=b.x-a.x, dy=b.y-a.y;
-    let d=Math.sqrt(dx*dx+dy*dy)||0.01;
-    const rest = 96;
-    const k=0.015;
-    const f=(d-rest)*k;
-    const fx=dx/d*f, fy=dy/d*f;
-    a.vx+=fx; a.vy+=fy; b.vx-=fx; b.vy-=fy;
+    const a=nodesMap.get(e.a), b=nodesMap.get(e.b); if(!a||!b) return;
+    const dx=b.x-a.x, dy=b.y-a.y, d=Math.sqrt(dx*dx+dy*dy)||0.01;
+    const f=(d-115)*0.012;
+    a.vx+=dx/d*f; a.vy+=dy/d*f;
+    b.vx-=dx/d*f; b.vy-=dy/d*f;
   });
-  // gravidade central + integração
-  nodes.forEach(n=>{
-    n.vx += -n.x*0.0018;
-    n.vy += -n.y*0.0018;
+  NODES.forEach(n=>{
+    n.vx-=n.x*0.0013; n.vy-=n.y*0.0013;
     if(n.fixed){ n.vx=0; n.vy=0; return; }
-    n.vx*=0.86; n.vy*=0.86;
-    // limite de velocidade
-    const sp=Math.hypot(n.vx,n.vy); const max=6;
-    if(sp>max){ n.vx=n.vx/sp*max; n.vy=n.vy/sp*max; }
+    n.vx*=0.88; n.vy*=0.88;
+    const sp=Math.hypot(n.vx,n.vy); if(sp>8){ n.vx=n.vx/sp*8; n.vy=n.vy/sp*8; }
     n.x+=n.vx; n.y+=n.vy;
   });
 }
 
-/* --- transforms --- */
-function toScreen(x,y){ return [ (x-cam.x)*cam.scale+W/2, (y-cam.y)*cam.scale+H/2 ]; }
-function toWorld(sx,sy){ return [ (sx-W/2)/cam.scale+cam.x, (sy-H/2)/cam.scale+cam.y ]; }
-
-/* --- estado de seleção --- */
-let selected=null;      // node id
-let hovered=null;
-let selNeighbors=new Set();
-
-function nodeVisible(n){
-  if(!visibleTypes.has(n.type)) return false;
-  return true;
+function toScreen(x,y){ return [(x-cam.x)*cam.scale+W/2,(y-cam.y)*cam.scale+H/2]; }
+function toWorld(sx,sy){ return [(sx-W/2)/cam.scale+cam.x,(sy-H/2)/cam.scale+cam.y]; }
+function hexA(hex,a){
+  const h=hex.replace('#','');
+  const r=parseInt(h.slice(0,2),16),g=parseInt(h.slice(2,4),16),b=parseInt(h.slice(4,6),16);
+  return `rgba(${r},${g},${b},${a})`;
 }
-function nodeInNucleo(n){
-  if(!nucleoFilter) return true;
-  // um nó é "do núcleo" se toca algum deal daquele núcleo
-  return [...n.deals].some(did=>{
-    const dd=DEALS.find(x=>x.id===did); return dd && dd.nucleo===nucleoFilter;
-  });
+
+let selected=null, hovered=null, selNeighbors=new Set();
+function nodeVisible(n){ return visibleTypes.has(n.type); }
+
+function drawBuildingGlyph(cx, cy, r, ic){
+  const s=r*0.50;
+  ctx.fillStyle=ic||'rgba(255,255,255,0.90)';
+  ctx.beginPath(); ctx.rect(cx-s*0.30, cy-s*1.05, s*0.60, s*1.70); ctx.fill();
+  ctx.beginPath(); ctx.rect(cx-s*0.68, cy-s*0.46, s*0.35, s*1.10); ctx.fill();
+  ctx.beginPath(); ctx.rect(cx+s*0.33, cy-s*0.46, s*0.35, s*1.10); ctx.fill();
+  ctx.fillStyle='rgba(0,88,92,0.50)';
+  for(let row=0;row<3;row++){
+    ctx.beginPath(); ctx.rect(cx-s*0.16, cy-s*0.80+row*s*0.50, s*0.32, s*0.26); ctx.fill();
+  }
+}
+
+function drawDealGlyph(cx, cy, r, ic){
+  const s=r*0.50;
+  const col=ic||'rgba(255,255,255,0.90)';
+  const bw=s*1.38, bh=s*0.92, bx=cx-bw/2, by=cy-bh/2+s*0.08;
+  ctx.fillStyle=col;
+  ctx.beginPath();
+  if(ctx.roundRect) ctx.roundRect(bx,by,bw,bh,2.5); else ctx.rect(bx,by,bw,bh);
+  ctx.fill();
+  ctx.beginPath(); ctx.arc(cx, by+0.5, s*0.36, Math.PI, 0, false);
+  ctx.strokeStyle=col; ctx.lineWidth=Math.max(1.5,r*0.12); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(bx+bw*0.08, by+bh*0.47); ctx.lineTo(bx+bw*0.92, by+bh*0.47);
+  ctx.strokeStyle=col.replace(/[\d.]+\)$/,'0.35)'); ctx.lineWidth=1.2; ctx.stroke();
+}
+
+function drawGrid(){
+  const sp=32*cam.scale; if(sp<10) return;
+  const ox=((W/2-cam.x*cam.scale)%sp+sp)%sp;
+  const oy=((H/2-cam.y*cam.scale)%sp+sp)%sp;
+  ctx.fillStyle='rgba(0,88,92,0.09)';
+  for(let x=ox-sp;x<W+sp;x+=sp)
+    for(let y=oy-sp;y<H+sp;y+=sp){
+      ctx.beginPath(); ctx.arc(x,y,1.2,0,Math.PI*2); ctx.fill();
+    }
 }
 
 function draw(){
   ctx.setTransform(DPR,0,0,DPR,0,0);
   ctx.clearRect(0,0,W,H);
-
-  const hasSel = !!selected;
-  const hasNucleo = !!nucleoFilter;
-
-  // ---- arestas ----
+  const g=ctx.createRadialGradient(W/2,H*0.42,0,W/2,H*0.42,Math.max(W,H)*0.72);
+  g.addColorStop(0,'#F6FBFB'); g.addColorStop(1,'#E1F1F0');
+  ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+  drawGrid();
+  const hasSel=!!selected;
   edges.forEach(e=>{
     const a=nodesMap.get(e.a), b=nodesMap.get(e.b);
-    if(!nodeVisible(a)||!nodeVisible(b)) return;
-    const [ax,ay]=toScreen(a.x,a.y);
-    const [bx,by]=toScreen(b.x,b.y);
-
-    let active=true, strong=false;
-    if(hasSel){
-      strong = (e.a===selected||e.b===selected);
-      active = strong;
+    if(!a||!b||!nodeVisible(a)||!nodeVisible(b)) return;
+    const [ax,ay]=toScreen(a.x,a.y), [bx,by]=toScreen(b.x,b.y);
+    let strong=false;
+    if(hasSel) strong=(e.a===selected||e.b===selected);
+    const active=strong||!hasSel;
+    if(!active&&hasSel){
+      ctx.globalAlpha=0.04; ctx.lineWidth=0.8; ctx.strokeStyle='rgba(14,26,26,1)';
+    } else if(strong){
+      ctx.globalAlpha=1; ctx.shadowBlur=7; ctx.shadowColor='rgba(0,88,92,0.4)';
+      ctx.lineWidth=2; ctx.strokeStyle='rgba(0,88,92,0.60)';
+    } else {
+      ctx.globalAlpha=1; ctx.lineWidth=0.85; ctx.strokeStyle='rgba(14,26,26,0.12)';
     }
-    if(hasNucleo){
-      const inN = nodeInNucleo(a)&&nodeInNucleo(b);
-      active = active && inN;
-      if(!hasSel) strong = inN;
-    }
-    ctx.beginPath();
-    ctx.moveTo(ax,ay); ctx.lineTo(bx,by);
-    ctx.lineWidth = strong?1.6:1;
-    ctx.strokeStyle = strong ? 'rgba(0,88,92,.6)'
-                    : (hasSel||hasNucleo) ? 'rgba(14,26,26,.045)'
-                    : 'rgba(14,26,26,.12)';
-    ctx.stroke();
-
-    // rótulo da aresta (só quando selecionado e forte, e zoom suficiente)
-    if(strong && hasSel && cam.scale>0.75){
-      const mx=(ax+bx)/2, my=(ay+by)/2;
-      ctx.font='9px "Segoe UI", Calibri, sans-serif';
-      ctx.fillStyle='rgba(0,88,92,.9)';
-      ctx.textAlign='center';
-      ctx.fillText(e.label, mx, my-4);
+    ctx.beginPath(); ctx.moveTo(ax,ay); ctx.lineTo(bx,by); ctx.stroke();
+    ctx.shadowBlur=0; ctx.globalAlpha=1;
+    if(strong&&hasSel&&cam.scale>0.85){
+      ctx.font='8px "Segoe UI",Calibri,sans-serif';
+      ctx.fillStyle='rgba(0,88,92,0.72)'; ctx.textAlign='center';
+      ctx.fillText(e.label,(ax+bx)/2,(ay+by)/2-4);
     }
   });
-
-  // ---- nós ----
   NODES.forEach(n=>{
     if(!nodeVisible(n)) return;
     const t=TYPES[n.type];
     const [sx,sy]=toScreen(n.x,n.y);
-    let r=(t.r + Math.min(n.deg,6)*1.1) * cam.scale;
-
-    let dim=false, focus=false;
-    if(hasSel){
-      focus = (n.id===selected) || selNeighbors.has(n.id);
-      dim = !focus;
-    }
-    if(hasNucleo){
-      const inN = nodeInNucleo(n);
-      if(!inN) dim = true;
-      else if(!hasSel) focus=true;
-    }
-    const alpha = dim?0.16:1;
-
-    ctx.globalAlpha=alpha;
-    // halo do selecionado
+    const r=(t.r+Math.min(n.deg,7)*1.2)*cam.scale;
+    let dim=false, focused=false;
+    if(hasSel){ focused=(n.id===selected)||selNeighbors.has(n.id); dim=!focused; }
+    ctx.globalAlpha=dim?0.07:1;
     if(n.id===selected){
-      ctx.beginPath(); ctx.arc(sx,sy,r+8,0,Math.PI*2);
-      ctx.fillStyle='rgba(0,88,92,.13)'; ctx.fill();
+      ctx.shadowBlur=24; ctx.shadowColor=hexA(t.color,0.55);
+      ctx.beginPath(); ctx.arc(sx,sy,r+10,0,Math.PI*2);
+      ctx.fillStyle=hexA(t.color,0.14); ctx.fill();
     }
-    // desenho
-    ctx.beginPath();
-    if(t.shape==='sq'){
-      ctx.save(); ctx.translate(sx,sy); ctx.rotate(Math.PI/4);
-      ctx.rect(-r,-r,r*2,r*2); ctx.restore();
-    } else {
-      ctx.arc(sx,sy,r,0,Math.PI*2);
-    }
+    if(n.id===hovered&&!dim) ctx.shadowBlur=14;
+    ctx.beginPath(); ctx.arc(sx,sy,r,0,Math.PI*2);
     ctx.fillStyle=t.color; ctx.fill();
-    if(t.ring){ ctx.lineWidth=2; ctx.strokeStyle=t.ring; ctx.stroke(); }
-    if(n.id===hovered && !dim){ ctx.lineWidth=2; ctx.strokeStyle='#0E1A1A'; ctx.stroke(); }
-
-    // rótulo
-    const showLabel = !dim && (focus || n.type==='edificio' || n.type==='cliente' || n.id===hovered || cam.scale>1.15 || (!hasSel&&!hasNucleo&&n.deg>=3));
-    if(showLabel && n.type!=='andar' || (n.type==='andar'&&(focus||n.id===hovered))){
-      ctx.globalAlpha=alpha;
-      ctx.font=(n.type==='deal'?'600 ':'')+(n.type==='cliente'||n.type==='edificio'?'11px':'10px')+' "Segoe UI", Calibri, sans-serif';
-      ctx.fillStyle= dim?'rgba(14,26,26,.3)':'rgba(14,26,26,.92)';
+    if(!dim){ ctx.lineWidth=1.8; ctx.strokeStyle='rgba(255,255,255,0.30)'; ctx.stroke(); }
+    ctx.shadowBlur=0;
+    if(!dim||focused){
+      if(t.icon==='building') drawBuildingGlyph(sx,sy,r,t.ic);
+      else if(t.icon==='deal') drawDealGlyph(sx,sy,r,t.ic);
+    }
+    const showLabel=!dim&&(focused||n.type==='edificio'||n.type==='cliente'||n.id===hovered||cam.scale>1.2||(!hasSel&&n.deg>=3));
+    if(showLabel&&n.type!=='andar'){
+      const fs=n.type==='edificio'||n.type==='cliente'?'600 11':'10';
+      ctx.font=fs+'px "Segoe UI",Calibri,sans-serif';
       ctx.textAlign='center';
-      ctx.fillText(n.label, sx, sy+r+12);
+      ctx.shadowBlur=3; ctx.shadowColor='rgba(240,248,248,0.95)';
+      ctx.fillStyle='rgba(14,26,26,0.88)';
+      ctx.fillText(n.label,sx,sy+r+13);
+      ctx.shadowBlur=0;
+    }
+    if(n.type==='andar'&&(focused||n.id===hovered)&&!dim){
+      ctx.font='9px "Segoe UI",Calibri,sans-serif';
+      ctx.fillStyle='rgba(14,26,26,0.70)'; ctx.textAlign='center';
+      ctx.fillText(n.label,sx,sy+r+11);
     }
   });
   ctx.globalAlpha=1;
 }
 
-function loop(){
-  if(running && !reduceMotion){ tick(); }
-  else if(settleFrames>0){ tick(); settleFrames--; }
-  draw();
-  requestAnimationFrame(loop);
-}
+function loop(){ if(running&&!reduceMotion) tick(); draw(); requestAnimationFrame(loop); }
 loop();
 
 /* ============================================================
    SELEÇÃO / DETALHE
    ============================================================ */
-function selectNode(id, center){
-  selected=id;
-  selNeighbors = adj[id] ? new Set(adj[id]) : new Set();
-  renderDetail(id);
-  if(center){
-    const n=nodesMap.get(id);
-    cam.x=n.x; cam.y=n.y;
-    if(cam.scale<0.95) cam.scale=1.05;
-  }
+function updateTableFromNode(n){
+  tvNodeFilter = n ? {type:n.type, label:n.label, id:n.id} : null;
+  if(tableMode) renderTable();
 }
-function clearSelection(){ selected=null; selNeighbors.clear(); renderDetail(null); }
+function selectNode(id, center){
+  selected=id; selNeighbors=adj[id]?new Set(adj[id]):new Set();
+  renderDetail(id);
+  if(center){ const n=nodesMap.get(id); if(n){ cam.x=n.x; cam.y=n.y; if(cam.scale<0.9)cam.scale=1; } }
+  updateTableFromNode(nodesMap.get(id));
+}
+function clearSelection(){ selected=null; selNeighbors.clear(); renderDetail(null); tvNodeFilter=null; if(tableMode) renderTable(); }
 
 const detailPanel=document.getElementById('detail-panel');
 function renderDetail(id){
   if(!id){
     detailPanel.innerHTML=`<div class="panel-h">Detalhe</div>
-      <div class="detail-empty">Nenhum nó selecionado.<br>Clique num ponto da teia para inspecionar suas conexões — ou comece por uma das sobreposições ao lado.</div>`;
+      <div class="detail-empty">Nenhum nó selecionado.<br>Clique num ponto da teia para inspecionar.</div>`;
     return;
   }
-  const n=nodesMap.get(id);
-  const t=TYPES[n.type];
-  let html=`<div class="panel-h">Detalhe</div>`;
-  html+=`<span class="node-badge" style="background:${hexA(t.color,.16)};color:${t.color==='#FFFFFF'?'#00585C':t.color}">
-    <span class="dot ${t.shape==='sq'?'sq':''}" style="width:9px;height:9px;background:${t.color}"></span>${t.label}</span>`;
-  html+=`<div class="detail-name">${n.label}</div>`;
-
+  const n=nodesMap.get(id), t=TYPES[n.type];
+  let h=`<div class="panel-h">Detalhe</div>`;
+  h+=`<span class="node-badge" style="background:${hexA(t.color,.14)};color:${t.color}">
+    <span class="dot" style="width:9px;height:9px;background:${t.color}"></span>${t.label}</span>`;
+  h+=`<div class="detail-name">${esc(n.label)}</div>`;
   if(n.type==='deal'){
-    html+=`<div class="detail-meta"><span class="chip n">${n.meta.nucleo}</span><span class="chip s">${n.meta.stage}</span></div>`;
-    // atores do deal, agrupados por rótulo
-    const conns = edges.filter(e=>e.a===id||e.b===id).map(e=>{
-      const other = e.a===id? e.b : e.a; return { id:other, label:e.label, node:nodesMap.get(other) };
+    h+=`<div class="detail-meta"><span class="chip s">${esc(n.meta.stage)}</span></div>`;
+    const conns=edges.filter(e=>e.a===id||e.b===id).map(e=>{
+      const oid=e.a===id?e.b:e.a; return { id:oid, label:e.label, node:nodesMap.get(oid) };
     });
-    html+=connGroup('Atores conectados', conns);
+    h+=connGroup('Atores conectados',conns);
   } else if(n.type==='edificio'){
-    const b = buildingStats.find(x=>x.edId===id);
-    const dealsHere = b.deals;
-    // resumo
-    html+=`<div class="sumchips">`;
-    html+=`<span class="sumchip nu">${b.nucleos.length} núcleo${b.nucleos.length>1?'s':''}</span>`;
-    html+=`<span class="sumchip br">${b.brokers.length} broker${b.brokers.length>1?'s':''}</span>`;
-    html+=`<span class="sumchip do">${b.donos.length} dono${b.donos.length>1?'s':''}</span>`;
-    html+=`</div>`;
-    if(b.brokers.length>1 || b.nucleos.length>1){
-      const parts=[];
-      if(b.brokers.length>1) parts.push(`<b>${b.brokers.length} brokers diferentes</b> atuando em andares distintos deste prédio (${b.brokers.join(', ')})`);
-      if(b.nucleos.length>1) parts.push(`<b>${b.nucleos.length} núcleos</b> da ATIE com deals aqui (${b.nucleos.join(', ')}) — possivelmente sem visibilidade cruzada`);
-      html+=`<div class="overlap-warn"><div class="ot">▲ O que a teia revela</div>
-        <div class="od">${parts.join('. ')}. Cada linha abaixo é um andar com seu próprio broker e dono.</div></div>`;
+    const b=buildingStats.find(x=>x.edId===id), dh=b?b.deals:[];
+    h+=`<div class="sumchips">`;
+    if(b) h+=`<span class="sumchip br">${b.brokers.length} broker${b.brokers.length>1?'s':''}</span><span class="sumchip do">${b.donos.length} dono${b.donos.length>1?'s':''}</span>`;
+    h+=`</div>`;
+    if(b&&b.brokers.length>1){
+      h+=`<div class="overlap-warn"><div class="ot">▲ O que a teia revela</div><div class="od"><b>${b.brokers.length} brokers</b> (${b.brokers.map(esc).join(', ')}).</div></div>`;
     }
-    // tabela por andar
-    html+=`<div class="conn-group"><div class="conn-lbl">Andares mapeados (${dealsHere.length})</div>`;
-    html+=`<table class="ftable"><thead><tr><th>Andar</th><th>Cliente</th><th>Broker</th><th>Dono</th></tr></thead><tbody>`;
-    dealsHere.forEach(d=>{
-      html+=`<tr data-goto="${d.id}">
-        <td class="andar">${d.andar||'—'}</td>
-        <td>${d.cliente}<div class="nuc">${d.nucleo}</div></td>
-        <td class="broker">${d.broker||'—'}</td>
-        <td class="dono">${d.dono||'—'}</td>
-      </tr>`;
-    });
-    html+=`</tbody></table></div>`;
+    h+=`<div class="conn-group"><div class="conn-lbl">Deals no prédio (${dh.length})</div>
+      <table class="ftable"><thead><tr><th>Andar</th><th>Cliente</th><th>Broker</th><th>Valor</th></tr></thead><tbody>`;
+    dh.forEach(d=>{ h+=`<tr data-goto="${d.id}"><td class="andar">${esc(d.andar||'—')}</td><td>${esc(d.cliente)}</td><td class="broker">${esc(d.broker||'—')}</td><td style="font-family:var(--font-mono);font-size:10px;color:var(--green)">${fmtBRLShort(d.valor)}</td></tr>`; });
+    h+=`</tbody></table></div>`;
   } else {
-    // ator genérico (cliente, broker, gerenciadora, dono, escritorio, andar)
-    const dealIds=[...n.deals];
-    const dealRows = dealIds.map(did=>{ const d=DEALS.find(x=>x.id===did);
-      // qual rótulo esse ator tem nesse deal?
-      const e = edges.find(e=>(e.a===id&&nodesMap.get(e.b).deals.has(did))||(e.b===id&&nodesMap.get(e.a).deals.has(did))|| ((e.a===id||e.b===id)));
-      const lbl = (edges.find(e=> (e.a===id||e.b===id) )||{}).label;
-      return { id:did, label:d.nome, sub:d.nucleo, node:nodesMap.get(did) };
-    });
-    html+=`<div class="detail-meta">${n.deg} conexões · presente em ${dealIds.length} deal(s)</div>`;
-    html+=`<div class="conn-group"><div class="conn-lbl">Deals em que aparece</div>`;
-    dealRows.forEach(r=>{ html+=`<div class="conn-row" data-goto="${r.id}"><span class="cn">${r.label}</span><span class="cr">${r.sub}</span></div>`; });
-    html+=`</div>`;
-    // vizinhos diretos não-deal
-    const others = [...selNeighbors].map(nid=>nodesMap.get(nid)).filter(x=>x.type!=='deal');
-    if(others.length){
-      html+=`<div class="conn-group"><div class="conn-lbl">Ligações diretas</div>`;
-      others.forEach(o=>{ html+=`<div class="conn-row" data-goto="${o.id}"><span class="cn">${o.label}</span><span class="cr">${TYPES[o.type].label}</span></div>`; });
-      html+=`</div>`;
+    const dids=[...n.deals];
+    const relDeals=dids.map(did=>DEALS.find(x=>x.id===did)).filter(Boolean);
+    h+=`<div class="detail-meta">${n.deg} conexões · ${dids.length} deal(s)</div>`;
+    h+=`<div class="conn-group"><div class="conn-lbl">Deals (${dids.length})</div>`;
+    dids.forEach(did=>{ const d=DEALS.find(x=>x.id===did); h+=`<div class="conn-row" data-goto="${did}"><span class="cn">${d?esc(d.nome):did}</span><span class="cr">${d?esc(d.stage):''}</span></div>`; });
+    h+=`</div>`;
+    if(n.type!=='cliente'){
+      const cls=[...new Set(relDeals.map(d=>d.cliente).filter(Boolean))];
+      if(cls.length){
+        h+=`<div class="conn-group"><div class="conn-lbl">Clientes</div>`;
+        cls.forEach(c=>{ const t2=TYPES['cliente']; h+=`<div class="conn-row" data-goto="C:${esc(c)}"><span class="dot" style="width:9px;height:9px;background:${t2.color}"></span><span class="cn">${esc(c)}</span><span class="cr">${t2.label}</span></div>`; });
+        h+=`</div>`;
+      }
+    }
+    const eds=[...new Set(relDeals.map(d=>d.edificio).filter(Boolean))];
+    if(eds.length){
+      h+=`<div class="conn-group"><div class="conn-lbl">Prédios</div>`;
+      eds.forEach(ed=>{ const t2=TYPES['edificio']; h+=`<div class="conn-row" data-goto="ED:${esc(ed)}"><span class="dot" style="width:9px;height:9px;background:${t2.color}"></span><span class="cn">${esc(ed)}</span><span class="cr">${t2.label}</span></div>`; });
+      h+=`</div>`;
+    }
+    if(n.type!=='broker'){
+      const brs=[...new Set(relDeals.map(d=>d.broker).filter(Boolean))];
+      if(brs.length){
+        h+=`<div class="conn-group"><div class="conn-lbl">Brokers</div>`;
+        brs.forEach(b=>{ const t2=TYPES['broker']; h+=`<div class="conn-row" data-goto="B:${esc(b)}"><span class="dot" style="width:9px;height:9px;background:${t2.color}"></span><span class="cn">${esc(b)}</span><span class="cr">${t2.label}</span></div>`; });
+        h+=`</div>`;
+      }
+    }
+    if(n.type!=='gerenciadora'){
+      const gers=[...new Set(relDeals.map(d=>d.gerenciadora).filter(Boolean))];
+      if(gers.length){
+        h+=`<div class="conn-group"><div class="conn-lbl">Gerenciadoras</div>`;
+        gers.forEach(g=>{ const t2=TYPES['gerenciadora']; h+=`<div class="conn-row" data-goto="G:${esc(g)}"><span class="dot" style="width:9px;height:9px;background:${t2.color}"></span><span class="cn">${esc(g)}</span><span class="cr">${t2.label}</span></div>`; });
+        h+=`</div>`;
+      }
     }
   }
-  detailPanel.innerHTML=html;
-  detailPanel.querySelectorAll('[data-goto]').forEach(r=>{
-    r.onclick=()=>selectNode(r.dataset.goto, true);
-  });
+  detailPanel.innerHTML=h;
+  detailPanel.querySelectorAll('[data-goto]').forEach(r=>{ r.onclick=()=>selectNode(r.dataset.goto,true); });
 }
-function connGroup(title, conns){
-  // agrupa por label
+function connGroup(title,conns){
   const by={};
   conns.forEach(c=>{ (by[c.label]=by[c.label]||[]).push(c); });
-  let h=`<div class="conn-group"><div class="conn-lbl">${title}</div>`;
-  Object.entries(by).forEach(([lbl,arr])=>{
-    arr.forEach(c=>{
-      const t=TYPES[c.node.type];
-      h+=`<div class="conn-row" data-goto="${c.id}">
-        <span class="dot ${t.shape==='sq'?'sq':''}" style="width:9px;height:9px;background:${t.color}"></span>
-        <span class="cn">${c.node.label}</span><span class="cr">${lbl}</span></div>`;
-    });
-  });
+  let h=`<div class="conn-group"><div class="conn-lbl">${esc(title)}</div>`;
+  Object.entries(by).forEach(([lbl,arr])=> arr.forEach(c=>{
+    const t=TYPES[c.node.type];
+    h+=`<div class="conn-row" data-goto="${c.id}">
+      <span class="dot" style="width:9px;height:9px;background:${t.color}"></span>
+      <span class="cn">${esc(c.node.label)}</span><span class="cr">${esc(lbl)}</span></div>`;
+  }));
   return h+`</div>`;
-}
-function hexA(hex,a){
-  if(hex==='#FFFFFF') return `rgba(0,88,92,${a})`;
-  const h=hex.replace('#',''); const r=parseInt(h.substr(0,2),16),g=parseInt(h.substr(2,2),16),b=parseInt(h.substr(4,2),16);
-  return `rgba(${r},${g},${b},${a})`;
 }
 
 /* ============================================================
-   INTERAÇÃO (mouse) — drag nó, pan, zoom, hover, click
+   SEARCH DROPDOWN
    ============================================================ */
-let dragNode=null, panning=false, moved=false;
-let last={x:0,y:0}, downAt={x:0,y:0};
+const searchEl=document.getElementById('search');
+const searchDrop=document.getElementById('search-drop');
 
+function renderSearchDrop(q){
+  if(!q.trim()){ searchDrop.style.display='none'; return; }
+  const ql=q.toLowerCase();
+  const groups={edificio:[],cliente:[],broker:[],gerenciadora:[]};
+  NODES.forEach(n=>{
+    if(!n.label.toLowerCase().includes(ql)) return;
+    if(groups[n.type]) groups[n.type].push(n);
+  });
+  const hasAny=Object.values(groups).some(g=>g.length);
+  if(!hasAny){ searchDrop.innerHTML=`<div class="sdi-empty">Sem resultados para "${esc(q)}"</div>`; searchDrop.style.display='block'; return; }
+
+  const typeLabels={edificio:'Prédios',cliente:'Clientes',broker:'Brokers',gerenciadora:'Gerenciadoras'};
+  let html='';
+  Object.entries(groups).forEach(([type,nodes])=>{
+    if(!nodes.length) return;
+    html+=`<div class="sdi-head">${typeLabels[type]}</div>`;
+    nodes.forEach(n=>{
+      const t=TYPES[n.type];
+      const bs=buildingStats.find(b=>b.edId===n.id);
+      const multiDeal=bs&&bs.deals.length>1;
+      const star=multiDeal?` <span class="sdi-star">*</span>`:'';
+      const sub=multiDeal?`${bs.deals.length} deals`:(n.deals?n.deals.size+' deal(s)':'');
+      html+=`<div class="sdi" data-id="${n.id}">
+        <span class="sdi-dot" style="background:${t.color}"></span>
+        <span class="sdi-name">${esc(n.label)}${star}</span>
+        <span class="sdi-type">${esc(sub)}</span>
+      </div>`;
+    });
+  });
+  searchDrop.innerHTML=html;
+  searchDrop.querySelectorAll('.sdi[data-id]').forEach(el=>{
+    el.onclick=()=>{
+      closeSearchDrop();
+      searchEl.value='';
+      setView('grafo');
+      selectNode(el.dataset.id,true);
+    };
+  });
+  searchDrop.style.display='block';
+}
+
+function closeSearchDrop(){ searchDrop.style.display='none'; }
+
+searchEl.addEventListener('input',e=>renderSearchDrop(e.target.value));
+searchEl.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){ closeSearchDrop(); searchEl.blur(); }
+  if(e.key==='Enter'){
+    const first=searchDrop.querySelector('.sdi[data-id]');
+    if(first) first.click();
+  }
+});
+document.addEventListener('click',e=>{ if(!e.target.closest('.search-wrap')) closeSearchDrop(); });
+
+/* ============================================================
+   INTERAÇÃO COM CANVAS
+   ============================================================ */
+let dragNode=null, panning=false;
+let last={x:0,y:0}, downAt={x:0,y:0};
 function pickNode(sx,sy){
-  // itera do fim (nós desenhados por cima) buscando o mais próximo dentro do raio
-  let best=null, bestD=Infinity;
+  let best=null, bd=Infinity;
   NODES.forEach(n=>{
     if(!nodeVisible(n)) return;
-    const [nx,ny]=toScreen(n.x,n.y);
-    const t=TYPES[n.type];
-    const r=(t.r+Math.min(n.deg,6)*1.1)*cam.scale + 4;
+    const t=TYPES[n.type], [nx,ny]=toScreen(n.x,n.y);
+    const r=(t.r+Math.min(n.deg,7)*1.2)*cam.scale+7;
     const d=Math.hypot(sx-nx,sy-ny);
-    if(d<r && d<bestD){ best=n; bestD=d; }
+    if(d<r&&d<bd){ best=n; bd=d; }
   });
   return best;
 }
-function evt(e){
-  const rect=canvas.getBoundingClientRect();
-  const t=e.touches?e.touches[0]:e;
-  return { x:t.clientX-rect.left, y:t.clientY-rect.top };
-}
-canvas.addEventListener('mousedown', e=>{
-  const p=evt(e); downAt=p; last=p; moved=false;
-  const n=pickNode(p.x,p.y);
-  if(n){ dragNode=n; n.fixed=true; }
-  else { panning=true; canvas.classList.add('grabbing'); }
-});
-window.addEventListener('mousemove', e=>{
-  const p=evt(e);
-  if(dragNode){
-    const [wx,wy]=toWorld(p.x,p.y);
-    dragNode.x=wx; dragNode.y=wy; dragNode.vx=0; dragNode.vy=0;
-    moved=true;
-    if(running===false) draw();
-  } else if(panning){
-    cam.x -= (p.x-last.x)/cam.scale;
-    cam.y -= (p.y-last.y)/cam.scale;
-    moved=true; if(!running) draw();
-  } else {
-    const n=pickNode(p.x,p.y);
-    const id=n?n.id:null;
-    if(id!==hovered){ hovered=id; canvas.style.cursor=n?'pointer':'grab'; if(!running)draw(); }
-  }
+function ep(e){ const rc=canvas.getBoundingClientRect(), t=e.touches?e.touches[0]:e; return {x:t.clientX-rc.left,y:t.clientY-rc.top}; }
+
+canvas.addEventListener('mousedown',e=>{ const p=ep(e); downAt=p; last=p; const n=pickNode(p.x,p.y); if(n){ dragNode=n; n.fixed=true; } else { panning=true; canvas.classList.add('grabbing'); } });
+window.addEventListener('mousemove',e=>{
+  const p=ep(e);
+  if(dragNode){ const [wx,wy]=toWorld(p.x,p.y); dragNode.x=wx; dragNode.y=wy; dragNode.vx=0; dragNode.vy=0; if(!running)draw(); }
+  else if(panning){ cam.x-=(p.x-last.x)/cam.scale; cam.y-=(p.y-last.y)/cam.scale; if(!running)draw(); }
+  else { const n=pickNode(p.x,p.y); const nid=n?n.id:null; if(nid!==hovered){ hovered=nid; canvas.style.cursor=n?'pointer':'grab'; if(!running)draw(); } }
   last=p;
 });
-window.addEventListener('mouseup', e=>{
-  const p=evt(e);
-  const dist=Math.hypot(p.x-downAt.x,p.y-downAt.y);
-  if(dragNode){
-    dragNode.fixed=false;
-    if(dist<4){ // clique = seleção
-      selected===dragNode.id ? clearSelection() : selectNode(dragNode.id,false);
-    }
-    dragNode=null;
-  } else if(panning && dist<4){
-    clearSelection();
-  }
+window.addEventListener('mouseup',e=>{
+  const p=ep(e), dist=Math.hypot(p.x-downAt.x,p.y-downAt.y);
+  if(dragNode){ dragNode.fixed=false; if(dist<5){ selected===dragNode.id?clearSelection():selectNode(dragNode.id,false); } dragNode=null; }
+  else if(panning&&dist<5) clearSelection();
   panning=false; canvas.classList.remove('grabbing');
 });
-canvas.addEventListener('wheel', e=>{
+canvas.addEventListener('wheel',e=>{
   e.preventDefault();
-  const p=evt(e);
-  const [wx,wy]=toWorld(p.x,p.y);
-  const factor = e.deltaY<0 ? 1.12 : 1/1.12;
-  cam.scale=Math.max(0.4,Math.min(3, cam.scale*factor));
-  // zoom em direção ao cursor
-  const [nx,ny]=toWorld(p.x,p.y);
-  cam.x += wx-nx; cam.y += wy-ny;
-  if(!running) draw();
+  const p=ep(e), [wx,wy]=toWorld(p.x,p.y);
+  cam.scale=Math.max(0.3,Math.min(4,cam.scale*(e.deltaY<0?1.13:1/1.13)));
+  const [nx,ny]=toWorld(p.x,p.y); cam.x+=wx-nx; cam.y+=wy-ny;
+  if(!running)draw();
 },{passive:false});
 
-/* ============================================================
-   CONTROLES
-   ============================================================ */
+/* CONTROLES */
 const btnPause=document.getElementById('btn-pause');
-btnPause.onclick=()=>{ running=!running; btnPause.textContent= running?'⏸ Pausar':'▶ Retomar'; };
+btnPause.onclick=()=>{ running=!running; btnPause.textContent=running?'⏸ Pausar':'▶ Retomar'; };
 document.getElementById('btn-reset').onclick=()=>{
-  NODES.forEach(n=>{ n.x=(Math.random()-.5)*600; n.y=(Math.random()-.5)*400; n.vx=0; n.vy=0; });
+  NODES.forEach(n=>{ const a=Math.random()*Math.PI*2,d=80+Math.random()*320; n.x=Math.cos(a)*d; n.y=Math.sin(a)*d; n.vx=0; n.vy=0; });
   running=true; btnPause.textContent='⏸ Pausar';
 };
 document.getElementById('btn-fit').onclick=fitView;
-document.getElementById('zin').onclick=()=>{ cam.scale=Math.min(3,cam.scale*1.2); if(!running)draw(); };
-document.getElementById('zout').onclick=()=>{ cam.scale=Math.max(0.4,cam.scale/1.2); if(!running)draw(); };
+document.getElementById('zin').onclick=()=>{ cam.scale=Math.min(4,cam.scale*1.2); if(!running)draw(); };
+document.getElementById('zout').onclick=()=>{ cam.scale=Math.max(0.3,cam.scale/1.2); if(!running)draw(); };
 
 function fitView(){
-  const vis=NODES.filter(nodeVisible);
-  if(!vis.length) return;
-  let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
-  vis.forEach(n=>{ minX=Math.min(minX,n.x); minY=Math.min(minY,n.y); maxX=Math.max(maxX,n.x); maxY=Math.max(maxY,n.y); });
-  const w=maxX-minX+120, h=maxY-minY+120;
-  cam.x=(minX+maxX)/2; cam.y=(minY+maxY)/2;
-  cam.scale=Math.max(0.4,Math.min(1.6, Math.min(W/w, H/h)));
-  if(!running) draw();
+  const vis=NODES.filter(nodeVisible); if(!vis.length) return;
+  let x0=Infinity,y0=Infinity,x1=-Infinity,y1=-Infinity;
+  vis.forEach(n=>{ x0=Math.min(x0,n.x);y0=Math.min(y0,n.y);x1=Math.max(x1,n.x);y1=Math.max(y1,n.y); });
+  cam.x=(x0+x1)/2; cam.y=(y0+y1)/2;
+  cam.scale=Math.max(0.3,Math.min(1.6,Math.min(W/(x1-x0+140),H/(y1-y0+140))));
+  if(!running)draw();
 }
+setTimeout(fitView, reduceMotion?100:2800);
 
 /* ============================================================
-   BUSCA
-   ============================================================ */
-const searchEl=document.getElementById('search');
-searchEl.addEventListener('keydown', e=>{
-  if(e.key==='Enter'){
-    const q=searchEl.value.trim().toLowerCase();
-    if(!q) return;
-    const hit=NODES.find(n=>n.label.toLowerCase().includes(q));
-    if(hit){ selectNode(hit.id,true); }
-  }
-});
-
-/* enquadrar após assentar */
-setTimeout(fitView, reduceMotion?100:2600);
-
-} // ---- fim de start() ----
-
-/* ============================================================
-   BOOT — busca dados reais em /api/teia (função serverless que
-   fala com o HubSpot). Se falhar por qualquer motivo, cai para
-   os dados simulados e deixa isso visível na tela.
+   BOOT — dados reais HubSpot
    ============================================================ */
 (async function boot(){
-  const badge = document.querySelector('.mock-badge');
-  const setBadge = (text, live)=>{
-    if(!badge) return;
-    badge.textContent = text;
-    badge.style.color = live ? 'var(--green)' : '';
-    badge.style.borderColor = live ? 'rgba(0,88,92,.4)' : '';
-    badge.style.background = live ? 'rgba(0,222,219,.14)' : '';
-  };
-  setBadge('Carregando HubSpot…', false);
+  const badge=document.getElementById('data-badge');
+  const setBadge=(text,live)=>{ if(!badge)return; badge.textContent=text; badge.style.color=live?'var(--green)':''; badge.style.borderColor=live?'rgba(0,88,92,.4)':''; badge.style.background=live?'rgba(0,222,219,.14)':''; };
+  setBadge('Carregando HubSpot…',false);
   try{
-    const res = await fetch('/api/teia', { cache:'no-store' });
-    if(!res.ok){
-      const body = await res.json().catch(()=>({}));
-      throw new Error(body.error || ('HTTP '+res.status));
-    }
-    const json = await res.json();
-    if(!Array.isArray(json.deals) || !json.deals.length) throw new Error('A API respondeu sem deals utilizáveis.');
-    DEALS = json.deals;
-    DATA_META = json.meta || null;
-    DATA_SOURCE = 'hubspot';
-    setBadge('Dados HubSpot (ao vivo)', true);
+    const res=await fetch('/api/teia',{cache:'no-store'});
+    if(!res.ok){ const body=await res.json().catch(()=>({})); throw new Error(body.error||('HTTP '+res.status)); }
+    const json=await res.json();
+    if(!Array.isArray(json.deals)||!json.deals.length) throw new Error('API sem deals utilizáveis.');
+    ALL_DEALS=json.deals; DEALS=ALL_DEALS; DATA_META=json.meta||null; DATA_SOURCE='hubspot';
+    setBadge('Dados HubSpot (ao vivo)',true);
+    buildNucleoSelect();
+    buildGraph(); buildUI();
+    NODES.forEach(n=>{ const a=Math.random()*Math.PI*2,d=80+Math.random()*320; n.x=Math.cos(a)*d; n.y=Math.sin(a)*d; n.vx=0; n.vy=0; });
+    running=true; btnPause.textContent='⏸ Pausar';
+    setTimeout(fitView,1600);
   }catch(err){
-    console.warn('[A Teia] Não consegui buscar /api/teia — usando dados simulados. Motivo:', err.message);
-    DEALS = SIMULATED_DEALS;
-    DATA_SOURCE = 'simulado';
-    setBadge('Dados simulados (fallback) — ver console', false);
+    console.warn('[A Teia] fallback:',err.message);
+    ALL_DEALS=SIMULATED_DEALS; DEALS=SIMULATED_DEALS; DATA_SOURCE='simulado';
+    setBadge('Dados simulados (fallback)',false);
   }
-  start();
 })();
 </script>
+<script src="vista.js"></script>
 </body>
 </html>

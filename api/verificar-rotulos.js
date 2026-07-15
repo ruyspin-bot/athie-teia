@@ -63,7 +63,13 @@ async function rotularClientesFinal(hs, eventos) {
     const existente = (companyAssoc[dealId] || []).find((c) => c.toId === companyId);
     if (existente && existente.hasCustomLabel) continue;
 
-    await createAssociation(hs, 'deals', dealId, 'companies', companyId, labelInfo.typeId, labelInfo.category);
+    // PUT no v4 substitui TODOS os tipos existentes — precisamos incluir o
+    // HUBSPOT_DEFINED 5 (Principal) junto com "Cliente Final" para não apagar a tag.
+    const types = [
+      { associationCategory: 'HUBSPOT_DEFINED', associationTypeId: 5 },
+      { associationCategory: labelInfo.category, associationTypeId: labelInfo.typeId },
+    ];
+    await createAssociation(hs, 'deals', dealId, 'companies', companyId, types);
     rotulados++;
   }
 

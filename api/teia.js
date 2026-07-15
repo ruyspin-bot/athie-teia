@@ -45,6 +45,7 @@
 const {
   makeClient,
   getPipelineNames,
+  getStageNames,
   getActiveDeals,
   getAssociations,
   getObjectsById,
@@ -113,7 +114,10 @@ module.exports = async (req, res) => {
 
     const hs = makeClient(token);
 
-    const nucleoByPipelineId = NUCLEO_SOURCE === 'pipeline' ? await getPipelineNames(hs) : null;
+    const [nucleoByPipelineId, stageNamesById] = await Promise.all([
+      NUCLEO_SOURCE === 'pipeline' ? getPipelineNames(hs) : Promise.resolve(null),
+      getStageNames(hs),
+    ]);
 
     const allDeals = await getActiveDeals(hs, [
       'dealname',
@@ -200,9 +204,17 @@ module.exports = async (req, res) => {
       console.warn('[api/teia] Fase 2 (Andar/Edifício) indisponível, usando fallback de texto:', err.message);
     }
 
-    // companies: as dos rótulos do deal + as donas de andar, tudo num batch só
+    // companies + contatos em paralelo
+    const rawDealIds = rawDeals.map((d) => d.id);
     const allCompanyIds = [...new Set([...companyIdsFromDeals, ...companyIdsFromAndares])];
-    const companiesById = await getCompanies(hs, allCompanyIds);
+    const [companiesById, contactAssocByDeal] = await Promise.all([
+      getCompanies(hs, allCompanyIds),
+      getAssociations(hs, 'deals', 'contacts', rawDealIds),
+    ]);
+    const allContactIds = [...new Set(Object.values(contactAssocByDeal).flatMap((arr) => arr.map((a) => a.toId)))];
+    const contactsById = allContactIds.length
+      ? await getObjectsById(hs, 'contacts', allContactIds, ['firstname', 'lastname', 'jobtitle'])
+      : {};
 
     const deals = rawDeals.map((d) => {
       const p = d.properties || {};
@@ -215,7 +227,7 @@ module.exports = async (req, res) => {
         id: d.id,
         nome: p.dealname || `Deal ${d.id}`,
         nucleo,
-        stage: p.dealstage || '—',
+        stage: stageNamesById[p.dealstage] || p.dealstage || '—',
         cliente: null,
         broker: null,
         gerenciadora: null,
@@ -225,6 +237,15 @@ module.exports = async (req, res) => {
         edificio: null,
         andar: null,
         andares: [], // Fase 2: cada item tem seu próprio dono
+        contatos: (contactAssocByDeal[d.id] || []).map((a) => {
+          const c = contactsById[a.toId];
+          if (!c) return null;
+          const cp = c.properties;
+          return {
+            nome: [cp.firstname, cp.lastname].filter(Boolean).join(' ') || `Contato ${a.toId}`,
+            cargo: cp.jobtitle || null,
+          };
+        }).filter(Boolean),
       };
 
       // ---- papéis Deal<->Company (Cliente Final, Broker...) — igual antes ----
