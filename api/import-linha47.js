@@ -40,10 +40,9 @@ const DEAL = {
   aw_responsabilidade_den:          'false',              // Focus '0' → boolean false
   aw_apalavrado_com_cliente:        'false',
   // aw_probabilidade_negocio_existir omitido — sem opções enum definidas no HubSpot
-  aw_den:                           'Daniel Giannella',
+  // aw_den, aw_gerente_comercial_conta, aw_funcionario_abertura omitidos — campos owner-type
+  //   (requerem ID numérico); escopo crm.objects.owners.read ausente → atribuir manualmente
   aw_local:                         'aw_sao_paulo',       // Focus 'Interiores Escritório SP'
-  aw_gerente_comercial_conta:       'Luisa Zerbini',
-  aw_funcionario_abertura:          'Leonardo Peliz',
   aw_gerenciadoras_obs:             'BINSWANGER',
   // NULL no Focus → omitidos: aw_substatus, aw_data_previsao_original,
   //   aw_den_comercial, aw_concorrentes_no_deal, aw_projeto_top, aw_new_business
