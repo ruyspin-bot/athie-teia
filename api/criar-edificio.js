@@ -78,10 +78,27 @@ module.exports = async (req, res) => {
       log.push({ etapa: 'edificio_criado', id: edificioId });
     }
 
-    // ── 4. Setar aw_edificio_id no deal (fallback que a Teia usa) ─
-    // O modelo da Teia: Deal→Andar→Edificio (via custom objects).
-    // Como este deal não tem andar definido, usa o fallback:
-    //   deal.aw_edificio_id = nome do edifício → a Teia resolve o nome diretamente.
+    // ── 4. Garantir que a propriedade aw_edificio_id existe nos deals ─
+    try {
+      await hs(`/crm/v3/properties/deals/${PROP_EDIFICIO}`);
+      log.push({ etapa: 'prop_deal_existe', prop: PROP_EDIFICIO });
+    } catch (e) {
+      // Propriedade não existe — criar
+      await hs('/crm/v3/properties/deals', {
+        method: 'POST',
+        body: JSON.stringify({
+          name: PROP_EDIFICIO,
+          label: 'Edifício (nome fallback)',
+          type: 'string',
+          fieldType: 'text',
+          groupName: 'dealinformation',
+          description: 'Nome do edifício associado ao deal (fallback quando não há andar associado via objeto customizado)',
+        }),
+      });
+      log.push({ etapa: 'prop_deal_criada', prop: PROP_EDIFICIO });
+    }
+
+    // ── 5. Setar aw_edificio_id no deal (fallback que a Teia usa) ─
     await hs(`/crm/v3/objects/deals/${DEAL_ID}`, {
       method: 'PATCH',
       body: JSON.stringify({ properties: { [PROP_EDIFICIO]: EDIFICIO_NOME } }),
