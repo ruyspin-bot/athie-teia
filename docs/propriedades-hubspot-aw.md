@@ -1,8 +1,11 @@
 # Propriedades HubSpot — Portal ATIE (51253038)
-> Versão 2026-07-15 · Ruy Spinola / Scient
+> Versão 2026-07-15 v2 · Ruy Spinola / Scient
+> Atualizado após auditoria completa via API + criação de propriedades faltantes.
 
 Documento de referência para a equipe técnica da AW (Léo Pais, Marcello Delai) consumir a API do HubSpot.
-Cobre: objetos existentes, nomes internos dos campos, mapeamento Focus → HubSpot e gaps a criar.
+Cobre: objetos existentes, nomes internos dos campos, mapeamento Focus → HubSpot e rótulos de associação.
+
+**Estado atual: todos os campos necessários estão criados no portal.**
 
 ---
 
@@ -24,6 +27,7 @@ Cobre: objetos existentes, nomes internos dos campos, mapeamento Focus → HubSp
 | Contacts | `contacts` | Contatos de pessoas |
 | Edifícios | `p51253038_edificios` | Custom object — edifícios/condomínios |
 | Andares | `p51253038_andares` | Custom object — pavimentos dentro dos edifícios |
+| Conjuntos | `p51253038_conjuntos` | Custom object — unidades/conjuntos dentro dos andares |
 
 ---
 
@@ -43,54 +47,71 @@ Cobre: objetos existentes, nomes internos dos campos, mapeamento Focus → HubSp
 | `createdate` | datetime | Data de criação |
 | `hs_lastmodifieddate` | datetime | Data de última modificação — **usar como cursor de sync** |
 
-### 3.2 Campos customizados `aw_*` — estado atual
+### 3.2 Campos customizados `aw_*`
 
-| Nome interno | Tipo | Descrição Focus | Status |
-|---|---|---|---|
-| `aw_id_interno` | string | `IdProjeto` — ID do projeto no Focus | ✅ Existe |
-| `aw_id_projeto_pai` | string | `IdProjetoPai` — ID do projeto pai | ✅ Existe |
-| `aw_edificio_id` | string | Nome do edifício (fallback sem Andar) | ✅ Criado hoje |
-| `aw_rotulo_pendente` | boolean | Flag: empresa associada sem rótulo | ✅ Existe |
-| `aw_numero_projeto` | string | `NumeroProjeto` ex: "4703/24" | ⚠️ Verificar |
-| `aw_tipo_de_negocio` | enum | `Escopo` — Obra / Projeto / Projeto e Obra | ⚠️ Verificar |
-| `aw_area_m2` | number | `Area` em m² | ⚠️ Verificar |
-| `aw_valor_m2_projeto` | number | `ValorMetro` — valor por m² | ⚠️ Verificar |
-| `aw_natureza_valor` | enum | `NaturezaValor` — Estimado / Informado | ⚠️ Verificar |
-| `aw_budget_declarado_total` | number | `BudgetDeclarado` | ⚠️ Verificar |
-| `aw_fonte_de_origem` | enum | `Origem` | ⚠️ Verificar |
-| `aw_setor_cliente` | enum | `RamoAtividade` | ⚠️ Verificar |
-| `aw_envolvimento_comercial` | enum | `EnvolvimentoComercial` | ⚠️ Verificar |
-| `aw_responsabilidade_den` | boolean | `ResponsabilidadeDEN` | ⚠️ Verificar |
-| `aw_apalavrado_com_cliente` | boolean | `Apalavrado` | ⚠️ Verificar |
-| `aw_probabilidade_negocio_existir` | enum | `ProbabilidadeNegocioExistir` | ⚠️ Verificar |
-| `aw_local` | enum | `AreaAtuacao` — localização geográfica | ⚠️ Verificar |
-| `aw_gerenciadoras_obs` | string | Observações sobre gerenciadoras | ⚠️ Verificar |
-| `aw_substatus` | string | `SubStatus` | ⚠️ Verificar |
-| `aw_data_previsao_original` | date | `DataFechamentoOriginal` | ⚠️ Verificar |
-| `aw_den_comercial` | string | `DENComercial` | ⚠️ Verificar |
-| `aw_projeto_top` | boolean | `ProjetoTOP` | ⚠️ Verificar |
-| `aw_new_business` | string | `NewBusiness` | ⚠️ Verificar |
-| `aw_chances_ganhar` | string | `ChancesGanhar` ex: "70% a 90%" | ❌ A criar |
-| `aw_frequencia_comercial` | string | `FrequenciaComercial` ex: "conta 1M (mensal)" | ❌ A criar |
-| `aw_id_agrupador` | string | `IdAgrupador` — agrupador de fases | ❌ A criar |
-| `aw_conta_negocio` | string | `ContaNegocio` | ❌ A criar |
+Todos os campos abaixo existem no portal. Auditados via API em 2026-07-15 (107 campos `aw_*` confirmados).
 
-> **Legenda**: ✅ Confirmado no código ativo · ⚠️ Criado em script anterior, verificar se ainda existe no portal · ❌ Ainda não existe
+| Nome interno | Tipo | Descrição / Campo Focus |
+|---|---|---|
+| `aw_id_interno` | string | `IdProjeto` — chave primária de dedup Focus ↔ HubSpot |
+| `aw_id_projeto_pai` | string | `IdProjetoPai` — projeto pai (hierarquia) |
+| `aw_numero_projeto` | string | `NumeroProjeto` ex: "4703/24" |
+| `aw_tipo_de_negocio` | enum | `Escopo` — Obra / Projeto / Projeto e Obra |
+| `aw_area_m2` | number | `Area` em m² |
+| `aw_valor_m2_projeto` | number | `ValorMetro` — valor por m² |
+| `aw_natureza_valor` | enum | `NaturezaValor` — Estimado / Informado |
+| `aw_budget_declarado_total` | number | `BudgetDeclarado` total |
+| `aw_fonte_de_origem` | enum | `Origem` do deal |
+| `aw_setor_cliente` | enum | `RamoAtividade` |
+| `aw_envolvimento_comercial` | enum | `EnvolvimentoComercial` |
+| `aw_responsabilidade_den` | boolean | `ResponsabilidadeDEN` |
+| `aw_apalavrado_com_cliente` | boolean | `Apalavrado` |
+| `aw_probabilidade_negocio_existir` | enum | `ProbabilidadeNegocioExistir` |
+| `aw_local` | string | `AreaAtuacao` — localização geográfica |
+| `aw_gerenciadoras_obs` | string | Observações sobre gerenciadoras |
+| `aw_substatus` | string | `SubStatus` |
+| `aw_data_previsao_original` | date | `DataFechamentoOriginal` |
+| `aw_den_comercial` | string | `DENComercial` |
+| `aw_projeto_top` | boolean | `ProjetoTOP` |
+| `aw_new_business` | string | `NewBusiness` |
+| `aw_chances_ganhar` | string | `ChancesGanhar` ex: "70% a 90%" |
+| `aw_frequencia_comercial` | string | `FrequenciaComercial` ex: "conta 1M (mensal)" |
+| `aw_id_agrupador` | string | `IdAgrupador` — agrupa fases do mesmo negócio |
+| `aw_conta_negocio` | string | `ContaNegocio` ex: "DNN - Interiores SP" |
+| `aw_probabilidade_negocio_existir` | enum | `ProbabilidadeNegocioExistir` |
+| `aw_envolvimento_comercial` | enum | `EnvolvimentoComercial` |
+| `aw_natureza_valor` | enum | `NaturezaValor` — Estimado / Informado |
+| `aw_budget_declarado_total` | number | `BudgetDeclarado` |
+| `aw_setor_cliente` | enum | `RamoAtividade` |
+| `aw_local` | string | `AreaAtuacao` — localização geográfica |
+| `aw_edificio_id` | string | Nome do edifício (fallback para deals sem Andar) |
+| `aw_rotulo_pendente` | boolean | Flag interna: empresa associada sem rótulo definido |
 
-### 3.3 Campos Focus sem mapeamento direto (tratados como associações)
+### 3.3 Campos tratados como associações (não campos diretos)
 
-| Campo Focus | Como tratar no HubSpot |
-|---|---|
-| `GrupoComercial` / `IdGrupoComercial` | Associação Deal → Company com rótulo **Cliente Final**; usar `aw_id_focus` da company |
-| `Gerenciadora` / `IdGerenciadora` | Associação Deal → Company com rótulo **Gerenciadora** |
-| `Broker` / `IdBrokerLocacoes` | Associação Deal → Company com rótulo **Broker** |
-| `Concorrentes` | Associação Deal → Company com rótulo **Concorrente** |
-| `GerenteComercial` / `IdGerenteComercial` | `hubspot_owner_id` (buscar owner pelo nome) |
-| `GerenteComercialConta` / `IdGerenteComercialConta` | Campo owner — a definir |
-| `DEN` / `IdDEN` | Campo owner — a definir |
-| `FuncionarioAbertura` / `IdFuncionarioAbertura` | Campo owner — a definir |
-| `JsonEdificios` | Associação Deal → Andar → Edifício (custom objects) |
-| `JsonContatos` | Associação Deal → Contact |
+| Campo Focus | Como tratar no HubSpot | Status importação |
+|---|---|---|
+| `GrupoComercial` / `IdGrupoComercial` | Deal → Company (rótulo **Cliente Final**) | ⚠️ fase 2 |
+| `Gerenciadora` / `IdGerenciadora` | Deal → Company (rótulo **Gerenciadora**) | ⚠️ fase 2 |
+| `Broker` / `IdBrokerLocacoes` | Deal → Company (rótulo **Broker**) | ⚠️ fase 2 |
+| `Concorrentes` | Deal → Company (rótulo **Concorrente**) — um por item | ⚠️ fase 2 |
+| `GerenteComercial` / `IdGerenteComercial` | `hubspot_owner_id` (buscar owner pelo nome) | ⚠️ fase 2 |
+| `JsonEdificios` | Deal → Andar → Edifício (custom objects) | ⚠️ fase 2 |
+| `JsonContatos` | Deal → Contact | ⚠️ fase 2 |
+
+> Fase 2 = após importar companies, edifícios e andares (Dia Zero completo).
+
+### 3.4 Mapeamento de stages Focus → HubSpot
+
+| Status Focus | Stage HubSpot | Stage ID |
+|---|---|---|
+| `LEAD`, `LEAD QLF` | Recebido no Núcleo | `1360364548` |
+| `QLF` | Estratégia Definida | `1360364552` |
+| `LEV` | Diagnóstico / Briefing / Test Fit | `1366396702` |
+| `EPP` | Proposta Apresentada | `1360364554` |
+| `NEG` | Em Negociação / Short List | `1360364555` |
+| `AP` | Go/No-Go 2 — Aprovação | `1375049221` |
+| `OBRA`, `EX`, `AS BUILT`, `CHECKLIST` | Contrato Assinado | `1360364557` |
 
 ---
 
@@ -101,30 +122,33 @@ Cobre: objetos existentes, nomes internos dos campos, mapeamento Focus → HubSp
 | Nome interno | Tipo | Descrição |
 |---|---|---|
 | `name` | string | Nome da empresa |
-| `hs_object_id` | string | ID interno HubSpot — **retornar para o Focus** |
+| `hs_object_id` | string | ID interno HubSpot — **retornar para o Focus após criar** |
 | `createdate` | datetime | Data de criação |
 | `hs_lastmodifieddate` | datetime | Cursor de sync |
 
-### 4.2 Campo de sincronização com Focus
+### 4.2 Campos customizados `aw_*`
 
-| Nome interno | Tipo | Descrição | Status |
-|---|---|---|---|
-| `aw_id_focus` | string | ID da empresa no Focus (IdGrupoComercial, IdGerenciadora etc.) | ❌ A criar |
+| Nome interno | Tipo | Descrição |
+|---|---|---|
+| `aw_id_focus` | string | ID master da empresa no Focus — chave de correlação principal |
+| `aw_id_grupo_comercial` | string | `IdGrupoComercial` quando a empresa age como Cliente Final |
+| `aw_id_gerenciadora` | string | `IdGerenciadora` quando a empresa age como Gerenciadora |
+| `aw_id_broker` | string | `IdBrokerLocacoes` quando a empresa age como Broker |
 
-> **Importante**: este campo é a chave de correlação. Quando o Focus enviar uma company com `IdGrupoComercial=1234`, o HubSpot deve armazenar `aw_id_focus=1234` para que futuras atualizações encontrem o registro sem duplicar.
+> **Por que 4 campos?** A mesma empresa pode aparecer com IDs diferentes em tabelas Focus distintas (tabela de grupos comerciais, tabela de gerenciadoras, tabela de brokers). Os campos `aw_id_*` por papel guardam esses IDs até que Delai forneça a tabela mestre. `aw_id_focus` receberá o ID canônico da tabela mestre após reconciliação.
 
 ### 4.3 Rótulos de associação Deal → Company
 
 Os rótulos são definidos por `associationCategory: "USER_DEFINED"` na API v4.
 
-| Rótulo | Descrição | Equivalente Focus |
+| Rótulo | `associationTypeId` | Equivalente Focus |
 |---|---|---|
-| `Cliente Final` | Empresa contratante do projeto | `GrupoComercial` |
-| `Gerenciadora` | Gerenciadora do imóvel | `Gerenciadora` |
-| `Broker` | Broker de locação | `Broker` |
-| `Concorrente` | Escritório concorrente no deal | `Concorrentes[]` |
+| `Cliente Final` | `1` | `GrupoComercial` |
+| `Gerenciadora` | `3` | `Gerenciadora` |
+| `Broker` | `7` | `Broker` |
+| `Concorrente` | `15` | `Concorrentes[]` |
 
-Para obter os `associationTypeId` de cada rótulo:
+Para verificar/listar os rótulos disponíveis:
 ```
 GET /crm/v4/associations/deals/companies/labels
 Authorization: Bearer <TOKEN>
@@ -134,85 +158,94 @@ Authorization: Bearer <TOKEN>
 
 ## 5. Edifícios (`p51253038_edificios`)
 
-### 5.1 Campos existentes
+### 5.1 Campos Focus
 
-| Nome interno | Tipo | Descrição | Status |
+| Nome interno | Tipo | Descrição | Campo Focus |
 |---|---|---|---|
-| `nome_do_edificio` | string | Nome do edifício/condomínio | ✅ Existe |
-| `cnpj_do_condominio` | string | CNPJ do condomínio | ✅ Existe |
-| `aw_id_focus` | string | ID do edifício/condomínio no Focus | ✅ Existe |
-| `andares_ocupados_pelo_cliente` | string | Lista de andares (uso interno Teia) | ✅ Existe |
+| `nome_do_edificio` | string | Nome do condomínio | `NomeCondominio` |
+| `aw_id_focus` | string | ID do condomínio no Focus | `IdCondominio` |
+| `aw_id_edificio_focus` | string | ID da torre específica no Focus | `IdEdificio` |
+| `nome_torre` | string | Nome da torre (ex: "Torre Norte") | `NomeEdificio` |
+| `cnpj_do_condominio` | string | CNPJ do condomínio | — |
+| `andares_ocupados_pelo_cliente` | string | Lista de andares (uso interno Teia) | — |
 
-### 5.2 Campos do Focus a mapear
+> **Nota estrutural**: no Focus, a hierarquia é Condomínio → Edifício (torre) → Pavimento (andar). No HubSpot: Edifício → Andar. O objeto Edifício no HubSpot representa a **torre específica** (ex: "CENU Torre Norte"), não o condomínio inteiro. `aw_id_focus` guarda o `IdCondominio` e `aw_id_edificio_focus` guarda o `IdEdificio` (torre).
 
-| Campo Focus (JsonEdificios) | Nome sugerido HubSpot | Status |
+### 5.2 Campos CRETool Buildings
+
+| Nome interno | Tipo | Campo CRETool |
 |---|---|---|
-| `IdCondominio` | → `aw_id_focus` (condomínio) | ✅ Existe |
-| `NomeCondominio` | → `nome_do_edificio` | ✅ Existe |
-| `IdEdificio` | `aw_id_edificio_focus` | ❌ A criar |
-| `NomeEdificio` | `nome_torre` | ❌ A criar |
-| `IdEdificioPavimento` | → ID do objeto Andar | Via associação |
-| `NomeEdificioPavimento` | → `nome_do_andar` | Via associação |
-
-> **Nota estrutural**: no Focus, a hierarquia é Condomínio → Edifício (torre) → Pavimento (andar). No HubSpot temos Edifício → Andar. Sugestão: o objeto Edifício no HubSpot = torre específica (ex: "CENU Torre Norte"), não o condomínio inteiro.
-
-### 5.3 Campos da CRETool a mapear (integração futura)
-
-| Campo CRETool | Nome sugerido HubSpot | Status |
-|---|---|---|
-| `building_id` | `aw_id_cretool` | ❌ A criar |
-| `perfil` | `perfil_edificio` | ❌ A criar |
-| `classe` | `classe_edificio` | ❌ A criar |
-| `logradouro` + `numero` | `endereco` | ❌ A criar |
-| `cep` | `cep` | ❌ A criar |
-| `microrregiao` | `microrregiao` | ❌ A criar |
-| `regiao` | `regiao` | ❌ A criar |
-| `latitude` / `longitude` | `latitude` / `longitude` | ❌ A criar |
-| `updated_at` | → `hs_lastmodifieddate` (padrão) | ✅ Automático |
+| `aw_id_cretool` | string | `building_id` — chave para enriquecimento de mercado |
+| `classe_edificio` | string | `classe` ex: "Classe A" |
+| `perfil_edificio` | string | `perfil` ex: "Corporate" |
+| `endereco` | string | `logradouro` + `numero` |
+| `cep` | string | `cep` |
+| `regiao` | string | `regiao` ex: "Berrini", "Faria Lima" |
+| `microrregiao` | string | `microrregiao` ex: "Marginal - Brooklin Novo" |
+| `latitude` | number | `latitude` |
+| `longitude` | number | `longitude` |
 
 ---
 
 ## 6. Andares (`p51253038_andares`)
 
-### 6.1 Campos existentes
+### 6.1 Campos Focus
 
-| Nome interno | Tipo | Descrição | Status |
+| Nome interno | Tipo | Descrição | Campo Focus |
 |---|---|---|---|
-| `nome_do_andar` | string | Nome/rótulo (ex: "7º Andar") | ✅ Existe |
-| `numero_do_andar` | string | Número sequencial | ✅ Existe |
+| `nome_do_andar` | string | Nome/rótulo (ex: "7º Andar") | `NomeEdificioPavimento` |
+| `numero_do_andar` | string | Número sequencial | — |
+| `aw_id_focus` | string | ID do pavimento no Focus — chave de dedup | `IdEdificioPavimento` |
 
-### 6.2 Campos a criar para sync com Focus
+### 6.2 Campos CRETool Buildings
 
-| Campo Focus | Nome sugerido HubSpot | Tipo | Status |
-|---|---|---|---|
-| `IdEdificioPavimento` | `aw_id_focus` | string | ❌ A criar |
-| `NomeEdificioPavimento` | → `nome_do_andar` | string | ✅ Existe |
-
-### 6.3 Campos da CRETool a mapear
-
-| Campo CRETool | Nome sugerido HubSpot | Status |
+| Nome interno | Tipo | Campo CRETool |
 |---|---|---|
-| `unit_id` | `aw_id_cretool_unit` | ❌ A criar |
-| `area_locavel_m2` | `area_locavel_m2` | ❌ A criar |
-| `area_privativa_m2` | `area_privativa_m2` | ❌ A criar |
-| `area_boma_m2` | `area_boma_m2` | ❌ A criar |
-| `area_construida_m2` | `area_construida_m2` | ❌ A criar |
-| `possui_terraco` | `possui_terraco` | ❌ A criar |
-| `preco_locacao_m2` | `preco_locacao_m2` | ❌ A criar |
-| `condominio_m2` | `condominio_m2` | ❌ A criar |
-| `iptu_m2` | `iptu_m2` | ❌ A criar |
-| `andares_disponiveis` | `disponibilidade` | ❌ A criar |
+| `aw_id_cretool_unit` | string | `unit_id` — identifica andar+conjunto |
+| `area_locavel_m2` | number | `area_locavel_m2` |
+| `area_privativa_m2` | number | `area_privativa_m2` |
+| `area_boma_m2` | number | `area_boma_m2` |
+| `area_construida_m2` | number | `area_construida_m2` |
+| `preco_locacao_m2` | number | Preço pedido de locação (R$/m²) |
+| `condominio_m2` | number | Condomínio (R$/m²) |
+| `iptu_m2` | number | IPTU (R$/m²) |
+| `disponibilidade` | string | Status de disponibilidade |
 
 ---
 
-## 7. Endpoints principais da API HubSpot
+## 7. Conjuntos (`p51253038_conjuntos`)
+
+Unidades ou conjuntos dentro de um andar. ObjectTypeId interno: `2-65811627`.
+
+### 7.1 Campos existentes
+
+| Nome interno | Tipo | Descrição |
+|---|---|---|
+| `hs_object_id` | number | ID interno HubSpot — **retornar para o Focus após criar** |
+| `hs_lastmodifieddate` | datetime | Cursor de sync |
+| `nome_do_proprietario` | string | Nome do proprietário do conjunto |
+
+### 7.2 Campos customizados criados em 2026-07-15
+
+| Nome interno | Tipo | Campo Focus | Descrição |
+|---|---|---|---|
+| `aw_id_focus` | string | `IdConjunto` (a confirmar) | Chave primária de dedup |
+| `nome_do_conjunto` | string | Nome do conjunto | Ex: "Conjunto 71", "Sala 1201" |
+| `area_m2` | number | Área do conjunto | m² do conjunto específico |
+| `disponibilidade` | string | Status | Disponível / Locado / Em obras |
+
+> Hierarquia completa: **Edifício → Andar → Conjunto**. O conjunto é a unidade locável final.
+
+---
+
+## 8. Endpoints principais
 
 ### Listar registros com cursor de sync
 ```
 GET /crm/v3/objects/{objectType}?limit=100&properties=aw_id_focus,name,hs_lastmodifieddate&after={cursor}
 ```
 
-### Buscar por campo (ex: aw_id_focus)
+### Buscar por campo (ex: dedup por aw_id_focus)
 ```
 POST /crm/v3/objects/{objectType}/search
 {
@@ -239,7 +272,7 @@ PATCH /crm/v3/objects/{objectType}/{objectId}
 ### Criar associação com rótulo (Deal → Company)
 ```
 PUT /crm/v4/objects/deals/{dealId}/associations/companies/{companyId}
-[{ "associationCategory": "USER_DEFINED", "associationTypeId": <ID_DO_ROTULO> }]
+[{ "associationCategory": "USER_DEFINED", "associationTypeId": 1 }]
 ```
 
 ### Listar alterações desde data (incremental)
@@ -258,80 +291,43 @@ POST /crm/v3/objects/{objectType}/search
 }
 ```
 
+### Buscar deals por aw_id_interno (dedup)
+```
+POST /crm/v3/objects/deals/search
+{
+  "filterGroups": [{
+    "filters": [{"propertyName": "aw_id_interno", "operator": "EQ", "value": "12345"}]
+  }],
+  "properties": ["dealname", "aw_id_interno", "hs_object_id"],
+  "limit": 1
+}
+```
+
 ---
 
-## 8. Sequência de sincronização recomendada (Dia Zero)
+## 8. Sequência de importação — Dia Zero
 
-1. **Companies** — importar todos os grupos comerciais, gerenciadoras, brokers, concorrentes do Focus → HubSpot devolve `hs_object_id` → Focus armazena como `id_hubspot`
-2. **Edifícios** — importar condomínios/edifícios → HubSpot devolve IDs → Focus armazena
-3. **Andares** — importar pavimentos → associar a Edifício → Focus armazena
-4. **Deals** — importar projetos ativos → associar companies (com rótulos) + andares
-5. **Contacts** — importar contatos → associar a companies e deals
+1. **Companies** — importar grupos comerciais, gerenciadoras, brokers, concorrentes do Focus. HubSpot devolve `hs_object_id` → Focus armazena como `id_hubspot`.
+2. **Edifícios** — importar condomínios/torres. HubSpot devolve IDs → Focus armazena.
+3. **Andares** — importar pavimentos → associar ao Edifício pai → Focus armazena.
+4. **Deals** — importar projetos ativos → associar companies (com rótulos) + andares.
+5. **Contacts** — importar contatos → associar a companies e deals.
 
-### Após Dia Zero — sync incremental
+### Sync incremental (após Dia Zero)
 ```
 A cada N minutos:
   1. Buscar companies/deals/edifícios com hs_lastmodifieddate >= última_sync
   2. Para cada registro novo: criar no Focus; Focus devolve IdFocus
-  3. PATCH no HubSpot: setar aw_id_focus = IdFocus (para fechar o loop)
+  3. PATCH no HubSpot: setar aw_id_focus = IdFocus (fechar o loop)
 ```
 
 ---
 
-## 9. Resumo de gaps — campos a criar no HubSpot
-
-### Deals (❌ a criar)
-| Campo | Tipo | Focus |
-|---|---|---|
-| `aw_chances_ganhar` | string | `ChancesGanhar` |
-| `aw_frequencia_comercial` | string | `FrequenciaComercial` |
-| `aw_id_agrupador` | string | `IdAgrupador` |
-| `aw_conta_negocio` | string | `ContaNegocio` |
-
-### Companies (❌ a criar)
-| Campo | Tipo | Finalidade |
-|---|---|---|
-| `aw_id_focus` | string | Chave de correlação Focus ↔ HubSpot |
-
-### Edifícios (❌ a criar)
-| Campo | Tipo | Fonte |
-|---|---|---|
-| `aw_id_edificio_focus` | string | IdEdificio (torre específica) no Focus |
-| `nome_torre` | string | NomeEdificio no Focus |
-| `aw_id_cretool` | string | building_id da CRETool |
-| `perfil_edificio` | string | CRETool |
-| `classe_edificio` | string | CRETool |
-| `endereco` | string | CRETool |
-| `cep` | string | CRETool |
-| `regiao` | string | CRETool |
-| `microrregiao` | string | CRETool |
-| `latitude` | number | CRETool |
-| `longitude` | number | CRETool |
-
-### Andares (❌ a criar)
-| Campo | Tipo | Fonte |
-|---|---|---|
-| `aw_id_focus` | string | IdEdificioPavimento no Focus |
-| `aw_id_cretool_unit` | string | unit_id da CRETool |
-| `area_locavel_m2` | number | CRETool |
-| `area_privativa_m2` | number | CRETool |
-| `area_boma_m2` | number | CRETool |
-| `area_construida_m2` | number | CRETool |
-| `possui_terraco` | boolean | CRETool |
-| `preco_locacao_m2` | number | CRETool |
-| `condominio_m2` | number | CRETool |
-| `iptu_m2` | number | CRETool |
-| `disponibilidade` | string | CRETool |
-
----
-
-## 10. Campos Focus sem equivalente óbvio — decisão pendente
+## 9. Campos Focus sem mapeamento direto — pendentes de decisão
 
 | Campo Focus | Observação |
 |---|---|
-| `IdNewBusiness` / `NewBusiness` | Classificação de "novo negócio" — criar `aw_new_business` ou ignorar? |
-| `IdContaNegocio` / `ContaNegocio` | Pode ser redundante com `GrupoComercial` — confirmar com AW |
-| `IdDENComercial` / `DENComercial` | Diferente do DEN técnico? Confirmar hierarquia |
-| `IdSubStatus` / `SubStatus` | Sub-status do deal — criar enum ou campo texto? |
-| `IdAgrupador` | Agrupa projetos pai/filho — `aw_id_agrupador` texto ou number? |
+| `IdDENComercial` / `DENComercial` | Diferente do DEN técnico? Confirmar hierarquia com AW |
 | `Lucratividade` | Campo sensível — confirmar se deve ir para o HubSpot |
+| `GerenteComercialConta` / `IdGerenteComercialConta` | Owner secundário — definir campo `aw_owner_conta` ou ignorar? |
+| `DEN` / `IdDEN` | DEN técnico vs DEN comercial — confirmar mapeamento |

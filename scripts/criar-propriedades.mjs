@@ -47,29 +47,15 @@ async function hs(path, opts = {}) {
 //   fieldType   : 'text' | 'number' | 'date' | 'booleancheckbox' | 'select' | 'textarea'
 //   groupName   : grupo de propriedades (deve existir no portal)
 
+// VERIFICADO via API em 2026-07-15:
+// - Deals: 107 campos aw_* já existem. Só faltam 4.
+// - Companies: aw_id_focus já existe. Faltam 3 campos de ID por papel.
+// - Edificios: aw_id_focus já existe. Faltam campos CRETool + torre.
+// - Andares: aw_id_focus NÃO existe — crítico para dedup.
+
 const PROPRIEDADES = [
 
-  // ── Companies ───────────────────────────────────────────────────────────────
-  {
-    objectType: 'companies',
-    name: 'aw_id_focus',
-    label: 'ID Focus',
-    type: 'string',
-    fieldType: 'text',
-    groupName: 'companyinformation',
-    description: 'ID interno da empresa no Focus CRM (IdGrupoComercial, IdGerenciadora, etc.). Chave de correlação para sync bidirecional.',
-  },
-
-  // ── Deals — campos do Focus ainda não criados ────────────────────────────────
-  {
-    objectType: 'deals',
-    name: 'aw_chances_ganhar',
-    label: 'Chances de Ganhar (Focus)',
-    type: 'string',
-    fieldType: 'text',
-    groupName: 'dealinformation',
-    description: 'ChancesGanhar do Focus. Ex: "70% a 90%".',
-  },
+  // ── Deals — 4 campos ausentes ────────────────────────────────────────────────
   {
     objectType: 'deals',
     name: 'aw_frequencia_comercial',
@@ -77,7 +63,16 @@ const PROPRIEDADES = [
     type: 'string',
     fieldType: 'text',
     groupName: 'dealinformation',
-    description: 'FrequenciaComercial do Focus. Ex: "conta 1M (mensal)".',
+    description: 'FrequenciaComercial do Focus. Ex: "conta 1M (mensal)", "Sem acompanhamento".',
+  },
+  {
+    objectType: 'deals',
+    name: 'aw_chances_ganhar',
+    label: 'Chances de Ganhar',
+    type: 'string',
+    fieldType: 'text',
+    groupName: 'dealinformation',
+    description: 'ChancesGanhar do Focus. Ex: "70% a 90%", "Não informado".',
   },
   {
     objectType: 'deals',
@@ -91,33 +86,65 @@ const PROPRIEDADES = [
   {
     objectType: 'deals',
     name: 'aw_conta_negocio',
-    label: 'Conta Negócio (Focus)',
+    label: 'Conta Negócio',
     type: 'string',
     fieldType: 'text',
     groupName: 'dealinformation',
-    description: 'ContaNegocio do Focus.',
+    description: 'ContaNegocio do Focus. Ex: "DNN - Interiores SP".',
   },
 
-  // ── Andares — chave de correlação com Focus ──────────────────────────────────
+  // ── Companies — IDs por papel (além de aw_id_focus que já existe) ────────────
+  // Necessário porque a mesma empresa pode ter IDs diferentes em tabelas Focus distintas.
+  // aw_id_focus = ID master (vem da tabela de grupos comerciais que Delai vai exportar).
+  // Os campos abaixo guardam o ID específico por papel até a reconciliação.
+  {
+    objectType: 'companies',
+    name: 'aw_id_grupo_comercial',
+    label: 'ID Grupo Comercial (Focus)',
+    type: 'string',
+    fieldType: 'text',
+    groupName: 'companyinformation',
+    description: 'IdGrupoComercial do Focus quando a empresa age como Cliente Final.',
+  },
+  {
+    objectType: 'companies',
+    name: 'aw_id_gerenciadora',
+    label: 'ID Gerenciadora (Focus)',
+    type: 'string',
+    fieldType: 'text',
+    groupName: 'companyinformation',
+    description: 'IdGerenciadora do Focus quando a empresa age como Gerenciadora.',
+  },
+  {
+    objectType: 'companies',
+    name: 'aw_id_broker',
+    label: 'ID Broker (Focus)',
+    type: 'string',
+    fieldType: 'text',
+    groupName: 'companyinformation',
+    description: 'IdBrokerLocacoes do Focus quando a empresa age como Broker.',
+  },
+
+  // ── Andares — chave de dedup AUSENTE ─────────────────────────────────────────
   {
     objectType: 'p51253038_andares',
     name: 'aw_id_focus',
     label: 'ID Focus (Pavimento)',
     type: 'string',
     fieldType: 'text',
-    groupName: 'p51253038_andares_information',
-    description: 'IdEdificioPavimento do Focus. Chave de correlação para sync.',
+    groupName: 'andares_information',
+    description: 'IdEdificioPavimento do Focus. Chave primária de dedup para sync bidirecional.',
   },
 
-  // ── Edifícios — torre específica + CRETool ───────────────────────────────────
+  // ── Edifícios — torre específica ──────────────────────────────────────────────
   {
     objectType: 'p51253038_edificios',
     name: 'aw_id_edificio_focus',
-    label: 'ID Edifício (Torre) Focus',
+    label: 'ID Torre (Focus)',
     type: 'string',
     fieldType: 'text',
-    groupName: 'p51253038_edificios_information',
-    description: 'IdEdificio do Focus — identifica a torre específica dentro de um condomínio.',
+    groupName: 'edificios_information',
+    description: 'IdEdificio do Focus — identifica a torre dentro de um condomínio. aw_id_focus guarda o IdCondominio.',
   },
   {
     objectType: 'p51253038_edificios',
@@ -125,17 +152,19 @@ const PROPRIEDADES = [
     label: 'Nome da Torre',
     type: 'string',
     fieldType: 'text',
-    groupName: 'p51253038_edificios_information',
-    description: 'NomeEdificio do Focus — nome da torre (ex: "Torre Norte"). Complementa nome_do_edificio que guarda o condomínio.',
+    groupName: 'edificios_information',
+    description: 'NomeEdificio do Focus (ex: "Torre Norte"). nome_do_edificio guarda o condomínio.',
   },
+
+  // ── Edifícios — dados CRETool Buildings ──────────────────────────────────────
   {
     objectType: 'p51253038_edificios',
     name: 'aw_id_cretool',
     label: 'ID CRETool Buildings',
     type: 'string',
     fieldType: 'text',
-    groupName: 'p51253038_edificios_information',
-    description: 'building_id da plataforma CRETool Buildings. Chave para sync de dados de mercado.',
+    groupName: 'edificios_information',
+    description: 'building_id da CRETool. Chave para sync de dados de mercado (classe, preços, vacância).',
   },
   {
     objectType: 'p51253038_edificios',
@@ -143,8 +172,8 @@ const PROPRIEDADES = [
     label: 'Classe do Edifício',
     type: 'string',
     fieldType: 'text',
-    groupName: 'p51253038_edificios_information',
-    description: 'Classe do ativo imobiliário (ex: "Classe A", "Classe B"). Fonte: CRETool.',
+    groupName: 'edificios_information',
+    description: 'Classe do ativo imobiliário (ex: "Classe A"). Fonte: CRETool.',
   },
   {
     objectType: 'p51253038_edificios',
@@ -152,8 +181,8 @@ const PROPRIEDADES = [
     label: 'Perfil do Edifício',
     type: 'string',
     fieldType: 'text',
-    groupName: 'p51253038_edificios_information',
-    description: 'Perfil de uso do edifício (ex: "Corporate", "Mixed-use"). Fonte: CRETool.',
+    groupName: 'edificios_information',
+    description: 'Perfil de uso (ex: "Corporate"). Fonte: CRETool.',
   },
   {
     objectType: 'p51253038_edificios',
@@ -161,8 +190,8 @@ const PROPRIEDADES = [
     label: 'Endereço',
     type: 'string',
     fieldType: 'text',
-    groupName: 'p51253038_edificios_information',
-    description: 'Logradouro + número do edifício. Fonte: CRETool.',
+    groupName: 'edificios_information',
+    description: 'Logradouro + número. Fonte: CRETool.',
   },
   {
     objectType: 'p51253038_edificios',
@@ -170,7 +199,7 @@ const PROPRIEDADES = [
     label: 'CEP',
     type: 'string',
     fieldType: 'text',
-    groupName: 'p51253038_edificios_information',
+    groupName: 'edificios_information',
     description: 'CEP do edifício. Fonte: CRETool.',
   },
   {
@@ -179,8 +208,8 @@ const PROPRIEDADES = [
     label: 'Região',
     type: 'string',
     fieldType: 'text',
-    groupName: 'p51253038_edificios_information',
-    description: 'Região do imóvel (ex: "Berrini", "Faria Lima"). Fonte: CRETool.',
+    groupName: 'edificios_information',
+    description: 'Região (ex: "Berrini", "Faria Lima"). Fonte: CRETool.',
   },
   {
     objectType: 'p51253038_edificios',
@@ -188,8 +217,8 @@ const PROPRIEDADES = [
     label: 'Microrregião',
     type: 'string',
     fieldType: 'text',
-    groupName: 'p51253038_edificios_information',
-    description: 'Microrregião do imóvel (ex: "Marginal - Brooklin Novo"). Fonte: CRETool.',
+    groupName: 'edificios_information',
+    description: 'Microrregião (ex: "Marginal - Brooklin Novo"). Fonte: CRETool.',
   },
   {
     objectType: 'p51253038_edificios',
@@ -197,8 +226,8 @@ const PROPRIEDADES = [
     label: 'Latitude',
     type: 'number',
     fieldType: 'number',
-    groupName: 'p51253038_edificios_information',
-    description: 'Coordenada geográfica — latitude. Fonte: CRETool.',
+    groupName: 'edificios_information',
+    description: 'Latitude geográfica. Fonte: CRETool.',
   },
   {
     objectType: 'p51253038_edificios',
@@ -206,8 +235,8 @@ const PROPRIEDADES = [
     label: 'Longitude',
     type: 'number',
     fieldType: 'number',
-    groupName: 'p51253038_edificios_information',
-    description: 'Coordenada geográfica — longitude. Fonte: CRETool.',
+    groupName: 'edificios_information',
+    description: 'Longitude geográfica. Fonte: CRETool.',
   },
 
   // ── Andares — dados de área e preço (CRETool) ────────────────────────────────
@@ -217,8 +246,8 @@ const PROPRIEDADES = [
     label: 'ID CRETool (Unidade)',
     type: 'string',
     fieldType: 'text',
-    groupName: 'p51253038_andares_information',
-    description: 'unit_id da CRETool Buildings — identifica a unidade andar+conjunto.',
+    groupName: 'andares_information',
+    description: 'unit_id da CRETool — identifica andar+conjunto. Fonte: CRETool.',
   },
   {
     objectType: 'p51253038_andares',
@@ -226,7 +255,7 @@ const PROPRIEDADES = [
     label: 'Área Locável (m²)',
     type: 'number',
     fieldType: 'number',
-    groupName: 'p51253038_andares_information',
+    groupName: 'andares_information',
     description: 'Área locável em m². Fonte: CRETool.',
   },
   {
@@ -235,7 +264,7 @@ const PROPRIEDADES = [
     label: 'Área Privativa (m²)',
     type: 'number',
     fieldType: 'number',
-    groupName: 'p51253038_andares_information',
+    groupName: 'andares_information',
     description: 'Área privativa em m². Fonte: CRETool.',
   },
   {
@@ -244,7 +273,7 @@ const PROPRIEDADES = [
     label: 'Área BOMA (m²)',
     type: 'number',
     fieldType: 'number',
-    groupName: 'p51253038_andares_information',
+    groupName: 'andares_information',
     description: 'Área BOMA em m². Fonte: CRETool.',
   },
   {
@@ -253,17 +282,8 @@ const PROPRIEDADES = [
     label: 'Área Construída (m²)',
     type: 'number',
     fieldType: 'number',
-    groupName: 'p51253038_andares_information',
+    groupName: 'andares_information',
     description: 'Área construída total em m². Fonte: CRETool.',
-  },
-  {
-    objectType: 'p51253038_andares',
-    name: 'possui_terraco',
-    label: 'Possui Terraço',
-    type: 'bool',
-    fieldType: 'booleancheckbox',
-    groupName: 'p51253038_andares_information',
-    description: 'Indica se o andar/conjunto possui terraço. Fonte: CRETool.',
   },
   {
     objectType: 'p51253038_andares',
@@ -271,7 +291,7 @@ const PROPRIEDADES = [
     label: 'Preço Locação (R$/m²)',
     type: 'number',
     fieldType: 'number',
-    groupName: 'p51253038_andares_information',
+    groupName: 'andares_information',
     description: 'Preço pedido de locação por m². Fonte: CRETool.',
   },
   {
@@ -280,7 +300,7 @@ const PROPRIEDADES = [
     label: 'Condomínio (R$/m²)',
     type: 'number',
     fieldType: 'number',
-    groupName: 'p51253038_andares_information',
+    groupName: 'andares_information',
     description: 'Valor do condomínio por m². Fonte: CRETool.',
   },
   {
@@ -289,7 +309,7 @@ const PROPRIEDADES = [
     label: 'IPTU (R$/m²)',
     type: 'number',
     fieldType: 'number',
-    groupName: 'p51253038_andares_information',
+    groupName: 'andares_information',
     description: 'Valor do IPTU por m². Fonte: CRETool.',
   },
   {
@@ -298,8 +318,46 @@ const PROPRIEDADES = [
     label: 'Disponibilidade',
     type: 'string',
     fieldType: 'text',
-    groupName: 'p51253038_andares_information',
-    description: 'Texto de disponibilidade do andar (ex: "7°, 8°, 11° (parte)"). Fonte: CRETool.',
+    groupName: 'andares_information',
+    description: 'Status de disponibilidade do andar. Fonte: CRETool.',
+  },
+
+  // ── Conjuntos — unidade locável dentro do andar ──────────────────────────────
+  {
+    objectType: 'p51253038_conjuntos',
+    name: 'aw_id_focus',
+    label: 'ID Focus (Conjunto)',
+    type: 'string',
+    fieldType: 'text',
+    groupName: 'conjuntos_information',
+    description: 'IdConjunto do Focus. Chave primária de dedup para sync bidirecional.',
+  },
+  {
+    objectType: 'p51253038_conjuntos',
+    name: 'nome_do_conjunto',
+    label: 'Nome do Conjunto',
+    type: 'string',
+    fieldType: 'text',
+    groupName: 'conjuntos_information',
+    description: 'Nome ou número do conjunto. Ex: "Conjunto 71", "Sala 1201".',
+  },
+  {
+    objectType: 'p51253038_conjuntos',
+    name: 'area_m2',
+    label: 'Área (m²)',
+    type: 'number',
+    fieldType: 'number',
+    groupName: 'conjuntos_information',
+    description: 'Área do conjunto em m².',
+  },
+  {
+    objectType: 'p51253038_conjuntos',
+    name: 'disponibilidade',
+    label: 'Disponibilidade',
+    type: 'string',
+    fieldType: 'text',
+    groupName: 'conjuntos_information',
+    description: 'Status de disponibilidade. Ex: "Disponível", "Locado", "Em obras".',
   },
 ];
 

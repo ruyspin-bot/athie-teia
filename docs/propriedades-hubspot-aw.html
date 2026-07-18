@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Propriedades HubSpot — Portal ATIE</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --tiffany: #00DEDB;
+      --dark-tiffany: #00585C;
+      --ink: #0E1A1A;
+      --ink-2: #3a4a4a;
+      --ink-3: #6b7878;
+      --bg: #F4F6F6;
+      --bg-white: #FFFFFF;
+      --divider: #E6E6E6;
+      --primary: #3278DC;
+      --warn-bg: #FFF6D0;
+      --warn: #B8860B;
+      --tag-deal: #DCE8E8;
+      --tag-broker: #00585C;
+      --tag-gerenciadora: #9650DC;
+      --tag-andar: #5CC4C0;
+    }
+
+    body {
+      font-family: 'Segoe UI', Calibri, system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      line-height: 1.6;
+      font-size: 14px;
+    }
+
+    /* ── HEADER ── */
+    .header {
+      background: var(--dark-tiffany);
+      color: #fff;
+      padding: 36px 48px 28px;
+      border-bottom: 4px solid var(--tiffany);
+    }
+    .header h1 {
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+    }
+    .header .subtitle {
+      color: rgba(255,255,255,0.7);
+      font-size: 13px;
+      margin-top: 4px;
+    }
+    .header .badge {
+      display: inline-block;
+      background: var(--tiffany);
+      color: var(--dark-tiffany);
+      font-weight: 700;
+      font-size: 11px;
+      padding: 3px 10px;
+      border-radius: 20px;
+      margin-top: 10px;
+      letter-spacing: 0.3px;
+    }
+
+    /* ── LAYOUT ── */
+    .container {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 32px 24px 64px;
+    }
+
+    /* ── SECTION ── */
+    .section {
+      background: var(--bg-white);
+      border-radius: 10px;
+      border: 1px solid var(--divider);
+      margin-bottom: 24px;
+      overflow: hidden;
+    }
+    .section-header {
+      background: var(--dark-tiffany);
+      color: #fff;
+      padding: 14px 24px;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.4px;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .section-header .num {
+      background: var(--tiffany);
+      color: var(--dark-tiffany);
+      font-size: 11px;
+      font-weight: 800;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .section-body { padding: 20px 24px; }
+
+    /* ── SUBSECTION ── */
+    h3 {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--dark-tiffany);
+      margin: 20px 0 10px;
+      padding-bottom: 5px;
+      border-bottom: 1px solid var(--divider);
+    }
+    h3:first-child { margin-top: 0; }
+
+    /* ── TABLE ── */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      margin-bottom: 4px;
+    }
+    thead th {
+      background: var(--bg);
+      color: var(--ink-2);
+      font-weight: 700;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      padding: 8px 12px;
+      text-align: left;
+      border-bottom: 2px solid var(--divider);
+    }
+    tbody tr:nth-child(even) { background: #fafafa; }
+    tbody tr:hover { background: #e8f5f5; }
+    td {
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--divider);
+      vertical-align: top;
+    }
+    tr:last-child td { border-bottom: none; }
+
+    /* ── CODE ── */
+    code {
+      font-family: 'Cascadia Code', 'Fira Mono', Consolas, monospace;
+      font-size: 12px;
+      background: var(--tag-deal);
+      color: var(--dark-tiffany);
+      padding: 1px 5px;
+      border-radius: 4px;
+    }
+    pre {
+      background: var(--ink);
+      color: var(--tiffany);
+      font-family: 'Cascadia Code', 'Fira Mono', Consolas, monospace;
+      font-size: 12px;
+      padding: 16px 20px;
+      border-radius: 8px;
+      overflow-x: auto;
+      margin: 12px 0;
+      line-height: 1.7;
+    }
+    pre code { background: none; color: inherit; padding: 0; }
+
+    /* ── CALLOUT ── */
+    .callout {
+      background: var(--warn-bg);
+      border-left: 3px solid var(--warn);
+      border-radius: 0 6px 6px 0;
+      padding: 12px 16px;
+      font-size: 13px;
+      color: var(--ink-2);
+      margin: 12px 0;
+    }
+    .callout strong { color: var(--warn); }
+
+    .callout-info {
+      background: #e8f5f5;
+      border-left: 3px solid var(--tiffany);
+    }
+    .callout-info strong { color: var(--dark-tiffany); }
+
+    /* ── TAGS ── */
+    .tag {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 20px;
+    }
+    .tag-rotulo {
+      background: var(--tag-deal);
+      color: var(--dark-tiffany);
+    }
+    .tag-cliente { background: var(--tiffany); color: var(--dark-tiffany); }
+    .tag-gerenciadora { background: #f0e5fa; color: var(--tag-gerenciadora); }
+    .tag-broker { background: #d0f0e0; color: #006030; }
+    .tag-concorrente { background: #fde8e8; color: #c03030; }
+
+    /* ── OBJECT PILL ── */
+    .obj-pill {
+      display: inline-block;
+      background: var(--dark-tiffany);
+      color: #fff;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 10px;
+      border-radius: 20px;
+      letter-spacing: 0.2px;
+    }
+
+    /* ── OBJECTS GRID ── */
+    .objects-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+      gap: 12px;
+      margin-top: 4px;
+    }
+    .obj-card {
+      background: var(--bg);
+      border: 1px solid var(--divider);
+      border-radius: 8px;
+      padding: 14px 16px;
+    }
+    .obj-card .obj-name {
+      font-weight: 700;
+      font-size: 13px;
+      color: var(--dark-tiffany);
+      margin-bottom: 4px;
+    }
+    .obj-card .obj-type {
+      font-size: 11px;
+      color: var(--ink-3);
+      font-family: 'Cascadia Code', Consolas, monospace;
+      margin-bottom: 6px;
+    }
+    .obj-card .obj-desc {
+      font-size: 12px;
+      color: var(--ink-2);
+    }
+
+    /* ── STEP LIST ── */
+    .step-list { list-style: none; counter-reset: steps; }
+    .step-list li {
+      counter-increment: steps;
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--divider);
+      font-size: 13px;
+      color: var(--ink-2);
+    }
+    .step-list li:last-child { border-bottom: none; }
+    .step-list li::before {
+      content: counter(steps);
+      background: var(--tiffany);
+      color: var(--dark-tiffany);
+      font-weight: 800;
+      font-size: 11px;
+      min-width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 1px;
+    }
+
+    /* ── PENDING TABLE ── */
+    .pending td:first-child { font-weight: 600; }
+
+    /* ── FOOTER ── */
+    .footer {
+      text-align: center;
+      color: var(--ink-3);
+      font-size: 12px;
+      margin-top: 40px;
+      padding-top: 20px;
+      border-top: 1px solid var(--divider);
+    }
+    .footer strong { color: var(--dark-tiffany); }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Propriedades HubSpot — Portal ATIE</h1>
+  <div class="subtitle">Referência técnica para integração Focus CRM ↔ HubSpot e CRETool Buildings → HubSpot</div>
+  <div class="badge">Portal ID: 51253038 &nbsp;·&nbsp; Versão 2026-07-15 &nbsp;·&nbsp; Ruy Spinola / Scient</div>
+</div>
+
+<div class="container">
+
+  <!-- ACESSO -->
+  <div class="section">
+    <div class="section-header"><span class="num">1</span> Acesso à API</div>
+    <div class="section-body">
+      <table>
+        <thead><tr><th>Parâmetro</th><th>Valor</th></tr></thead>
+        <tbody>
+          <tr><td>Base URL</td><td><code>https://api.hubapi.com</code></td></tr>
+          <tr><td>Autenticação</td><td><code>Authorization: Bearer &lt;TOKEN&gt;</code> — token fornecido via canal seguro</td></tr>
+          <tr><td>Portal ID</td><td><code>51253038</code></td></tr>
+          <tr><td>Documentação oficial</td><td><code>https://developers.hubspot.com/docs/api/crm/crm-custom-objects</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- OBJETOS -->
+  <div class="section">
+    <div class="section-header"><span class="num">2</span> Objetos do portal</div>
+    <div class="section-body">
+      <div class="objects-grid">
+        <div class="obj-card">
+          <div class="obj-name">Deals</div>
+          <div class="obj-type">deals</div>
+          <div class="obj-desc">Negócios e projetos</div>
+        </div>
+        <div class="obj-card">
+          <div class="obj-name">Companies</div>
+          <div class="obj-type">companies</div>
+          <div class="obj-desc">Clientes, gerenciadoras, brokers, concorrentes</div>
+        </div>
+        <div class="obj-card">
+          <div class="obj-name">Contacts</div>
+          <div class="obj-type">contacts</div>
+          <div class="obj-desc">Contatos de pessoas</div>
+        </div>
+        <div class="obj-card">
+          <div class="obj-name">Edifícios</div>
+          <div class="obj-type">p51253038_edificios</div>
+          <div class="obj-desc">Custom object — edifícios e condomínios</div>
+        </div>
+        <div class="obj-card">
+          <div class="obj-name">Andares</div>
+          <div class="obj-type">p51253038_andares</div>
+          <div class="obj-desc">Custom object — pavimentos dos edifícios</div>
+        </div>
+        <div class="obj-card">
+          <div class="obj-name">Conjuntos</div>
+          <div class="obj-type">p51253038_conjuntos</div>
+          <div class="obj-desc">Custom object — unidades locáveis dentro dos andares</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DEALS -->
+  <div class="section">
+    <div class="section-header"><span class="num">3</span> Deals</div>
+    <div class="section-body">
+
+      <h3>3.1 Campos padrão relevantes</h3>
+      <table>
+        <thead><tr><th>Nome interno</th><th>Tipo</th><th>Descrição</th></tr></thead>
+        <tbody>
+          <tr><td><code>dealname</code></td><td>string</td><td>Nome do negócio</td></tr>
+          <tr><td><code>pipeline</code></td><td>string</td><td>ID do pipeline</td></tr>
+          <tr><td><code>dealstage</code></td><td>string</td><td>ID do stage atual</td></tr>
+          <tr><td><code>amount</code></td><td>number</td><td>Valor total estimado (R$)</td></tr>
+          <tr><td><code>closedate</code></td><td>datetime</td><td>Data prevista de fechamento</td></tr>
+          <tr><td><code>hubspot_owner_id</code></td><td>string</td><td>ID numérico do owner (Gerente Comercial)</td></tr>
+          <tr><td><code>hs_object_id</code></td><td>string</td><td>ID interno HubSpot do deal</td></tr>
+          <tr><td><code>hs_lastmodifieddate</code></td><td>datetime</td><td>Última modificação — <strong>usar como cursor de sync</strong></td></tr>
+        </tbody>
+      </table>
+
+      <h3>3.2 Campos customizados <code>aw_*</code></h3>
+      <div class="callout callout-info">
+        Todos os campos abaixo existem no portal. Auditados via API em 2026-07-15 (107 campos <code>aw_*</code> confirmados).
+      </div>
+      <table>
+        <thead><tr><th>Nome interno</th><th>Tipo</th><th>Descrição / Campo Focus</th></tr></thead>
+        <tbody>
+          <tr><td><code>aw_id_interno</code></td><td>string</td><td><strong>Chave primária de dedup</strong> — <code>IdProjeto</code> no Focus</td></tr>
+          <tr><td><code>aw_id_projeto_pai</code></td><td>string</td><td><code>IdProjetoPai</code> — hierarquia de projetos</td></tr>
+          <tr><td><code>aw_numero_projeto</code></td><td>string</td><td><code>NumeroProjeto</code> ex: "4703/24"</td></tr>
+          <tr><td><code>aw_tipo_de_negocio</code></td><td>enum</td><td><code>Escopo</code> — Obra / Projeto / Projeto e Obra</td></tr>
+          <tr><td><code>aw_area_m2</code></td><td>number</td><td><code>Area</code> em m²</td></tr>
+          <tr><td><code>aw_valor_m2_projeto</code></td><td>number</td><td><code>ValorMetro</code> — valor por m²</td></tr>
+          <tr><td><code>aw_natureza_valor</code></td><td>enum</td><td><code>NaturezaValor</code> — Estimado / Informado</td></tr>
+          <tr><td><code>aw_budget_declarado_total</code></td><td>number</td><td><code>BudgetDeclarado</code> total</td></tr>
+          <tr><td><code>aw_fonte_de_origem</code></td><td>enum</td><td><code>Origem</code> do deal</td></tr>
+          <tr><td><code>aw_setor_cliente</code></td><td>enum</td><td><code>RamoAtividade</code></td></tr>
+          <tr><td><code>aw_envolvimento_comercial</code></td><td>enum</td><td><code>EnvolvimentoComercial</code></td></tr>
+          <tr><td><code>aw_responsabilidade_den</code></td><td>boolean</td><td><code>ResponsabilidadeDEN</code></td></tr>
+          <tr><td><code>aw_apalavrado_com_cliente</code></td><td>boolean</td><td><code>Apalavrado</code></td></tr>
+          <tr><td><code>aw_probabilidade_negocio_existir</code></td><td>enum</td><td><code>ProbabilidadeNegocioExistir</code></td></tr>
+          <tr><td><code>aw_local</code></td><td>string</td><td><code>AreaAtuacao</code> — localização geográfica</td></tr>
+          <tr><td><code>aw_substatus</code></td><td>string</td><td><code>SubStatus</code></td></tr>
+          <tr><td><code>aw_data_previsao_original</code></td><td>date</td><td><code>DataFechamentoOriginal</code></td></tr>
+          <tr><td><code>aw_den_comercial</code></td><td>string</td><td><code>DENComercial</code></td></tr>
+          <tr><td><code>aw_projeto_top</code></td><td>boolean</td><td><code>ProjetoTOP</code></td></tr>
+          <tr><td><code>aw_new_business</code></td><td>string</td><td><code>NewBusiness</code></td></tr>
+          <tr><td><code>aw_chances_ganhar</code></td><td>string</td><td><code>ChancesGanhar</code> ex: "70% a 90%"</td></tr>
+          <tr><td><code>aw_frequencia_comercial</code></td><td>string</td><td><code>FrequenciaComercial</code> ex: "conta 1M (mensal)"</td></tr>
+          <tr><td><code>aw_id_agrupador</code></td><td>string</td><td><code>IdAgrupador</code> — agrupa fases do mesmo negócio</td></tr>
+          <tr><td><code>aw_conta_negocio</code></td><td>string</td><td><code>ContaNegocio</code> ex: "DNN - Interiores SP"</td></tr>
+          <tr><td><code>aw_probabilidade_negocio_existir</code></td><td>enum</td><td><code>ProbabilidadeNegocioExistir</code></td></tr>
+          <tr><td><code>aw_envolvimento_comercial</code></td><td>enum</td><td><code>EnvolvimentoComercial</code></td></tr>
+          <tr><td><code>aw_natureza_valor</code></td><td>enum</td><td><code>NaturezaValor</code> — Estimado / Informado</td></tr>
+          <tr><td><code>aw_budget_declarado_total</code></td><td>number</td><td><code>BudgetDeclarado</code></td></tr>
+          <tr><td><code>aw_setor_cliente</code></td><td>enum</td><td><code>RamoAtividade</code></td></tr>
+          <tr><td><code>aw_local</code></td><td>string</td><td><code>AreaAtuacao</code> — localização geográfica</td></tr>
+          <tr><td><code>aw_edificio_id</code></td><td>string</td><td>Nome do edifício (fallback para deals sem Andar)</td></tr>
+          <tr><td><code>aw_rotulo_pendente</code></td><td>boolean</td><td>Flag interna: empresa associada sem rótulo definido</td></tr>
+        </tbody>
+      </table>
+
+      <h3>3.3 Campos tratados como associações (não campos diretos)</h3>
+      <table>
+        <thead><tr><th>Campo Focus</th><th>Como tratar no HubSpot</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td><code>GrupoComercial</code> / <code>IdGrupoComercial</code></td><td>Deal → Company com rótulo <span class="tag tag-cliente">Cliente Final</span></td><td>Fase 2</td></tr>
+          <tr><td><code>Gerenciadora</code> / <code>IdGerenciadora</code></td><td>Deal → Company com rótulo <span class="tag tag-gerenciadora">Gerenciadora</span></td><td>Fase 2</td></tr>
+          <tr><td><code>Broker</code> / <code>IdBrokerLocacoes</code></td><td>Deal → Company com rótulo <span class="tag tag-broker">Broker</span></td><td>Fase 2</td></tr>
+          <tr><td><code>Concorrentes</code></td><td>Deal → Company com rótulo <span class="tag tag-concorrente">Concorrente</span> — um por item</td><td>Fase 2</td></tr>
+          <tr><td><code>GerenteComercial</code> / <code>IdGerenteComercial</code></td><td><code>hubspot_owner_id</code> (buscar owner pelo nome)</td><td>Fase 2</td></tr>
+          <tr><td><code>JsonEdificios</code></td><td>Deal → Andar → Edifício (custom objects)</td><td>Fase 2</td></tr>
+          <tr><td><code>JsonContatos</code></td><td>Deal → Contact</td><td>Fase 2</td></tr>
+        </tbody>
+      </table>
+      <div class="callout callout-info">
+        <strong>Fase 2</strong> — estas associações são criadas após o Dia Zero (quando companies, edifícios e andares já estão importados e com IDs no HubSpot). A Fase 1 importa os deals com todos os campos diretos; as ligações entre objetos vêm na etapa seguinte.
+      </div>
+
+      <h3>3.4 Mapeamento de stages Focus → HubSpot</h3>
+      <table>
+        <thead><tr><th>Status Focus</th><th>Stage HubSpot</th><th>Stage ID</th></tr></thead>
+        <tbody>
+          <tr><td><code>LEAD</code>, <code>LEAD QLF</code></td><td>Recebido no Núcleo</td><td><code>1360364548</code></td></tr>
+          <tr><td><code>QLF</code></td><td>Estratégia Definida</td><td><code>1360364552</code></td></tr>
+          <tr><td><code>LEV</code></td><td>Diagnóstico / Briefing / Test Fit</td><td><code>1366396702</code></td></tr>
+          <tr><td><code>EPP</code></td><td>Proposta Apresentada</td><td><code>1360364554</code></td></tr>
+          <tr><td><code>NEG</code></td><td>Em Negociação / Short List</td><td><code>1360364555</code></td></tr>
+          <tr><td><code>AP</code></td><td>Go/No-Go 2 — Aprovação</td><td><code>1375049221</code></td></tr>
+          <tr><td><code>OBRA</code>, <code>EX</code>, <code>AS BUILT</code>, <code>CHECKLIST</code></td><td>Contrato Assinado</td><td><code>1360364557</code></td></tr>
+        </tbody>
+      </table>
+
+    </div>
+  </div>
+
+  <!-- COMPANIES -->
+  <div class="section">
+    <div class="section-header"><span class="num">4</span> Companies</div>
+    <div class="section-body">
+
+      <h3>4.1 Campos padrão relevantes</h3>
+      <table>
+        <thead><tr><th>Nome interno</th><th>Tipo</th><th>Descrição</th></tr></thead>
+        <tbody>
+          <tr><td><code>name</code></td><td>string</td><td>Nome da empresa</td></tr>
+          <tr><td><code>hs_object_id</code></td><td>string</td><td>ID interno HubSpot — <strong>retornar para o Focus após criar</strong></td></tr>
+          <tr><td><code>hs_lastmodifieddate</code></td><td>datetime</td><td>Cursor de sync</td></tr>
+        </tbody>
+      </table>
+
+      <h3>4.2 Campos customizados <code>aw_*</code></h3>
+      <table>
+        <thead><tr><th>Nome interno</th><th>Tipo</th><th>Descrição</th></tr></thead>
+        <tbody>
+          <tr><td><code>aw_id_focus</code></td><td>string</td><td><strong>Chave de correlação principal</strong> — ID master da empresa no Focus</td></tr>
+          <tr><td><code>aw_id_grupo_comercial</code></td><td>string</td><td><code>IdGrupoComercial</code> quando a empresa age como Cliente Final</td></tr>
+          <tr><td><code>aw_id_gerenciadora</code></td><td>string</td><td><code>IdGerenciadora</code> quando a empresa age como Gerenciadora</td></tr>
+          <tr><td><code>aw_id_broker</code></td><td>string</td><td><code>IdBrokerLocacoes</code> quando a empresa age como Broker</td></tr>
+        </tbody>
+      </table>
+      <div class="callout callout-info">
+        <strong>Por que 4 campos?</strong> A mesma empresa pode aparecer com IDs diferentes em tabelas Focus distintas. Os campos por papel guardam esses IDs até que a tabela mestre seja fornecida. <code>aw_id_focus</code> receberá o ID canônico após reconciliação.
+      </div>
+
+      <h3>4.3 Rótulos de associação Deal → Company</h3>
+      <table>
+        <thead><tr><th>Rótulo</th><th>associationTypeId</th><th>Equivalente Focus</th></tr></thead>
+        <tbody>
+          <tr><td><span class="tag tag-cliente">Cliente Final</span></td><td><code>1</code></td><td><code>GrupoComercial</code></td></tr>
+          <tr><td><span class="tag tag-gerenciadora">Gerenciadora</span></td><td><code>3</code></td><td><code>Gerenciadora</code></td></tr>
+          <tr><td><span class="tag tag-broker">Broker</span></td><td><code>7</code></td><td><code>Broker</code></td></tr>
+          <tr><td><span class="tag tag-concorrente">Concorrente</span></td><td><code>15</code></td><td><code>Concorrentes[]</code></td></tr>
+        </tbody>
+      </table>
+      <pre><code>GET /crm/v4/associations/deals/companies/labels
+Authorization: Bearer &lt;TOKEN&gt;</code></pre>
+
+    </div>
+  </div>
+
+  <!-- EDIFICIOS -->
+  <div class="section">
+    <div class="section-header"><span class="num">5</span> Edifícios — <code>p51253038_edificios</code></div>
+    <div class="section-body">
+
+      <div class="callout callout-info">
+        <strong>Estrutura hierárquica:</strong> no Focus a hierarquia é Condomínio → Edifício (torre) → Pavimento. No HubSpot: Edifício → Andar. O objeto Edifício representa a <strong>torre específica</strong> (ex: "CENU Torre Norte"). <code>aw_id_focus</code> guarda o <code>IdCondominio</code>; <code>aw_id_edificio_focus</code> guarda o <code>IdEdificio</code> (torre).
+      </div>
+
+      <h3>5.1 Campos Focus</h3>
+      <table>
+        <thead><tr><th>Nome interno</th><th>Tipo</th><th>Campo Focus</th><th>Descrição</th></tr></thead>
+        <tbody>
+          <tr><td><code>nome_do_edificio</code></td><td>string</td><td><code>NomeCondominio</code></td><td>Nome do condomínio</td></tr>
+          <tr><td><code>aw_id_focus</code></td><td>string</td><td><code>IdCondominio</code></td><td>Chave de dedup do condomínio</td></tr>
+          <tr><td><code>aw_id_edificio_focus</code></td><td>string</td><td><code>IdEdificio</code></td><td>ID da torre específica</td></tr>
+          <tr><td><code>nome_torre</code></td><td>string</td><td><code>NomeEdificio</code></td><td>Nome da torre (ex: "Torre Norte")</td></tr>
+          <tr><td><code>cnpj_do_condominio</code></td><td>string</td><td>—</td><td>CNPJ do condomínio</td></tr>
+        </tbody>
+      </table>
+
+      <h3>5.2 Campos CRETool Buildings</h3>
+      <table>
+        <thead><tr><th>Nome interno</th><th>Tipo</th><th>Campo CRETool</th></tr></thead>
+        <tbody>
+          <tr><td><code>aw_id_cretool</code></td><td>string</td><td><code>building_id</code> — chave para enriquecimento de mercado</td></tr>
+          <tr><td><code>classe_edificio</code></td><td>string</td><td><code>classe</code> ex: "Classe A"</td></tr>
+          <tr><td><code>perfil_edificio</code></td><td>string</td><td><code>perfil</code> ex: "Corporate"</td></tr>
+          <tr><td><code>endereco</code></td><td>string</td><td><code>logradouro</code> + <code>numero</code></td></tr>
+          <tr><td><code>cep</code></td><td>string</td><td><code>cep</code></td></tr>
+          <tr><td><code>regiao</code></td><td>string</td><td><code>regiao</code> ex: "Berrini", "Faria Lima"</td></tr>
+          <tr><td><code>microrregiao</code></td><td>string</td><td><code>microrregiao</code> ex: "Marginal - Brooklin Novo"</td></tr>
+          <tr><td><code>latitude</code></td><td>number</td><td><code>latitude</code></td></tr>
+          <tr><td><code>longitude</code></td><td>number</td><td><code>longitude</code></td></tr>
+        </tbody>
+      </table>
+
+    </div>
+  </div>
+
+  <!-- ANDARES -->
+  <div class="section">
+    <div class="section-header"><span class="num">6</span> Andares — <code>p51253038_andares</code></div>
+    <div class="section-body">
+
+      <h3>6.1 Campos Focus</h3>
+      <table>
+        <thead><tr><th>Nome interno</th><th>Tipo</th><th>Campo Focus</th><th>Descrição</th></tr></thead>
+        <tbody>
+          <tr><td><code>nome_do_andar</code></td><td>string</td><td><code>NomeEdificioPavimento</code></td><td>Nome/rótulo (ex: "7º Andar")</td></tr>
+          <tr><td><code>numero_do_andar</code></td><td>string</td><td>—</td><td>Número sequencial</td></tr>
+          <tr><td><code>aw_id_focus</code></td><td>string</td><td><code>IdEdificioPavimento</code></td><td><strong>Chave primária de dedup</strong> para o pavimento</td></tr>
+        </tbody>
+      </table>
+
+      <h3>6.2 Campos CRETool Buildings</h3>
+      <table>
+        <thead><tr><th>Nome interno</th><th>Tipo</th><th>Campo CRETool</th></tr></thead>
+        <tbody>
+          <tr><td><code>aw_id_cretool_unit</code></td><td>string</td><td><code>unit_id</code> — identifica andar + conjunto</td></tr>
+          <tr><td><code>area_locavel_m2</code></td><td>number</td><td><code>area_locavel_m2</code></td></tr>
+          <tr><td><code>area_privativa_m2</code></td><td>number</td><td><code>area_privativa_m2</code></td></tr>
+          <tr><td><code>area_boma_m2</code></td><td>number</td><td><code>area_boma_m2</code></td></tr>
+          <tr><td><code>area_construida_m2</code></td><td>number</td><td><code>area_construida_m2</code></td></tr>
+          <tr><td><code>preco_locacao_m2</code></td><td>number</td><td>Preço pedido de locação (R$/m²)</td></tr>
+          <tr><td><code>condominio_m2</code></td><td>number</td><td>Condomínio (R$/m²)</td></tr>
+          <tr><td><code>iptu_m2</code></td><td>number</td><td>IPTU (R$/m²)</td></tr>
+          <tr><td><code>disponibilidade</code></td><td>string</td><td>Status de disponibilidade</td></tr>
+        </tbody>
+      </table>
+
+    </div>
+  </div>
+
+  <!-- CONJUNTOS -->
+  <div class="section">
+    <div class="section-header"><span class="num">7</span> Conjuntos — <code>p51253038_conjuntos</code></div>
+    <div class="section-body">
+
+      <div class="callout callout-info">
+        <strong>Hierarquia completa:</strong> Edifício → Andar → <strong>Conjunto</strong>. O conjunto é a unidade locável final (ex: "Sala 1201", "Conjunto 71"). ObjectTypeId interno: <code>2-65811627</code>.
+      </div>
+
+      <h3>7.1 Campos existentes</h3>
+      <table>
+        <thead><tr><th>Nome interno</th><th>Tipo</th><th>Descrição</th></tr></thead>
+        <tbody>
+          <tr><td><code>hs_object_id</code></td><td>number</td><td>ID interno HubSpot — <strong>retornar para o Focus após criar</strong></td></tr>
+          <tr><td><code>hs_lastmodifieddate</code></td><td>datetime</td><td>Cursor de sync</td></tr>
+          <tr><td><code>nome_do_proprietario</code></td><td>string</td><td>Nome do proprietário do conjunto</td></tr>
+        </tbody>
+      </table>
+
+      <h3>7.2 Campos customizados</h3>
+      <table>
+        <thead><tr><th>Nome interno sugerido</th><th>Tipo</th><th>Campo Focus</th><th>Descrição</th></tr></thead>
+        <tbody>
+          <tr><td><code>aw_id_focus</code></td><td>string</td><td><code>IdConjunto</code> (a confirmar)</td><td><strong>Chave primária de dedup</strong></td></tr>
+          <tr><td><code>nome_do_conjunto</code></td><td>string</td><td>Nome do conjunto</td><td>Ex: "Conjunto 71", "Sala 1201"</td></tr>
+          <tr><td><code>area_m2</code></td><td>number</td><td>Área do conjunto</td><td>m² da unidade específica</td></tr>
+          <tr><td><code>disponibilidade</code></td><td>string</td><td>Status</td><td>Disponível / Locado / Em obras</td></tr>
+        </tbody>
+      </table>
+
+    </div>
+  </div>
+
+  <!-- ENDPOINTS -->
+  <div class="section">
+    <div class="section-header"><span class="num">8</span> Endpoints principais da API</div>
+    <div class="section-body">
+
+      <h3>Listar registros com cursor de sync</h3>
+      <pre><code>GET /crm/v3/objects/{objectType}?limit=100&properties=aw_id_focus,name,hs_lastmodifieddate&after={cursor}</code></pre>
+
+      <h3>Buscar por campo (dedup por aw_id_focus)</h3>
+      <pre><code>POST /crm/v3/objects/{objectType}/search
+{
+  "filterGroups": [{
+    "filters": [{"propertyName": "aw_id_focus", "operator": "EQ", "value": "1234"}]
+  }],
+  "properties": ["name", "aw_id_focus", "hs_object_id"],
+  "limit": 1
+}</code></pre>
+
+      <h3>Criar registro</h3>
+      <pre><code>POST /crm/v3/objects/{objectType}
+{ "properties": { "name": "...", "aw_id_focus": "..." } }</code></pre>
+
+      <h3>Atualizar registro</h3>
+      <pre><code>PATCH /crm/v3/objects/{objectType}/{objectId}
+{ "properties": { "campo": "valor" } }</code></pre>
+
+      <h3>Criar associação com rótulo (Deal → Company)</h3>
+      <pre><code>PUT /crm/v4/objects/deals/{dealId}/associations/companies/{companyId}
+[{ "associationCategory": "USER_DEFINED", "associationTypeId": 1 }]</code></pre>
+
+      <h3>Buscar alterações incrementais (cursor de sync)</h3>
+      <pre><code>POST /crm/v3/objects/{objectType}/search
+{
+  "filterGroups": [{
+    "filters": [{
+      "propertyName": "hs_lastmodifieddate",
+      "operator": "GTE",
+      "value": "2026-07-15T09:00:00.000Z"
+    }]
+  }],
+  "sorts": [{"propertyName": "hs_lastmodifieddate", "direction": "ASCENDING"}],
+  "limit": 100
+}</code></pre>
+
+      <h3>Buscar deal por aw_id_interno (dedup)</h3>
+      <pre><code>POST /crm/v3/objects/deals/search
+{
+  "filterGroups": [{
+    "filters": [{"propertyName": "aw_id_interno", "operator": "EQ", "value": "12345"}]
+  }],
+  "properties": ["dealname", "aw_id_interno", "hs_object_id"],
+  "limit": 1
+}</code></pre>
+
+    </div>
+  </div>
+
+  <!-- SEQUÊNCIA -->
+  <div class="section">
+    <div class="section-header"><span class="num">9</span> Sequência de importação — Dia Zero</div>
+    <div class="section-body">
+      <ul class="step-list">
+        <li><strong>Companies</strong> — importar grupos comerciais, gerenciadoras, brokers, concorrentes do Focus. HubSpot devolve <code>hs_object_id</code> → Focus armazena como <code>id_hubspot</code>.</li>
+        <li><strong>Edifícios</strong> — importar condomínios e torres. HubSpot devolve IDs → Focus armazena.</li>
+        <li><strong>Andares</strong> — importar pavimentos → associar ao Edifício pai → Focus armazena.</li>
+        <li><strong>Conjuntos</strong> — importar unidades → associar ao Andar pai → Focus armazena.</li>
+        <li><strong>Deals</strong> — importar projetos ativos → associar companies (com rótulos) + andares + conjuntos.</li>
+        <li><strong>Contacts</strong> — importar contatos → associar a companies e deals.</li>
+      </ul>
+
+      <h3>Sync incremental (após Dia Zero)</h3>
+      <pre><code>A cada N minutos:
+  1. Buscar objetos com hs_lastmodifieddate >= ultima_sync
+  2. Para cada registro novo: criar no Focus; Focus devolve IdFocus
+  3. PATCH no HubSpot: setar aw_id_focus = IdFocus  ← fecha o loop</code></pre>
+    </div>
+  </div>
+
+  <!-- PENDENTES -->
+  <div class="section">
+    <div class="section-header"><span class="num">10</span> Campos pendentes de decisão</div>
+    <div class="section-body">
+      <table class="pending">
+        <thead><tr><th>Campo Focus</th><th>Observação</th></tr></thead>
+        <tbody>
+          <tr><td><code>IdDENComercial</code> / <code>DENComercial</code></td><td>Diferente do DEN técnico? Confirmar hierarquia com AW.</td></tr>
+          <tr><td><code>Lucratividade</code></td><td>Campo sensível — confirmar se deve ir para o HubSpot.</td></tr>
+          <tr><td><code>GerenteComercialConta</code> / <code>IdGerenteComercialConta</code></td><td>Owner secundário — definir campo <code>aw_owner_conta</code> ou ignorar?</td></tr>
+          <tr><td><code>DEN</code> / <code>IdDEN</code></td><td>DEN técnico vs DEN comercial — confirmar mapeamento.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="footer">
+    Documento gerado por <strong>Scient</strong> · Portal ATIE (51253038) · 2026-07-15<br/>
+    Dúvidas: Ruy Spinola — ruy@ruyspinola.com.br
+  </div>
+
+</div>
+</body>
+</html>
