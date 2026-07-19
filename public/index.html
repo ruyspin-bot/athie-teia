@@ -437,7 +437,8 @@ function buildGraph(){
 const kpiEl=document.getElementById('kpis');
 const legendEl=document.getElementById('legend');
 const insightsEl=document.getElementById('insights');
-const visibleTypes=new Set(Object.keys(TYPES));
+const HIDDEN_BY_DEFAULT=new Set(['deal','andar']);
+const visibleTypes=new Set(Object.keys(TYPES).filter(k=>!HIDDEN_BY_DEFAULT.has(k)));
 
 function buildUI(){
   kpiEl.innerHTML='';
@@ -469,11 +470,12 @@ function buildUI(){
     kpiEl.appendChild(d);
   });
 
-  visibleTypes.clear(); Object.keys(TYPES).forEach(k=>visibleTypes.add(k));
+  visibleTypes.clear(); Object.keys(TYPES).forEach(k=>{ if(!HIDDEN_BY_DEFAULT.has(k)) visibleTypes.add(k); });
   legendEl.innerHTML='';
   Object.entries(TYPES).forEach(([key,t])=>{
     const cnt=NODES.filter(n=>n.type===key).length;
-    const row=document.createElement('div'); row.className='legend-item'; row.dataset.type=key;
+    const row=document.createElement('div'); row.dataset.type=key;
+    row.className='legend-item'+(visibleTypes.has(key)?'':' off');
     row.innerHTML=`<span class="dot" style="background:${t.color}"></span><span class="ln">${t.label}</span><span class="cnt">${cnt}</span>`;
     row.onclick=()=>{ if(visibleTypes.has(key)){ visibleTypes.delete(key); row.classList.add('off'); } else { visibleTypes.add(key); row.classList.remove('off'); } };
     legendEl.appendChild(row);
@@ -683,29 +685,31 @@ window.addEventListener('resize',()=>{ resize(); if(!running)draw(); });
 
 function tick(){
   for(let i=0;i<NODES.length;i++){
-    const a=NODES[i];
+    const a=NODES[i]; if(!nodeVisible(a)) continue;
     for(let j=i+1;j<NODES.length;j++){
-      const b=NODES[j];
+      const b=NODES[j]; if(!nodeVisible(b)) continue;
       let dx=a.x-b.x, dy=a.y-b.y;
       let d2=dx*dx+dy*dy; if(d2<1)d2=1;
       const d=Math.sqrt(d2);
-      const f=Math.min(5000/d2,90);
+      const f=Math.min(22000/d2,220);
       a.vx+=dx/d*f; a.vy+=dy/d*f;
       b.vx-=dx/d*f; b.vy-=dy/d*f;
     }
   }
   edges.forEach(e=>{
     const a=nodesMap.get(e.a), b=nodesMap.get(e.b); if(!a||!b) return;
+    if(!nodeVisible(a)||!nodeVisible(b)) return;
     const dx=b.x-a.x, dy=b.y-a.y, d=Math.sqrt(dx*dx+dy*dy)||0.01;
-    const f=(d-115)*0.012;
+    const f=(d-200)*0.009;
     a.vx+=dx/d*f; a.vy+=dy/d*f;
     b.vx-=dx/d*f; b.vy-=dy/d*f;
   });
   NODES.forEach(n=>{
-    n.vx-=n.x*0.0013; n.vy-=n.y*0.0013;
+    if(!nodeVisible(n)) return;
+    n.vx-=n.x*0.0006; n.vy-=n.y*0.0006;
     if(n.fixed){ n.vx=0; n.vy=0; return; }
-    n.vx*=0.88; n.vy*=0.88;
-    const sp=Math.hypot(n.vx,n.vy); if(sp>8){ n.vx=n.vx/sp*8; n.vy=n.vy/sp*8; }
+    n.vx*=0.86; n.vy*=0.86;
+    const sp=Math.hypot(n.vx,n.vy); if(sp>14){ n.vx=n.vx/sp*14; n.vy=n.vy/sp*14; }
     n.x+=n.vx; n.y+=n.vy;
   });
 }
