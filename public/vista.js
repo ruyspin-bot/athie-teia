@@ -197,7 +197,8 @@ function render(){
       });
       const lcol=S.hatch?'#0E1A1A':ink(col);
       const cy=centY(m.ed,d.id);
-      const short=g.w<130?d.cliente.split(' ')[0]:(g.w<160?d.cliente.split(' ').slice(0,2).join(' '):d.cliente);
+      const label=d.cliente||d.nome||'—';
+      const short=g.w<130?label.split(' ')[0]:(g.w<160?label.split(' ').slice(0,2).join(' '):label);
       const stageLbl=STAGE_ABBR[d.stage]||d.stage;
       const hasDono=d.dono&&FH>30;
       const textY=hasDono?cy-FH*0.14:cy;
@@ -271,7 +272,7 @@ function render(){
     const col=clientColor[c.cliente]||'#3278DC';
     svg+=`<path d="${d}" fill="none" stroke="${col}" stroke-width="1.7" ${c.dashed?'stroke-dasharray="6 5"':''} opacity="${c.ctx?0.45:0.85}" stroke-linecap="round" data-conn="${ci}"></path>`;
     svg+=`<path d="${d}" fill="none" stroke="transparent" stroke-width="14" data-connhit="${ci}" style="cursor:pointer"></path>`;
-    ov+=`<div style="left:${px(mx)}%;top:${py(my)}%;transform:translate(-50%,-50%);font-size:8.5px;font-family:var(--font-mono);color:#3a4a4a;background:#fff;border:1px solid rgba(14,26,26,.2);padding:2px 7px;border-radius:2px;opacity:${c.ctx?0.6:1}" data-connbadge="${ci}">${esc(c.anot)}</div>`;
+    ov+=`<div style="left:${px(mx)}%;top:${py(my)}%;transform:translate(-50%,-50%);font-size:8.5px;font-family:var(--font-mono);color:#3a4a4a;background:#fff;border:1px solid rgba(14,26,26,.2);padding:2px 7px;border-radius:2px;opacity:${c.ctx?0.6:1};display:none" data-connbadge="${ci}">${esc(c.anot)}</div>`;
   });
 
   host.innerHTML =
@@ -324,8 +325,8 @@ function render(){
     const ci=p.dataset.connhit;
     const line=host.querySelector(`[data-conn="${ci}"]`);
     const badge=host.querySelector(`[data-connbadge="${ci}"]`);
-    p.addEventListener('mouseenter',()=>{ line.setAttribute('stroke-width','2.6'); line.setAttribute('opacity','1'); if(badge){badge.style.borderColor=line.getAttribute('stroke');} });
-    p.addEventListener('mouseleave',()=>{ line.setAttribute('stroke-width','1.7'); if(badge){badge.style.borderColor='rgba(14,26,26,.2)';} });
+    p.addEventListener('mouseenter',()=>{ line.setAttribute('stroke-width','2.6'); line.setAttribute('opacity','1'); if(badge){badge.style.display='block';badge.style.borderColor=line.getAttribute('stroke');} });
+    p.addEventListener('mouseleave',()=>{ line.setAttribute('stroke-width','1.7'); if(badge){badge.style.display='none';badge.style.borderColor='rgba(14,26,26,.2)';} });
   });
 
   renderPin();
