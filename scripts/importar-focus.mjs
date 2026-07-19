@@ -297,7 +297,7 @@ function mapearDeal(row) {
     aw_responsabilidade_den:   row.ResponsabilidadeDEN === '1' ? 'true' : 'false',
     aw_substatus:              row.SubStatus || '',
     aw_probabilidade_negocio_existir: PROBABILIDADE_MAP[row.ProbabilidadeNegocioExistir] ?? '',
-    aw_envolvimento_comercial: row.EnvolvimentoComercial || '', // opções cadastradas em aw_envolvimento_comercial já usam o texto bruto do Focus
+    aw_envolvimento_comercial: row.EnvolvimentoComercial || '',
     aw_natureza_valor:         row.NaturezaValor || '',
     aw_budget_declarado_total: row.BudgetDeclarado || '',
     aw_new_business:           row.NewBusiness ? 'true' : 'false',
