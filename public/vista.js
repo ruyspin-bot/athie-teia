@@ -270,7 +270,7 @@ function render(){
     const d=`M${x1},${y1} C${x1+dxc},${y1-lift} ${x2-dxc},${y2-lift} ${x2},${y2}`;
     const mx=(x1+3*(x1+dxc)+3*(x2-dxc)+x2)/8, my=(y1+3*(y1-lift)+3*(y2-lift)+y2)/8;
     const col=clientColor[c.cliente]||'#3278DC';
-    svg+=`<path d="${d}" fill="none" stroke="${col}" stroke-width="1.7" ${c.dashed?'stroke-dasharray="6 5"':''} opacity="${c.ctx?0.45:0.85}" stroke-linecap="round" data-conn="${ci}"></path>`;
+    svg+=`<path d="${d}" fill="none" stroke="${col}" stroke-width="1.7" ${c.dashed?'stroke-dasharray="6 5"':''} opacity="0" stroke-linecap="round" data-conn="${ci}" data-conn-a="${c.a.id}" data-conn-b="${c.b.id}"></path>`;
     svg+=`<path d="${d}" fill="none" stroke="transparent" stroke-width="14" data-connhit="${ci}" style="cursor:pointer"></path>`;
     ov+=`<div style="left:${px(mx)}%;top:${py(my)}%;transform:translate(-50%,-50%);font-size:8.5px;font-family:var(--font-mono);color:#3a4a4a;background:#fff;border:1px solid rgba(14,26,26,.2);padding:2px 7px;border-radius:2px;opacity:${c.ctx?0.6:1};display:none" data-connbadge="${ci}">${esc(c.anot)}</div>`;
   });
@@ -289,9 +289,23 @@ function render(){
 
   // interações
   const tip = document.getElementById('vd-tip');
+  function showConns(dealId){
+    host.querySelectorAll('[data-conn]').forEach(p=>{
+      const active = p.dataset.connA===dealId||p.dataset.connB===dealId;
+      p.setAttribute('opacity', active ? (p.getAttribute('stroke-dasharray')?'0.75':'0.9') : '0');
+    });
+    host.querySelectorAll('[data-connbadge]').forEach(b=>{ b.style.display='none'; });
+  }
+  function hideConns(){
+    if(pinned) return;
+    host.querySelectorAll('[data-conn]').forEach(p=>p.setAttribute('opacity','0'));
+    host.querySelectorAll('[data-connbadge]').forEach(b=>{ b.style.display='none'; });
+  }
+
   host.querySelectorAll('[data-deal]').forEach(r=>{
     const d = DEALS.find(x=>x.id===r.dataset.deal);
     r.addEventListener('mouseenter', e=>{
+      showConns(d.id);
       const hr=host.getBoundingClientRect(), rr=r.getBoundingClientRect();
       let x=rr.right-hr.left+12;
       if(x>hr.width-270) x=rr.left-hr.left-272;
@@ -314,7 +328,7 @@ function render(){
         ${d.concorrente?`<div class="vd-tn">▲ Concorrente no deal: ${esc(d.concorrente)}</div>`:''}
         <div class="vd-th">clique para fixar os detalhes · Abrir no HubSpot ↗</div>`;
     });
-    r.addEventListener('mouseleave', ()=>{ tip.style.display='none'; });
+    r.addEventListener('mouseleave', ()=>{ tip.style.display='none'; hideConns(); });
     r.addEventListener('click', ()=>{ pinned = pinned===d.id?null:d.id; render(); });
   });
   host.querySelectorAll('[data-focus]').forEach(el=>{
@@ -325,10 +339,11 @@ function render(){
     const ci=p.dataset.connhit;
     const line=host.querySelector(`[data-conn="${ci}"]`);
     const badge=host.querySelector(`[data-connbadge="${ci}"]`);
-    p.addEventListener('mouseenter',()=>{ line.setAttribute('stroke-width','2.6'); line.setAttribute('opacity','1'); if(badge){badge.style.display='block';badge.style.borderColor=line.getAttribute('stroke');} });
-    p.addEventListener('mouseleave',()=>{ line.setAttribute('stroke-width','1.7'); if(badge){badge.style.display='none';badge.style.borderColor='rgba(14,26,26,.2)';} });
+    p.addEventListener('mouseenter',()=>{ if(line.getAttribute('opacity')==='0') return; line.setAttribute('stroke-width','2.6'); if(badge){badge.style.display='block';badge.style.borderColor=line.getAttribute('stroke');} });
+    p.addEventListener('mouseleave',()=>{ line.setAttribute('stroke-width','1.7'); if(badge){badge.style.display='none';} });
   });
 
+  if(pinned) showConns(pinned);
   renderPin();
   renderLegend(model, conns);
   renderStyleButtons();
