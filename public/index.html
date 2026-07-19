@@ -401,7 +401,7 @@ function buildGraph(){
         link(d.id,ak,'Local do Deal'); link(ak,'ED:'+a.edificio,'Andar de');
         if(a.dono){ ensure('DO:'+a.dono,'dono',{label:a.dono}).deals.add(d.id); link(ak,'DO:'+a.dono,'Dono do andar'); }
       });
-    } else {
+    } else if(d.edificio && d.edificio !== 'Sem edifício identificado'){
       const ed=ensure('ED:'+d.edificio,'edificio',{label:d.edificio}); ed.deals.add(d.id);
       if(d.andar){
         const ak='AN:'+d.edificio+':'+d.andar;
@@ -449,12 +449,15 @@ function buildUI(){
   const top=Object.entries(bc).sort((a,b)=>b[1]-a[1])[0];
   const disputados=buildingStats.filter(b=>b.deals.length>1);
   const multibroker=buildingStats.filter(b=>b.brokers.length>1);
+  const semEd=DEALS.filter(d=>!d.edificio||d.edificio==='Sem edifício identificado');
+  const exemploSemEd=semEd[0]?semEd[0].nome:'';
 
   const kpis=[
     { v:DEALS.length,             l:'Deals'+(activeNucleo?' · '+activeNucleo:''), cls:'' },
     { v:fmtBRLShort(totalValor),  l:'Valor total', cls:'hot' },
     { v:disputados.length,        l:'Prédios em disputa', x:'2+ deals no mesmo edifício', cls:'hot', filter:'disputados' },
     { v:multibroker.length,       l:'Multi-broker',       x:'brokers diferentes no mesmo prédio', cls:'hot', filter:'multibroker' },
+    { v:semEd.length,             l:'Sem edifício', x:exemploSemEd?'ex: '+exemploSemEd:'', cls:'' },
     { v:top?top[0]:'—',           l:'Broker mais recorrente', x:top?top[1]+' deals':'', cls:'' },
   ];
   kpis.forEach(k=>{
