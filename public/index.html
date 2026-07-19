@@ -234,7 +234,7 @@
       </div>
       <div id="search-drop" class="search-drop"></div>
     </div>
-    <select id="nucleo-sel" class="nucleo-sel" title="Filtrar por núcleo">
+    <select id="nucleo-sel" class="nucleo-sel" title="Filtrar por núcleo" style="display:none">
       <option value="">Todos os núcleos</option>
     </select>
     <div class="view-toggle">
@@ -342,7 +342,7 @@ let ALL_DEALS = SIMULATED_DEALS;
 let DEALS = SIMULATED_DEALS;
 let DATA_SOURCE = 'simulado';
 let DATA_META = null;
-let activeNucleo = '';
+let activeNucleo = 'Pipeline de vendas';
 let tableMode = false;
 let kpiFilter = null;
 
@@ -383,9 +383,11 @@ function buildGraph(){
 
   DEALS.forEach(d=>{
     const deal  = ensure(d.id,'deal',{label:d.nome, meta:{stage:d.stage}});
-    const cli   = ensure('C:'+d.cliente,'cliente',{label:d.cliente});
-    cli.deals.add(d.id); deal.deals.add(d.id);
-    link('C:'+d.cliente, d.id, 'Cliente Final');
+    if(d.cliente){
+      const cli=ensure('C:'+d.cliente,'cliente',{label:d.cliente});
+      cli.deals.add(d.id); deal.deals.add(d.id);
+      link('C:'+d.cliente, d.id, 'Cliente Final');
+    }
     if(d.broker)      { ensure('B:'+d.broker,'broker',{label:d.broker}).deals.add(d.id);                  link(d.id,'B:'+d.broker,'Broker'); }
     if(d.gerenciadora){ ensure('G:'+d.gerenciadora,'gerenciadora',{label:d.gerenciadora}).deals.add(d.id);link(d.id,'G:'+d.gerenciadora,'Gerenciadora'); }
     if(d.parceiro)    { ensure('E:'+d.parceiro,'escritorio',{label:d.parceiro}).deals.add(d.id);           link(d.id,'E:'+d.parceiro,'Parceiro'); }
@@ -437,7 +439,7 @@ function buildGraph(){
 const kpiEl=document.getElementById('kpis');
 const legendEl=document.getElementById('legend');
 const insightsEl=document.getElementById('insights');
-const HIDDEN_BY_DEFAULT=new Set(['deal','andar']);
+const HIDDEN_BY_DEFAULT=new Set(['andar']);
 const visibleTypes=new Set(Object.keys(TYPES).filter(k=>!HIDDEN_BY_DEFAULT.has(k)));
 
 function buildUI(){
@@ -1078,7 +1080,7 @@ function fitView(){
     if(!res.ok){ const body=await res.json().catch(()=>({})); throw new Error(body.error||('HTTP '+res.status)); }
     const json=await res.json();
     if(!Array.isArray(json.deals)||!json.deals.length) throw new Error('API sem deals utilizáveis.');
-    ALL_DEALS=json.deals; DEALS=ALL_DEALS; DATA_META=json.meta||null; DATA_SOURCE='hubspot';
+    ALL_DEALS=json.deals; DEALS=activeNucleo?ALL_DEALS.filter(d=>d.nucleo===activeNucleo):ALL_DEALS; DATA_META=json.meta||null; DATA_SOURCE='hubspot';
     setBadge('Dados HubSpot (ao vivo)',true);
     buildNucleoSelect();
     buildGraph(); buildUI();
