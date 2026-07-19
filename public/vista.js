@@ -53,27 +53,21 @@ function buildModel(focal){
   const byEd = {};
   DEALS.forEach(d=>{
     const n = andarNum(d.andar);
-    if(n==null) return; // só deals com andar aparecem na vista
+    if(n==null) return;
     (byEd[d.edificio] = byEd[d.edificio]||[]).push(Object.assign({}, d, { n }));
   });
   const focalDeals = byEd[focal]||[];
-  const focalClients = new Set(focalDeals.map(d=>d.cliente));
-  // prédios relacionados: compartilham cliente com o focal
-  const rel = Object.keys(byEd).filter(ed=>ed!==focal &&
-    byEd[ed].some(d=>focalClients.has(d.cliente)));
-  // contexto: demais prédios com deals (esmaecidos), máx. p/ caber
-  const ctx = Object.keys(byEd).filter(ed=>ed!==focal && !rel.includes(ed))
-    .slice(0, Math.max(0, 3-rel.length));
-  const order = [];
-  const others = rel.concat(ctx);
-  if(others.length){ order.push({ed:others[0], ctx:!rel.includes(others[0])}); }
-  order.push({ed:focal, ctx:false});
-  others.slice(1).forEach(ed=>order.push({ed, ctx:!rel.includes(ed)}));
+  const focalClients = new Set(focalDeals.map(d=>d.cliente).filter(Boolean));
+  // relacionados: TODOS os prédios que compartilham cliente com o focal (sem cap)
+  const rel = focalClients.size > 0
+    ? Object.keys(byEd).filter(ed=>ed!==focal && byEd[ed].some(d=>focalClients.has(d.cliente)))
+    : [];
+  // focal primeiro, relacionados à direita (scroll horizontal revela o resto)
+  const order = [{ed:focal, ctx:false}, ...rel.map(ed=>({ed, ctx:false}))];
   return order.map(o=>{
     const deals = byEd[o.ed];
-    const total = Math.max(12, Math.max(...deals.map(d=>d.n))+5);
     const donos = [...new Set(deals.map(d=>d.dono).filter(Boolean))];
-    return { ed:o.ed, ctx:o.ctx, deals, total, dono: donos.join(' / ')||'—', focal:o.ed===focal };
+    return { ed:o.ed, ctx:false, deals, dono: donos.join(' / ')||'—', focal:o.ed===focal };
   });
 }
 
@@ -101,7 +95,7 @@ function buildConns(model){
 }
 
 /* ---- render ---- */
-const SVGW=900, SVGH=610, GROUND=536, TOP=40;
+const SVGH=610, GROUND=536, TOP=40;
 
 // Cores dos rótulos — barras coloridas dentro do andar
 const ROLE_BARS=[
@@ -135,10 +129,12 @@ function render(){
   });
   const centY=(ed,did)=>GROUND-(slotMap[ed][did]+0.5)*FH;
 
-  const GAP = 56;
-  const widths = model.map(m=>m.focal?230:(m.ctx?120:165));
+  const GAP = 48;
+  const PAD = 40;
+  const widths = model.map(m=>m.focal?220:160);
   const totalW = widths.reduce((a,c)=>a+c,0)+(model.length-1)*GAP;
-  let cx=(SVGW-totalW)/2;
+  const SVGW = Math.max(860, totalW + PAD*2);
+  let cx = PAD;
   const geo={};
   model.forEach((m,i)=>{ geo[m.ed]={x:cx,w:widths[i],i}; cx+=widths[i]+GAP; });
   const dxo=10, dyo=7;
@@ -242,17 +238,17 @@ function render(){
       ov+=`<div style="left:${px(bx+8)}%;top:${py((y1+y2)/2)}%;transform:translateY(-50%);font-size:7px;color:#C8940A;font-weight:600;white-space:nowrap;opacity:${op}">${esc(lbl)}</div>`;
     });
     ov+=`<div data-focus="${esc(m.ed)}" style="left:${px(g.x+g.w/2)}%;top:${py(GROUND+16)}%;transform:translate(-50%,-50%);font-size:11px;font-weight:${m.focal?700:600};color:${m.focal?'#0E1A1A':'#3a4a4a'};opacity:${op};${m.focal?'':'pointer-events:auto;cursor:pointer'}">${esc(m.ed)}</div>`;
-    if(m.focal) svg+=`<rect x="${g.x+g.w/2-16}" y="${GROUND+37}" width="32" height="2.5" fill="#00DEDB"></rect>`;
+    if(m.focal) svg+=`<rect x="${g.x+g.w/2-20}" y="${GROUND+37}" width="40" height="2.5" fill="#00DEDB"></rect>`;
     svg+='</g>';
   });
 
 
   // chão + árvores
-  svg+=`<line x1="26" y1="${GROUND}" x2="874" y2="${GROUND}" stroke="${S.ground}" stroke-width="${S.gw}"></line>`;
+  svg+=`<line x1="${PAD/2}" y1="${GROUND}" x2="${SVGW-PAD/2}" y2="${GROUND}" stroke="${S.ground}" stroke-width="${S.gw}"></line>`;
   const txs=[];
   for(let i=0;i<model.length-1;i++){ const g1=geo[model[i].ed]; txs.push(g1.x+g1.w+GAP/2); }
   const g0=geo[model[0].ed], gl=geo[model[model.length-1].ed];
-  txs.push(g0.x-38, gl.x+gl.w+38);
+  txs.push(g0.x-28, gl.x+gl.w+28);
   txs.forEach((tx,i)=>{ const s=i%2?0.8:1.1;
     svg+=`<g opacity="0.72"><line x1="${tx}" y1="${GROUND}" x2="${tx}" y2="${GROUND-11*s}" stroke="#2A3333" stroke-width="1.5"></line><circle cx="${tx}" cy="${GROUND-15*s}" r="${5.5*s}" fill="#2A3333"></circle></g>`;
   });
@@ -275,12 +271,15 @@ function render(){
     ov+=`<div style="left:${px(mx)}%;top:${py(my)}%;transform:translate(-50%,-50%);font-size:8.5px;font-family:var(--font-mono);color:#3a4a4a;background:#fff;border:1px solid rgba(14,26,26,.2);padding:2px 7px;border-radius:2px;opacity:${c.ctx?0.6:1};display:none" data-connbadge="${ci}">${esc(c.anot)}</div>`;
   });
 
+  host.style.overflowX = 'auto';
   host.innerHTML =
-    `<svg width="100%" viewBox="0 0 ${SVGW} ${SVGH}" style="display:block">${svg}</svg>
-     <div style="position:absolute;inset:0;pointer-events:none;font-family:var(--font-head)">
-       ${ov.replace(/<div /g,'<div class="vd-ov" ').replace(/style="/g,'style="position:absolute;white-space:nowrap;line-height:1.2;')}
-     </div>
-     <div class="vd-tip" id="vd-tip"></div>`;
+    `<div style="position:relative;width:${SVGW}px;height:${SVGH}px;flex-shrink:0">
+       <svg width="${SVGW}" height="${SVGH}" viewBox="0 0 ${SVGW} ${SVGH}" style="display:block;position:absolute;top:0;left:0">${svg}</svg>
+       <div style="position:absolute;inset:0;pointer-events:none;font-family:var(--font-head)">
+         ${ov.replace(/<div /g,'<div class="vd-ov" ').replace(/style="/g,'style="position:absolute;white-space:nowrap;line-height:1.2;')}
+       </div>
+       <div class="vd-tip" id="vd-tip"></div>
+     </div>`;
 
   // header
   const focal = model.find(m=>m.focal);
