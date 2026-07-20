@@ -544,17 +544,6 @@ function renderPin(){
     <div class="vd-pinl">
       <span class="vd-stage" style="background:${col};color:${ink(col)}">${esc(d.stage)}</span>
       <div class="vd-pind">${esc(d.nome)}</div>
-      <div class="vd-pinm">${esc(d.edificio)}</div>
-    </div>
-    <div class="vd-kv">
-      <div><div class="vd-kl">Cliente</div><div class="vd-kvv">${esc(d.cliente)}</div></div>
-      <div><div class="vd-kl">Broker</div><div class="vd-kvv">${esc(d.broker||'—')}</div></div>
-      <div><div class="vd-kl">Gerenciadora</div><div class="vd-kvv">${esc(d.gerenciadora||'—')}</div></div>
-      <div><div class="vd-kl">Dono do andar</div><div class="vd-kvv">${esc(d.dono||'—')}</div></div>
-      ${d.tipo?`<div><div class="vd-kl">Tipo</div><div class="vd-kvv" style="color:${(TIPO_BADGE[d.tipo]||{bg:'#333'}).bg}">${esc(d.tipo)}</div></div>`:''}
-      ${d.conjunto?`<div><div class="vd-kl">Conjunto</div><div class="vd-kvv">${esc(d.conjunto)}</div></div>`:''}
-      ${d.contatos&&d.contatos.length?`<div style="grid-column:1/-1"><div class="vd-kl">Contatos</div><div class="vd-kvv">${d.contatos.map(c=>`<div style="margin-bottom:3px">${esc(c.nome)}${c.cargo?`<span style="color:rgba(14,26,26,.45);font-size:10px"> · ${esc(c.cargo)}</span>`:''}</div>`).join('')}</div></div>`:''}
-      <div><div class="vd-kl">Nota</div><div class="vd-kvv" style="color:#6b5200">${esc(d.concorrente?('Concorrente: '+d.concorrente):(d.parceiro?('Parceiro: '+d.parceiro):'—'))}</div></div>
     </div>
     <div class="vd-pinbtns">
       ${d._mergedFrom
