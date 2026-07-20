@@ -319,47 +319,49 @@ function render(){
         opacity="${dealOp}"
         data-deal="${d.id}" style="cursor:pointer"></rect>`;
 
-      // Larguras reservadas à direita: badges P/O + etapa
-      const bFontSz = FH>32 ? 7.5 : 6.5;
-      const badgeW = d.tipo ? (d._mergedFrom ? 30 : 18) : 0;  // largura px dos badges P/O
-      const stageW = 48;   // largura px da pílula de etapa
-      const PAD_L = 5;     // margem interna esquerda
-      const PAD_R = 5;     // margem interna direita
-      // espaço disponível para nº andar + cliente
-      const innerW = g.w - PAD_L - PAD_R - stageW - (badgeW>0 ? badgeW+3 : 0);
+      // ── métricas de layout ──
+      const PAD_L = 5;   // margem interna esquerda
+      const PAD_R = 4;   // margem interna direita
+      const bFontSz = 7; // tamanho fixo badges P/O
 
-      // ── nº do andar (dentro do slot, à esquerda) ──
+      // nº do andar: só dígitos, largura calculada pelo nº de chars (font-mono 9px ≈ 6px/char)
       const andarStr = d.andar ? d.andar.replace(/[^\d]/g,'') : String(d.n);
-      const andarW = 16; // px fixo para o número
-      ov+=`<div data-novwrap style="left:${px(g.x+PAD_L)}%;top:${py(cy)}%;transform:translateY(-50%);font-size:9px;font-family:var(--font-mono);color:${lcol};font-weight:800;opacity:${op*dealOp*0.7}">${esc(andarStr)}</div>`;
+      const andarW = andarStr.length * 6.5 + 4; // px estimados + gap
 
-      // ── cliente final (à direita do nº, truncado antes da etapa) ──
-      const clientMaxW = Math.max(20, innerW - andarW - 4);
+      // largura dos badges P/O à direita
+      const badgeW = d.tipo ? (d._mergedFrom ? 32 : 16) : 0;
+
+      // largura da pílula de etapa — proporcional ao texto abreviado
+      const stageLbl = STAGE_ABBR[d.stage]||d.stage;
+      const stageW = stageLbl.length * 4.8 + 10; // estimativa font-mono 6.5px
+
+      // espaço total reservado à direita (etapa + badges + gaps)
+      const rightW = stageW + (badgeW > 0 ? badgeW + 3 : 0) + PAD_R + 2;
+
+      // max-width do cliente: do fim do nº andar até o início da etapa
+      const clientLeft = g.x + PAD_L + andarW + 2;
+      const clientMaxW = Math.max(10, g.w - PAD_L - andarW - 2 - rightW);
+
+      // ── nº do andar (extrema esquerda, dentro do slot) ──
+      ov+=`<div data-novwrap style="left:${px(g.x+PAD_L)}%;top:${py(cy)}%;transform:translateY(-50%);font-size:9px;font-family:var(--font-mono);color:${lcol};font-weight:800;opacity:${op*dealOp*0.65}">${esc(andarStr)}</div>`;
+
+      // ── cliente final (logo após o nº, truncado) ──
       if(d.cliente){
-        ov+=`<div data-filter-actor="cliente" data-filter-val="${esc(d.cliente)}" style="left:${px(g.x+PAD_L+andarW+4)}%;top:${py(cy)}%;transform:translateY(-50%);display:inline-block;font-size:${g.w>=160?9:8}px;font-weight:600;color:${lcol};opacity:${op*dealOp};cursor:pointer;text-decoration:underline dotted;max-width:${clientMaxW}px;overflow:hidden;text-overflow:ellipsis;vertical-align:top;pointer-events:auto">${esc(d.cliente)}</div>`;
+        ov+=`<div data-filter-actor="cliente" data-filter-val="${esc(d.cliente)}" style="left:${px(clientLeft)}%;top:${py(cy)}%;transform:translateY(-50%);display:inline-block;font-size:${g.w>=160?9:8}px;font-weight:600;color:${lcol};opacity:${op*dealOp};cursor:pointer;text-decoration:underline dotted;max-width:${clientMaxW}px;overflow:hidden;text-overflow:ellipsis;vertical-align:top;pointer-events:auto">${esc(d.cliente)}</div>`;
       }
 
-      // ── valor (segunda linha, abaixo do cliente, se FH comportar) ──
-      if(FH>32){
-        const vShort = fmtVShort(d.valor);
-        if(vShort){
-          ov+=`<div data-novwrap style="left:${px(g.x+PAD_L+andarW+4)}%;top:${py(floorY+FH-5)}%;transform:translateY(-100%);font-size:7px;font-family:var(--font-mono);color:${lcol};font-weight:600;opacity:${op*dealOp*0.65}">${esc(vShort)}</div>`;
-        }
-      }
-
-      // ── etapa (direita do slot, antes dos badges) ──
-      const stageLbl=STAGE_ABBR[d.stage]||d.stage;
-      const stageLeft = g.x+g.w-PAD_R-(badgeW>0?badgeW+3:0)-stageW;
+      // ── etapa (centralizada verticalmente, à direita dos badges) ──
+      const stageLeft = g.x + g.w - PAD_R - (badgeW > 0 ? badgeW + 3 : 0) - stageW;
       ov+=`<div data-novwrap style="left:${px(stageLeft)}%;top:${py(cy)}%;transform:translateY(-50%);display:inline-block;background:rgba(0,0,0,0.2);color:${lcol};font-size:6.5px;font-family:var(--font-mono);font-weight:700;letter-spacing:.3px;text-transform:uppercase;padding:1px 5px;border-radius:2px;opacity:${0.92*op*dealOp}">${esc(stageLbl)}</div>`;
 
-      // ── badges P / O (extrema direita do slot) ──
-      if(d.tipo && FH>18){
-        const bRight = g.x+g.w-PAD_R;
+      // ── badges P / O (extrema direita) ──
+      if(d.tipo && FH > 16){
+        const bRight = g.x + g.w - PAD_R;
         if(d._mergedFrom){
-          ov+=`<div data-novwrap style="left:${px(bRight)}%;top:${py(cy)}%;transform:translate(-100%,-50%);display:inline-flex;gap:2px;opacity:${op*dealOp}"><span style="background:#00585C;color:#fff;font-size:${bFontSz}px;font-family:var(--font-mono);font-weight:700;padding:0 3px;border-radius:2px;line-height:1.8">P</span><span style="background:#E07800;color:#fff;font-size:${bFontSz}px;font-family:var(--font-mono);font-weight:700;padding:0 3px;border-radius:2px;line-height:1.8">O</span></div>`;
+          ov+=`<div data-novwrap style="left:${px(bRight)}%;top:${py(cy)}%;transform:translate(-100%,-50%);display:inline-flex;gap:2px;opacity:${op*dealOp}"><span style="background:#00585C;color:#fff;font-size:${bFontSz}px;font-family:var(--font-mono);font-weight:700;padding:0 3px;border-radius:2px;line-height:1.9">P</span><span style="background:#E07800;color:#fff;font-size:${bFontSz}px;font-family:var(--font-mono);font-weight:700;padding:0 3px;border-radius:2px;line-height:1.9">O</span></div>`;
         } else {
-          const tb=TIPO_BADGE[d.tipo];
-          if(tb) ov+=`<div data-novwrap style="left:${px(bRight)}%;top:${py(cy)}%;transform:translate(-100%,-50%);display:inline-block;background:${tb.bg};color:#fff;font-size:${bFontSz}px;font-family:var(--font-mono);font-weight:700;padding:0 4px;border-radius:2px;line-height:1.8;opacity:${op*dealOp}">${esc(tb.label)}</div>`;
+          const tb = TIPO_BADGE[d.tipo];
+          if(tb) ov+=`<div data-novwrap style="left:${px(bRight)}%;top:${py(cy)}%;transform:translate(-100%,-50%);display:inline-block;background:${tb.bg};color:#fff;font-size:${bFontSz}px;font-family:var(--font-mono);font-weight:700;padding:0 4px;border-radius:2px;line-height:1.9;opacity:${op*dealOp}">${esc(tb.label)}</div>`;
         }
       }
     });
