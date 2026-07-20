@@ -269,10 +269,11 @@ function render(){
       const stageLbl=STAGE_ABBR[d.stage]||d.stage;
       const hasDono=d.dono&&FH>30;
       const textY=hasDono?cy-FH*0.14:cy;
-      // badge tipo — canto superior esquerdo
+      // badge tipo — canto inferior esquerdo do slot, label legível
       if(d.tipo&&TIPO_BADGE[d.tipo]&&FH>26){
         const tb=TIPO_BADGE[d.tipo];
-        ov+=`<div style="left:${px(g.x+3)}%;top:${py(floorY+3)}%;background:${tb.bg};color:#fff;font-size:6px;font-family:var(--font-mono);font-weight:700;padding:0 3px;border-radius:2px;line-height:1.6;opacity:${op*0.9}">${tb.label}</div>`;
+        const tipoLabel=FH>40?d.tipo:tb.label; // label completo se espaço, abrev. se compacto
+        ov+=`<div style="left:${px(g.x+3)}%;top:${py(floorY+FH-4)}%;transform:translateY(-100%);background:${tb.bg};color:#fff;font-size:${FH>40?7.5:6.5}px;font-family:var(--font-mono);font-weight:700;padding:0 4px;border-radius:2px;line-height:1.7;opacity:${op*dealOp*0.95}">${esc(tipoLabel)}</div>`;
       }
       if(!m.ctx||g.w>=130) ov+=`<div style="left:${px(g.x+6)}%;top:${py(textY)}%;transform:translateY(-50%);font-size:${g.w>=160?9.5:8.5}px;font-weight:600;color:${lcol};opacity:${op*dealOp}">${esc(short)}</div>`;
       if(hasDono&&(!m.ctx||g.w>=130)){
