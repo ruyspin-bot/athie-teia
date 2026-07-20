@@ -504,7 +504,7 @@ function render(){
         : `<a href="https://app.hubspot.com/contacts/51253038/deal/${d.id}" target="_blank" style="color:inherit;text-decoration:underline">HubSpot ↗</a>`;
       const mergedLabel = d._mergedFrom ? `<span style="font-size:9px;font-weight:400;opacity:.6"> · ${d._mergedFrom.length} deals (unificados por andar)</span>` : '';
       tip.innerHTML=`
-        <div class="vd-tr"><span class="vd-stage" style="background:${col};color:${ink(col)}">${esc(d.stage)}</span><span class="vd-tf">${esc(d.andar||'')}</span>${d.conjunto?`<span class="vd-tf">Conj. ${esc(d.conjunto)}</span>`:''}</div>
+        <div class="vd-tr"><span class="vd-stage" style="background:${col};color:${ink(col)}">${esc(d.stage)}</span>${d.conjunto?`<span class="vd-tf">Conj. ${esc(d.conjunto)}</span>`:''}</div>
         <div class="vd-td">${esc(d.nome)}${mergedLabel}</div>
         <div class="vd-tm">${esc(d.edificio)}</div>
         <div class="vd-tg">
@@ -544,7 +544,7 @@ function renderPin(){
     <div class="vd-pinl">
       <span class="vd-stage" style="background:${col};color:${ink(col)}">${esc(d.stage)}</span>
       <div class="vd-pind">${esc(d.nome)}</div>
-      <div class="vd-pinm">${esc(d.edificio)} · ${esc(d.andar||'')}</div>
+      <div class="vd-pinm">${esc(d.edificio)}</div>
     </div>
     <div class="vd-kv">
       <div><div class="vd-kl">Cliente</div><div class="vd-kvv">${esc(d.cliente)}</div></div>
