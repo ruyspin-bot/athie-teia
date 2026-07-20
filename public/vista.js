@@ -73,15 +73,14 @@ const REL_WEIGHT = { cliente:100, dono:40, broker:10, gerenciadora:8 };
 
 /* Funde dois deals do mesmo andar que diferem apenas no tipo (Projeto + Obra).
    Retorna uma lista de deals onde pares P+O viram um único deal com tipo 'Projeto e Obra',
-   valor somado e stage = o mais avançado dos dois. */
+   valor somado e stage = o mais avançado dos dois.
+   A condição "mesmo contexto" é relaxada: campos vazios/null/undefined são equivalentes. */
 function mergeAndarTipo(deals){
-  // índice por andar normalizado (número inteiro)
   const byAndar = {};
   deals.forEach(d=>{
-    const key = d.n; // número do andar já calculado
+    const key = d.n;
     (byAndar[key] = byAndar[key]||[]).push(d);
   });
-  const TIPO_RANK = { 'Projeto':0, 'Obra':1, 'Projeto e Obra':2 };
   const STAGE_ORDER = [
     'Recebido no Núcleo','Diagnóstico / Briefing / Test Fit','Estratégia Definida',
     'Proposta em Elaboração','Proposta Apresentada','Em Negociação / Short List',
@@ -89,31 +88,32 @@ function mergeAndarTipo(deals){
     'Perdido','Declinado',
   ];
   const stageRank = s => { const i=STAGE_ORDER.indexOf(s); return i<0?99:i; };
+  // dois valores são "iguais para efeito de merge" se ambos forem vazios ou idênticos
+  const sameVal = (a,b) => (a||'')===(b||'');
   const out = [];
   Object.values(byAndar).forEach(grupo=>{
     if(grupo.length===2){
       const [a,b]=grupo;
-      const tipoA=a.tipo, tipoB=b.tipo;
+      const tipoA=a.tipo||'', tipoB=b.tipo||'';
       const isPO=(tipoA==='Projeto'&&tipoB==='Obra')||(tipoA==='Obra'&&tipoB==='Projeto');
       if(isPO){
-        // verifica que só o tipo difere (mesmo cliente, broker, dono, andar)
-        const sameContext =
-          a.cliente===b.cliente && a.broker===b.broker &&
-          a.dono===b.dono && a.gerenciadora===b.gerenciadora;
-        if(sameContext){
-          // deal merged: mantém o id do mais avançado (para links HubSpot, pin, etc.)
+        // mesmo contexto: cliente, broker, dono, gerenciadora coincidem (ou ambos vazios)
+        const sameCtx =
+          sameVal(a.cliente,b.cliente) && sameVal(a.broker,b.broker) &&
+          sameVal(a.dono,b.dono)       && sameVal(a.gerenciadora,b.gerenciadora);
+        if(sameCtx){
           const [adv,oth] = stageRank(a.stage)<=stageRank(b.stage) ? [a,b] : [b,a];
           out.push(Object.assign({}, adv, {
             tipo: 'Projeto e Obra',
             valor: (a.valor||0)+(b.valor||0),
-            _mergedFrom: [a.id, b.id],  // ids originais (para conexões)
-            nome: adv.nome,             // nome do deal mais avançado
+            _mergedFrom: [a.id, b.id],
+            _mergedTipos: [tipoA==='Projeto'?a:b, tipoA==='Obra'?a:b], // [proj, obra]
+            nome: adv.nome,
           }));
           return;
         }
       }
     }
-    // sem merge: adiciona todos individualmente
     out.push(...grupo);
   });
   return out;
@@ -322,43 +322,54 @@ function render(){
       });
       const lcol=S.hatch?'#0E1A1A':ink(col);
       const cy=centY(m.ed,d.id);
-      const label=d.cliente||d.nome||'—';
-      const short=g.w<130?label.split(' ')[0]:(g.w<160?label.split(' ').slice(0,2).join(' '):label);
+      // Label principal: cliente (preferido) ou primeiras palavras do nome do deal
+      // NUNCA exibe o nome completo do deal — ele pode ter 60+ chars e quebrar o layout
+      const rawLabel = d.cliente||'';
+      const label = rawLabel
+        ? rawLabel                                  // usa o cliente se existir
+        : (d.nome||'—').replace(/^\d+[ºo°]\s*[Aa]ndar\s*[—–-]\s*/i,'') // remove prefixo "Xº Andar — "
+                       .split(' ').slice(0,3).join(' ');  // máx 3 palavras
       const stageLbl=STAGE_ABBR[d.stage]||d.stage;
       const hasDono=d.dono&&FH>30;
       const textY=hasDono?cy-FH*0.14:cy;
-      // badge tipo — canto inferior esquerdo do slot, label legível
-      if(d.tipo&&TIPO_BADGE[d.tipo]&&FH>26){
+
+      // badge tipo — canto inferior esquerdo do slot
+      if(d.tipo&&TIPO_BADGE[d.tipo]&&FH>20){
         const tb=TIPO_BADGE[d.tipo];
-        const tipoLabel=FH>40?d.tipo:tb.label; // label completo se espaço, abrev. se compacto
-        ov+=`<div style="left:${px(g.x+3)}%;top:${py(floorY+FH-4)}%;transform:translateY(-100%);background:${tb.bg};color:#fff;font-size:${FH>40?7.5:6.5}px;font-family:var(--font-mono);font-weight:700;padding:0 4px;border-radius:2px;line-height:1.7;opacity:${op*dealOp*0.95}">${esc(tipoLabel)}</div>`;
+        // deal merged P+O: exibe dois badges P e O lado a lado
+        if(d._mergedFrom&&FH>26){
+          ov+=`<div data-novwrap style="left:${px(g.x+3)}%;top:${py(floorY+FH-4)}%;transform:translateY(-100%);display:inline-flex;gap:3px;opacity:${op*dealOp*0.95}"><span style="background:#00585C;color:#fff;font-size:${FH>40?7.5:6.5}px;font-family:var(--font-mono);font-weight:700;padding:0 4px;border-radius:2px;line-height:1.7">P</span><span style="background:#E07800;color:#fff;font-size:${FH>40?7.5:6.5}px;font-family:var(--font-mono);font-weight:700;padding:0 4px;border-radius:2px;line-height:1.7">O</span></div>`;
+        } else {
+          const tipoLabel=tb.label;
+          ov+=`<div data-novwrap style="left:${px(g.x+3)}%;top:${py(floorY+FH-4)}%;transform:translateY(-100%);background:${tb.bg};color:#fff;font-size:${FH>40?7.5:6.5}px;font-family:var(--font-mono);font-weight:700;padding:0 4px;border-radius:2px;line-height:1.7;opacity:${op*dealOp*0.95}">${esc(tipoLabel)}</div>`;
+        }
       }
-      // nome do cliente: clicável para filtrar (só se tiver cliente real)
-      // max-width limitado à largura da coluna (com margem pra pílula de etapa)
-      const maxW = Math.floor(g.w * 0.72);
+
+      // nome do cliente — truncado ao espaço disponível (deixa margem pra pílula de etapa)
+      // usa display:inline-block para que max-width + overflow:hidden funcionem com position:absolute
+      const maxW = Math.floor(g.w * 0.68);
       if(!m.ctx||g.w>=130){
-        const hasCliente=d.cliente&&d.cliente!==d.nome;
-        ov+=`<div ${hasCliente?`data-filter-cliente="${esc(d.cliente)}" style="left:${px(g.x+6)}%;top:${py(textY)}%;transform:translateY(-50%);font-size:${g.w>=160?9.5:8.5}px;font-weight:600;color:${lcol};opacity:${op*dealOp};cursor:pointer;text-decoration:underline dotted;max-width:${maxW}px;overflow:hidden;text-overflow:ellipsis;pointer-events:auto"`:
-          `style="left:${px(g.x+6)}%;top:${py(textY)}%;transform:translateY(-50%);font-size:${g.w>=160?9.5:8.5}px;font-weight:600;color:${lcol};opacity:${op*dealOp};max-width:${maxW}px;overflow:hidden;text-overflow:ellipsis"`}>${esc(short)}</div>`;
+        const hasCliente=!!(d.cliente);
+        ov+=`<div ${hasCliente?`data-filter-actor="cliente" data-filter-val="${esc(d.cliente)}" style="left:${px(g.x+6)}%;top:${py(textY)}%;transform:translateY(-50%);display:inline-block;font-size:${g.w>=160?9.5:8.5}px;font-weight:600;color:${lcol};opacity:${op*dealOp};cursor:pointer;text-decoration:underline dotted;max-width:${maxW}px;overflow:hidden;text-overflow:ellipsis;vertical-align:top;pointer-events:auto"`:
+          `style="left:${px(g.x+6)}%;top:${py(textY)}%;transform:translateY(-50%);display:inline-block;font-size:${g.w>=160?9.5:8.5}px;font-weight:600;color:${lcol};opacity:${op*dealOp};max-width:${maxW}px;overflow:hidden;text-overflow:ellipsis;vertical-align:top"`}>${esc(label)}</div>`;
       }
       if(hasDono&&(!m.ctx||g.w>=130)){
-        const donoShort=d.dono;
-        ov+=`<div style="left:${px(g.x+6)}%;top:${py(cy+FH*0.18)}%;transform:translateY(-50%);font-size:7.5px;font-style:italic;color:${lcol};opacity:${op*dealOp*0.6};overflow:hidden;text-overflow:ellipsis;max-width:${Math.floor(g.w*0.6)}px">${esc(donoShort)}</div>`;
+        ov+=`<div style="left:${px(g.x+6)}%;top:${py(cy+FH*0.18)}%;transform:translateY(-50%);display:inline-block;font-size:7.5px;font-style:italic;color:${lcol};opacity:${op*dealOp*0.6};overflow:hidden;text-overflow:ellipsis;max-width:${Math.floor(g.w*0.6)}px;vertical-align:top">${esc(d.dono)}</div>`;
       }
       const pillBg=S.hatch?'rgba(255,255,255,0.55)':col;
       const pillCol=S.hatch?'#0E1A1A':ink(col);
-      ov+=`<div style="left:${px(g.x+g.w-5)}%;top:${py(cy)}%;transform:translate(-100%,-50%);background:${pillBg};color:${pillCol};font-size:${g.w>=160?7.5:7}px;font-family:var(--font-mono);font-weight:700;letter-spacing:.3px;text-transform:uppercase;padding:1px 5px;border-radius:2px;opacity:${.92*op}">${esc(stageLbl)}</div>`;
+      ov+=`<div data-novwrap style="left:${px(g.x+g.w-5)}%;top:${py(cy)}%;transform:translate(-100%,-50%);display:inline-block;background:${pillBg};color:${pillCol};font-size:${g.w>=160?7.5:7}px;font-family:var(--font-mono);font-weight:700;letter-spacing:.3px;text-transform:uppercase;padding:1px 5px;border-radius:2px;opacity:${.92*op}">${esc(stageLbl)}</div>`;
       // badge contatos — canto superior direito
       if(d.contatos&&d.contatos.length&&FH>26){
-        ov+=`<div style="left:${px(g.x+g.w-4)}%;top:${py(floorY+3)}%;transform:translate(-100%,0);background:rgba(14,26,26,.22);color:#fff;font-size:6px;font-family:var(--font-mono);padding:0 3px;border-radius:2px;line-height:1.6;opacity:${op*0.85}">●${d.contatos.length}</div>`;
+        ov+=`<div data-novwrap style="left:${px(g.x+g.w-4)}%;top:${py(floorY+3)}%;transform:translate(-100%,0);display:inline-block;background:rgba(14,26,26,.22);color:#fff;font-size:6px;font-family:var(--font-mono);padding:0 3px;border-radius:2px;line-height:1.6;opacity:${op*0.85}">●${d.contatos.length}</div>`;
       }
-      // número do andar sempre visível à esquerda do slot
-      const andarLbl = d.andar ? d.andar.replace(/andar/i,'').trim().replace(/\s+/,'') : `${d.n}º`;
-      ov+=`<div style="left:${px(g.x-4)}%;top:${py(cy)}%;transform:translate(-100%,-50%);font-size:8px;font-family:var(--font-mono);color:rgba(14,26,26,.55);font-weight:700;opacity:${op};white-space:nowrap">${esc(andarLbl)}</div>`;
+      // número do andar — sempre visível à esquerda, usando white-space:nowrap individual
+      const andarLbl = d.andar ? d.andar.replace(/andar/i,'').trim().replace(/\s+/g,'') : `${d.n}º`;
+      ov+=`<div data-novwrap style="left:${px(g.x-4)}%;top:${py(cy)}%;transform:translate(-100%,-50%);font-size:8px;font-family:var(--font-mono);color:rgba(14,26,26,.55);font-weight:700;opacity:${op}">${esc(andarLbl)}</div>`;
       // valor monetário abaixo do número do andar (se couber)
       const vShort = fmtVShort(d.valor);
       if(vShort && FH>36){
-        ov+=`<div style="left:${px(g.x-4)}%;top:${py(cy+FH*0.28)}%;transform:translate(-100%,-50%);font-size:7px;font-family:var(--font-mono);color:#00585C;font-weight:700;opacity:${op};white-space:nowrap">${esc(vShort)}</div>`;
+        ov+=`<div data-novwrap style="left:${px(g.x-4)}%;top:${py(cy+FH*0.28)}%;transform:translate(-100%,-50%);font-size:7px;font-family:var(--font-mono);color:#00585C;font-weight:700;opacity:${op}">${esc(vShort)}</div>`;
       }
     });
     // colchete de mesmo-dono
@@ -415,11 +426,18 @@ function render(){
   });
 
   host.style.overflowX = 'auto';
+  // Injeta os prefixos de estilo corretos em cada div do overlay:
+  // • data-novwrap → position:absolute + white-space:nowrap (nº andar, valor, pílulas, badges)
+  // • demais divs  → position:absolute sem nowrap (labels de cliente/dono com max-width+overflow)
+  // Isso evita que texto longo vaze horizontalmente para o prédio vizinho.
+  const ovHtml = ov
+    .replace(/<div data-novwrap ([^>]*style=")/g, '<div class="vd-ov" $1position:absolute;white-space:nowrap;line-height:1.2;')
+    .replace(/<div ([^>]*style=")/g, '<div class="vd-ov" $1position:absolute;line-height:1.2;');
   host.innerHTML =
     `<div style="position:relative;width:${SVGW}px;height:${SVGH}px;flex-shrink:0">
        <svg width="${SVGW}" height="${SVGH}" viewBox="0 0 ${SVGW} ${SVGH}" style="display:block;position:absolute;top:0;left:0">${svg}</svg>
        <div style="position:absolute;inset:0;pointer-events:none;font-family:var(--font-head)">
-         ${ov.replace(/<div /g,'<div class="vd-ov" ').replace(/style="/g,'style="position:absolute;white-space:nowrap;line-height:1.2;')}
+         ${ovHtml}
        </div>
        <div class="vd-tip" id="vd-tip"></div>
      </div>`;
@@ -444,6 +462,8 @@ function render(){
   tip.onclick = (e)=>{
     const fc = e.target.closest('[data-filter-cliente]');
     if(fc){ tip.style.display='none'; setActorFilter('cliente', fc.dataset.filterCliente); }
+    const fa = e.target.closest('[data-filter-actor]');
+    if(fa){ tip.style.display='none'; setActorFilter(fa.dataset.filterActor, fa.dataset.filterVal); }
   };
   tip.addEventListener('mouseenter', ()=>{ _tipHover=true; });
   tip.addEventListener('mouseleave', ()=>{ _tipHover=false; tip.style.display='none'; hideConns(); });
@@ -502,9 +522,9 @@ function render(){
   host.querySelector('[data-clear]').addEventListener('click', ()=>{
     if(pinned || actorFilter){ pinned=null; if(actorFilter){ actorFilter=null; _modelCache=null; } render(); }
   });
-  // clique direto no nome do cliente no slot (overlay HTML) → actor filter
-  host.querySelectorAll('[data-filter-cliente]').forEach(el=>{
-    el.addEventListener('click', (e)=>{ e.stopPropagation(); setActorFilter('cliente', el.dataset.filterCliente); });
+  // clique direto no label do ator no slot (overlay HTML) → actor filter
+  host.querySelectorAll('[data-filter-actor]').forEach(el=>{
+    el.addEventListener('click', (e)=>{ e.stopPropagation(); setActorFilter(el.dataset.filterActor, el.dataset.filterVal); });
   });
   host.querySelectorAll('[data-connhit]').forEach(p=>{
     const ci=p.dataset.connhit;
@@ -517,6 +537,7 @@ function render(){
   if(pinned) showConns(pinned);
   renderPin();
   renderLegend(model, conns);
+  renderEntityPanel(model);
 }
 
 function renderPin(){
@@ -563,11 +584,87 @@ function clearActorFilter(){
 }
 function renderFilterBadge(){
   if(!actorFilter){ filterEl.style.display='none'; return; }
-  const LABEL = { cliente:'Cliente', broker:'Broker', gerenciadora:'Gerenciadora', dono:'Dono' };
+  const LABEL = { cliente:'Cliente Final', broker:'Broker', gerenciadora:'Gerenciadora', dono:'Dono do andar', parceiro:'Parceiro', concorrente:'Concorrente' };
   filterEl.style.display='flex';
   filterEl.style.cssText='display:flex;align-items:center;gap:8px;background:#00DEDB22;border:1px solid #00DEDB;border-radius:3px;padding:4px 10px;font-size:11px;font-weight:600;color:#005554;white-space:nowrap';
   filterEl.innerHTML=`<span>⊙ ${LABEL[actorFilter.kind]||actorFilter.kind}: <b>${esc(actorFilter.value)}</b></span><button id="vd-clear-filter" style="background:none;border:none;font-size:14px;cursor:pointer;color:#005554;line-height:1;padding:0">✕</button>`;
   document.getElementById('vd-clear-filter').onclick=()=>clearActorFilter();
+}
+
+/* ---- painel de entidades ---- */
+// Agrupa todas as entidades envolvidas nos deals do model atual,
+// com contagem de ocorrências. Clicar num chip ativa o actor filter.
+const ENTITY_KINDS = [
+  { key:'cliente',      label:'Cliente Final',   color:'#3278DC' },
+  { key:'broker',       label:'Broker',          color:'#00585C' },
+  { key:'gerenciadora', label:'Gerenciadora',    color:'#9650DC' },
+  { key:'dono',         label:'Dono do andar',   color:'#C8940A' },
+  { key:'parceiro',     label:'Parceiro',        color:'#DC5028' },
+  { key:'concorrente',  label:'Concorrente',     color:'#888888' },
+];
+
+function renderEntityPanel(model){
+  const entEl = document.getElementById('vd-entities');
+  if(!entEl) return;
+
+  // conta ocorrências de cada entidade por tipo em todos os deals visíveis
+  const counts = {}; // { 'cliente::Grupo Primo': { kind, value, count } }
+  model.forEach(m=>{
+    m.deals.forEach(d=>{
+      ENTITY_KINDS.forEach(ek=>{
+        const val = d[ek.key];
+        if(!val) return;
+        const key = ek.key+'::'+val;
+        if(!counts[key]) counts[key]={ kind:ek.key, value:val, count:0, kindLabel:ek.label, color:ek.color };
+        counts[key].count++;
+      });
+    });
+  });
+
+  // agrupa por tipo, ordena por contagem desc
+  const byKind = {};
+  Object.values(counts).forEach(e=>{
+    (byKind[e.kind]=byKind[e.kind]||[]).push(e);
+  });
+  ENTITY_KINDS.forEach(ek=>{ if(byKind[ek.key]) byKind[ek.key].sort((a,b)=>b.count-a.count); });
+
+  const hasData = Object.keys(byKind).length > 0;
+  if(!hasData){ entEl.innerHTML=''; return; }
+
+  const activeKind  = actorFilter?.kind  || null;
+  const activeValue = actorFilter?.value || null;
+
+  let html = `<div class="vde-title">Entidades envolvidas — clique para filtrar a vista</div>`;
+  ENTITY_KINDS.forEach(ek=>{
+    const items = byKind[ek.key];
+    if(!items||!items.length) return;
+    html += `<div class="vde-section">
+      <div class="vde-kind">${esc(ek.label)}</div>
+      <div class="vde-chips">`;
+    items.forEach(e=>{
+      const isActive = activeKind===e.kind && activeValue===e.value;
+      html += `<div class="vde-chip${isActive?' active':''}" data-ek="${esc(e.kind)}" data-ev="${esc(e.value)}">
+        <i style="background:${e.color}"></i>
+        ${esc(e.value)}
+        <span class="cnt">${e.count > 1 ? e.count+'×' : ''}</span>
+      </div>`;
+    });
+    html += `</div></div>`;
+  });
+
+  entEl.innerHTML = html;
+
+  // event listeners nos chips
+  entEl.querySelectorAll('.vde-chip').forEach(chip=>{
+    chip.addEventListener('click', ()=>{
+      const kind = chip.dataset.ek, value = chip.dataset.ev;
+      if(actorFilter && actorFilter.kind===kind && actorFilter.value===value){
+        clearActorFilter(); // segundo clique: limpa
+      } else {
+        setActorFilter(kind, value);
+      }
+    });
+  });
 }
 
 const LINK_LEG = { dono:{c:'#C8940A',l:'mesmo dono'}, broker:{c:'#00585C',l:'mesmo broker'}, gerenciadora:{c:'#9650DC',l:'mesma gerenc.'} };
