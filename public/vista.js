@@ -197,7 +197,7 @@ function render(){
   const centY=(ed,did)=>GROUND-(slotMap[ed][did]+0.5)*FH;
 
   const GAP = 48;
-  const PAD = 40;
+  const PAD = 80; // margem esquerda generosa para textos fora da coluna (nº andar, valor)
   const widths = model.map(m=>m.focal?220:160);
   const totalW = widths.reduce((a,c)=>a+c,0)+(model.length-1)*GAP;
   const SVGW = Math.max(860, totalW + PAD*2);
@@ -435,7 +435,9 @@ function render(){
   host.querySelectorAll('[data-focus]').forEach(el=>{
     el.addEventListener('click', ()=>{ focalEd=el.dataset.focus; pinned=null; _modelCache=null; actorFilter=null; render(); const _en=NODES&&NODES.find(n=>n.type==='edificio'&&n.label===focalEd); if(typeof updateTableFromNode==='function') updateTableFromNode(_en||null); });
   });
-  host.querySelector('[data-clear]').addEventListener('click', ()=>{ if(pinned){ pinned=null; render(); } });
+  host.querySelector('[data-clear]').addEventListener('click', ()=>{
+    if(pinned || actorFilter){ pinned=null; if(actorFilter){ actorFilter=null; _modelCache=null; } render(); }
+  });
   // clique direto no nome do cliente no slot (overlay HTML) → actor filter
   host.querySelectorAll('[data-filter-cliente]').forEach(el=>{
     el.addEventListener('click', (e)=>{ e.stopPropagation(); setActorFilter('cliente', el.dataset.filterCliente); });
