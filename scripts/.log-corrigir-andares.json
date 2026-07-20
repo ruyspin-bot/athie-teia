@@ -1,0 +1,98 @@
+[
+  {
+    "numero": "1598/23",
+    "nome": "JJ Jansen Office SP Obr",
+    "idFocus": "58967",
+    "dealId": "62736517394",
+    "andaresVinculados": 1,
+    "status": "corrigido"
+  },
+  {
+    "numero": "1152/26",
+    "nome": "Educação Mint Capital",
+    "idFocus": "74210",
+    "dealId": "62740295006",
+    "andaresVinculados": 4,
+    "status": "corrigido"
+  },
+  {
+    "numero": "1153/26",
+    "nome": "Educação Mint Capital Ob",
+    "idFocus": "74211",
+    "dealId": "62740294946",
+    "andaresVinculados": 4,
+    "status": "corrigido"
+  },
+  {
+    "numero": "2755/26",
+    "nome": "Daycoval Nova Sede",
+    "idFocus": "76006",
+    "dealId": "62750197603",
+    "andaresVinculados": 1,
+    "status": "corrigido"
+  },
+  {
+    "numero": "2756/26",
+    "nome": "Daycoval Nova Sede",
+    "idFocus": "76007",
+    "dealId": "62750197639",
+    "andaresVinculados": 1,
+    "status": "corrigido"
+  },
+  {
+    "numero": "4500/24",
+    "nome": "Wildlife Obr",
+    "idFocus": "65760",
+    "dealId": "62750197591",
+    "andaresVinculados": 1,
+    "status": "corrigido"
+  },
+  {
+    "numero": "1455/26",
+    "nome": "MEZ RZK Campos Elíseos",
+    "idFocus": "74610",
+    "dealId": "62749120814",
+    "andaresVinculados": 3,
+    "status": "corrigido"
+  },
+  {
+    "numero": "1456/26",
+    "nome": "MEZ RZK Campos Elíseos Obr",
+    "idFocus": "74611",
+    "dealId": "62749120876",
+    "andaresVinculados": 3,
+    "status": "corrigido"
+  },
+  {
+    "numero": "2268/26",
+    "nome": "Apsen Farmacêutica Sto Amaro",
+    "idFocus": "75499",
+    "dealId": "62760962468",
+    "andaresVinculados": 1,
+    "status": "corrigido"
+  },
+  {
+    "numero": "2269/26",
+    "nome": "Apsen Farmacêut Sto Amaro Obra",
+    "idFocus": "75500",
+    "dealId": "62760962399",
+    "andaresVinculados": 1,
+    "status": "corrigido"
+  },
+  {
+    "numero": "2675/26",
+    "nome": "Confidencial AUR",
+    "idFocus": "75925",
+    "dealId": "62760962418",
+    "andaresVinculados": 1,
+    "status": "corrigido"
+  },
+  {
+    "numero": "2676/26",
+    "nome": "Confidencial AUR Obr",
+    "idFocus": "75926",
+    "dealId": "62760962457",
+    "andaresVinculados": 1,
+    "status": "corrigido"
+  }
+]
