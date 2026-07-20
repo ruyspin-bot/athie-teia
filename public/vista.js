@@ -286,11 +286,13 @@ function render(){
       if(d.contatos&&d.contatos.length&&FH>26){
         ov+=`<div style="left:${px(g.x+g.w-4)}%;top:${py(floorY+3)}%;transform:translate(-100%,0);background:rgba(14,26,26,.22);color:#fff;font-size:6px;font-family:var(--font-mono);padding:0 3px;border-radius:2px;line-height:1.6;opacity:${op*0.85}">●${d.contatos.length}</div>`;
       }
+      // número do andar sempre visível à esquerda do slot
+      const andarLbl = d.andar ? d.andar.replace(/andar/i,'').trim().replace(/\s+/,'') : `${d.n}º`;
+      ov+=`<div style="left:${px(g.x-4)}%;top:${py(cy)}%;transform:translate(-100%,-50%);font-size:8px;font-family:var(--font-mono);color:rgba(14,26,26,.55);font-weight:700;opacity:${op};white-space:nowrap">${esc(andarLbl)}</div>`;
+      // valor monetário abaixo do número do andar (se couber)
       const vShort = fmtVShort(d.valor);
-      if(vShort){
-        ov+=`<div style="left:${px(g.x-5)}%;top:${py(cy)}%;transform:translate(-100%,-50%);font-size:8px;font-family:var(--font-mono);color:#00585C;font-weight:700;opacity:${op};white-space:nowrap">${esc(vShort)}</div>`;
-      } else {
-        ov+=`<div style="left:${px(g.x-7)}%;top:${py(cy)}%;transform:translate(-100%,-50%);font-size:8.5px;font-family:var(--font-mono);color:rgba(14,26,26,.5);opacity:${op}">${d.n}º</div>`;
+      if(vShort && FH>36){
+        ov+=`<div style="left:${px(g.x-4)}%;top:${py(cy+FH*0.28)}%;transform:translate(-100%,-50%);font-size:7px;font-family:var(--font-mono);color:#00585C;font-weight:700;opacity:${op};white-space:nowrap">${esc(vShort)}</div>`;
       }
     });
     // colchete de mesmo-dono
