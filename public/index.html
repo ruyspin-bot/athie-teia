@@ -215,6 +215,21 @@
 </style>
 </head>
 <body>
+<!-- Gate de senha compartilhada (mostrado só quando /api/teia responde 401) -->
+<div id="gate" style="display:none;position:fixed;inset:0;z-index:9999;background:var(--dark2);align-items:center;justify-content:center;">
+  <form id="gate-form" style="width:320px;max-width:88vw;background:#fff;border:1px solid rgba(14,26,26,.12);border-radius:6px;box-shadow:0 12px 40px rgba(14,26,26,.16);padding:28px 26px;display:flex;flex-direction:column;gap:14px;">
+    <div style="display:flex;flex-direction:column;gap:3px;">
+      <span style="font-size:9px;font-weight:600;letter-spacing:3px;color:var(--green);text-transform:uppercase;">Athié Wohnrath</span>
+      <span style="font-family:var(--font-head);font-size:18px;font-weight:700;color:var(--ink);">A Teia — acesso restrito</span>
+    </div>
+    <p style="font-size:12px;color:var(--ink-3);margin:0;">Informe a senha de acesso para visualizar os dados.</p>
+    <input id="gate-pass" type="password" autocomplete="current-password" placeholder="Senha"
+      style="height:38px;border:1px solid rgba(14,26,26,.16);border-radius:4px;padding:0 12px;font-family:inherit;font-size:14px;color:var(--ink);outline:none;" />
+    <div id="gate-err" style="display:none;font-size:11.5px;color:var(--c-escritorio);"></div>
+    <button id="gate-btn" type="submit"
+      style="height:38px;border:none;border-radius:4px;background:var(--green);color:#fff;font-family:inherit;font-size:13px;font-weight:600;letter-spacing:.3px;cursor:pointer;">Entrar</button>
+  </form>
+</div>
 <div class="app">
 
   <div class="topbar">
@@ -1116,12 +1131,36 @@ function fitView(){
 /* ============================================================
    BOOT — dados reais HubSpot
    ============================================================ */
-(async function boot(){
+// ---- gate de senha ----
+function showGate(){
+  const g=document.getElementById('gate'); if(g) g.style.display='flex';
+  const p=document.getElementById('gate-pass'); if(p) setTimeout(()=>p.focus(),50);
+}
+function hideGate(){ const g=document.getElementById('gate'); if(g) g.style.display='none'; }
+(function wireGate(){
+  const form=document.getElementById('gate-form'); if(!form) return;
+  const errEl=document.getElementById('gate-err');
+  const btn=document.getElementById('gate-btn');
+  form.addEventListener('submit',async(e)=>{
+    e.preventDefault();
+    const pass=document.getElementById('gate-pass').value;
+    errEl.style.display='none'; btn.disabled=true; btn.textContent='Entrando…';
+    try{
+      const r=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:pass})});
+      if(r.ok){ hideGate(); boot(); }
+      else{ const b=await r.json().catch(()=>({})); errEl.textContent=b.error||'Senha incorreta.'; errEl.style.display='block'; }
+    }catch{ errEl.textContent='Falha de conexão. Tente de novo.'; errEl.style.display='block'; }
+    finally{ btn.disabled=false; btn.textContent='Entrar'; }
+  });
+})();
+
+async function boot(){
   const badge=document.getElementById('data-badge');
   const setBadge=(text,live)=>{ if(!badge)return; badge.textContent=text; badge.style.color=live?'var(--green)':''; badge.style.borderColor=live?'rgba(0,88,92,.4)':''; badge.style.background=live?'rgba(0,222,219,.14)':''; };
   setBadge('Carregando HubSpot…',false);
   try{
     const res=await fetch('/api/teia',{cache:'no-store'});
+    if(res.status===401){ setBadge('Acesso restrito',false); showGate(); return; }
     if(!res.ok){ const body=await res.json().catch(()=>({})); throw new Error(body.error||('HTTP '+res.status)); }
     const json=await res.json();
     if(!Array.isArray(json.deals)||!json.deals.length) throw new Error('API sem deals utilizáveis.');
@@ -1142,7 +1181,8 @@ function fitView(){
     running=true; btnPause.textContent='⏸ Pausar';
     setTimeout(fitView,1600);
   }
-})();
+}
+boot();
 </script>
 <script src="vista.js"></script>
 </body>
