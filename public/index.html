@@ -466,20 +466,12 @@ const visibleTypes=new Set(Object.keys(TYPES).filter(k=>!HIDDEN_BY_DEFAULT.has(k
 function buildUI(){
   kpiEl.innerHTML='';
   const totalValor = DEALS.reduce((a,d)=>a+(d.valor||0),0);
-  const bc={}; DEALS.forEach(d=>{ if(d.broker) bc[d.broker]=(bc[d.broker]||0)+1; });
-  const top=Object.entries(bc).sort((a,b)=>b[1]-a[1])[0];
   const disputados=buildingStats.filter(b=>b.deals.length>1);
-  const multibroker=buildingStats.filter(b=>b.brokers.length>1);
-  const semEd=DEALS.filter(d=>!d.edificio||d.edificio==='Sem edifício identificado');
-  const exemploSemEd=semEd[0]?semEd[0].nome:'';
 
   const kpis=[
     { v:DEALS.length,             l:'Deals'+(activeNucleo?' · '+activeNucleo:''), cls:'' },
     { v:fmtBRLShort(totalValor),  l:'Valor total', cls:'hot' },
     { v:disputados.length,        l:'Prédios em disputa', x:'2+ deals no mesmo edifício', cls:'hot', filter:'disputados' },
-    { v:multibroker.length,       l:'Multi-broker',       x:'brokers diferentes no mesmo prédio', cls:'hot', filter:'multibroker' },
-    { v:semEd.length,             l:'Sem edifício', x:exemploSemEd?'ex: '+exemploSemEd:'', cls:'' },
-    { v:top?top[0]:'—',           l:'Broker mais recorrente', x:top?top[1]+' deals':'', cls:'' },
   ];
   kpis.forEach(k=>{
     const d=document.createElement('div');
@@ -530,9 +522,7 @@ function buildUI(){
 
 function highlightKpiFilter(){
   if(!kpiFilter){ clearSelection(); return; }
-  const targets = kpiFilter==='disputados'
-    ? buildingStats.filter(b=>b.deals.length>1).map(b=>b.edId)
-    : buildingStats.filter(b=>b.brokers.length>1).map(b=>b.edId);
+  const targets = buildingStats.filter(b=>b.deals.length>1).map(b=>b.edId);
   if(!targets.length) return;
   // Highlight all matching nodes simultaneously
   selected=targets[0]; selNeighbors=new Set();
