@@ -286,10 +286,12 @@ module.exports = async (req, res) => {
           nome: a.andar.nome,
           numero: a.andar.numero,
           edificio: a.edificio ? a.edificio.nome : 'Sem edifício identificado',
+          edificioId: a.edificio ? a.edificio.id : null,
           dono: a.donoCompanyId ? (companiesById[a.donoCompanyId] ? companiesById[a.donoCompanyId].properties.name : `Company ${a.donoCompanyId}`) : null,
         }));
         // campos "resumo" (compat com o grafo atual, que ainda espera 1 valor por deal)
         record.edificio = record.andares[0].edificio;
+        record.edificioId = record.andares[0].edificioId || null;
         record.andar = record.andares.map((a) => a.nome).join(', ');
         record.dono = record.andares.find((a) => a.dono) ? record.andares.find((a) => a.dono).dono : null;
       } else {

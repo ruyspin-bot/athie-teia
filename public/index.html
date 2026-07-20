@@ -422,6 +422,7 @@ function buildGraph(){
     if(Array.isArray(d.andares)&&d.andares.length){
       d.andares.forEach(a=>{
         const ed=ensure('ED:'+a.edificio,'edificio',{label:a.edificio}); ed.deals.add(d.id);
+        if(a.edificioId && !ed.edificioId) ed.edificioId = a.edificioId;
         const ak='AN:'+a.edificio+':'+(a.nome||a.id);
         const an=ensure(ak,'andar',{label:a.nome||('Andar '+a.id),meta:{edificio:a.edificio}}); an.deals.add(d.id);
         link(d.id,ak,'Local do Deal'); link(ak,'ED:'+a.edificio,'Andar de');
@@ -1012,7 +1013,9 @@ function renderDetail(id){
     if(n.type==='deal')            hsUrl = `https://app.hubspot.com/contacts/51253038/deal/${n.id}`;
     else if(n.type==='cliente'||n.type==='broker'||n.type==='gerenciadora'||n.type==='escritorio'||n.type==='dono')
                                    hsUrl = `https://app.hubspot.com/contacts/51253038/companies?query=${encodeURIComponent(n.label)}`;
-    else if(n.type==='edificio')   hsUrl = `https://app.hubspot.com/contacts/51253038/companies?query=${encodeURIComponent(n.label)}`;
+    else if(n.type==='edificio')   hsUrl = n.edificioId
+                                   ? `https://app.hubspot.com/contacts/51253038/objects/2-65603861/${n.edificioId}`
+                                   : `https://app.hubspot.com/contacts/51253038/companies?query=${encodeURIComponent(n.label)}`;
     if(hsUrl) h+=`<a href="${hsUrl}" target="_blank" style="display:inline-block;margin-bottom:14px;background:var(--tiffany,#00DEDB);color:#0E1A1A;border-radius:3px;padding:6px 13px;font-family:inherit;font-size:11px;font-weight:700;text-decoration:none">Abrir no HubSpot ↗</a>`;
   })();
   if(n.type==='deal'){
