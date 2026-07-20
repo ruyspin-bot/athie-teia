@@ -41,6 +41,7 @@ const STYLES = {
   corte: { label:'Corte 2.5D', body:'#EDF1F1', stroke:'#B7C3C3', sw:1, fl:'rgba(14,26,26,.10)', hatch:false, ground:'#2A3333', gw:3, depth:true }
 };
 let styleKey = 'corte';
+let showVacant = false; // mostrar andares/conjuntos VAGOS (sem deal) além dos ocupados
 let focalEd = null;   // label do edifício focal
 let pinned = null;    // deal id fixado
 // filtro por ator: { kind:'cliente'|'broker'|'gerenciadora', value:'Grupo Primo' }
@@ -50,10 +51,10 @@ let _modelCache = null;  // { ed, model, conns }
 // mapa de todos os deals do model atual (incluindo merged): id → deal
 let _modelDealMap = {};
 function getModelConns(){
-  if(_modelCache&&_modelCache.ed===focalEd) return _modelCache;
+  if(_modelCache&&_modelCache.ed===focalEd&&_modelCache.vacant===showVacant) return _modelCache;
   const model = buildModel(focalEd);
   const conns = buildConns(model);
-  _modelCache = { ed:focalEd, model, conns };
+  _modelCache = { ed:focalEd, vacant:showVacant, model, conns };
   return _modelCache;
 }
 
@@ -189,7 +190,7 @@ function buildModel(focal){
       return { ed, ctx:false, deals:dealsFiltered, dono:donos.join(' / ')||'—', focal:ed===focalFirst };
     });
     model.hiddenRel = 0;
-    return model;
+    return addVacantFloors(model);
   }
 
   // ---- modo normal (focal + relacionados por score) ----
@@ -211,6 +212,29 @@ function buildModel(focal){
     return { ed:o.ed, ctx:false, deals, dono: donos.join(' / ')||'—', focal:o.ed===focal };
   });
   model.hiddenRel = Math.max(0, scored.length - rel.length);
+  return addVacantFloors(model);
+}
+
+// Acrescenta ao model os andares VAGOS (sem deal) de cada prédio, a partir do
+// inventário (window.FLOORS_BY_EDIFICIO_ID). Só quando showVacant está ligado.
+// Cada slot vago é um pseudo-deal { _vacant:true } que o render desenha em cinza.
+function addVacantFloors(model){
+  if(!showVacant) return model;
+  const FLOORS = window.FLOORS_BY_EDIFICIO_ID || {};
+  model.forEach(m=>{
+    const edId = (m.deals.find(d=>d.edificioId)||{}).edificioId;
+    const floors = edId && FLOORS[edId];
+    if(!floors || !floors.length) return;
+    const occupied = new Set(m.deals.map(d=>d.n));
+    floors.forEach(f=>{
+      const num = (f.numero!=null && f.numero!=='') ? Number(f.numero) : null;
+      if(num==null || isNaN(num) || occupied.has(num)) return;
+      occupied.add(num);
+      m.deals.push({ id:`_vac_${edId}_${num}`, n:num, _vacant:true,
+        nome:f.nome||('Andar '+num), disp:f.disp||null, area:f.area||null,
+        cliente:null, stage:null, valor:null, tipo:null, edificio:m.ed });
+    });
+  });
   return model;
 }
 
@@ -346,6 +370,22 @@ function render(){
     }
     m.deals.forEach(d=>{
       const slot=slotMap[m.ed][d.id];
+
+      // ── andar VAGO (sem deal): slot cinza tracejado, sem interação ──
+      if(d._vacant){
+        const fyv=GROUND-(slot+1)*FH+0.5;
+        const cyv=centY(m.ed,d.id);
+        svg+=`<rect x="${g.x+1}" y="${fyv}" width="${g.w-2}" height="${FH-1}"
+          fill="#E7ECEC" fill-opacity="0.9" stroke="#C2CCCC" stroke-width="0.8" stroke-dasharray="3 2"
+          data-vacant="1" style="cursor:default" pointer-events="none"></rect>`;
+        ov+=`<div data-novwrap style="left:${px(g.x-5)}%;top:${py(cyv)}%;transform:translate(-100%,-50%);font-size:9px;font-family:var(--font-mono);color:rgba(14,26,26,.32);font-weight:700;opacity:${op}">${esc(andarDisplay(d))}</div>`;
+        if(FH>13){
+          const vlabel = d.disp ? esc(d.disp) : (d.area?`${esc(String(d.area))} m²`:'Disponível');
+          ov+=`<div style="left:${px(g.x+5)}%;top:${py(cyv)}%;transform:translateY(-50%);font-size:7.5px;font-style:italic;color:rgba(14,26,26,.42);opacity:${op}">${vlabel}</div>`;
+        }
+        return;
+      }
+
       const dealDim = actorFilter && d._actorMatch===false;
       const col=STAGE_COLORS[d.stage]||'#5BAEF0';
       const isPin=pinned===d.id;
@@ -461,12 +501,14 @@ function render(){
   const focal = model.find(m=>m.focal);
   nomeEl.textContent = focal.ed;
   const relCount = model.length-1;
+  const focalDealsReais = focal.deals.filter(d=>!d._vacant).length; // exclui vagos
   if(actorFilter){
     metaEl.textContent = `${model.length} prédio(s)`;
   } else {
-    metaEl.textContent = `Proprietário: ${focal.dono} · ${focal.deals.length} deal(s) no prédio · ${relCount} prédio(s) relacionado(s)`
+    metaEl.textContent = `Proprietário: ${focal.dono} · ${focalDealsReais} deal(s) no prédio · ${relCount} prédio(s) relacionado(s)`
       + (model.hiddenRel ? ` (+${model.hiddenRel} ocultos)` : '');
   }
+  renderVacantToggle();
   renderFilterBadge();
 
   // interações
@@ -580,6 +622,17 @@ function clearActorFilter(){
   _modelCache = null;
   render();
   syncDetail(edNodeId(focalEd)); // volta o Detalhe ao prédio focal
+}
+// Toggle "Andares vagos" no header (usa o slot #vd-styles, antes ocioso).
+function renderVacantToggle(){
+  if(!stylesEl) return;
+  const on = showVacant;
+  stylesEl.innerHTML =
+    `<button id="vd-vacant" title="Mostrar andares/conjuntos sem negócio vinculado"
+       style="height:30px;border:1px solid ${on?'#00585C':'rgba(14,26,26,.18)'};background:${on?'rgba(0,222,219,.12)':'#fff'};color:${on?'#00585C':'rgba(14,26,26,.6)'};border-radius:3px;padding:0 11px;font-family:inherit;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;gap:6px">
+       <span style="width:9px;height:9px;border-radius:2px;background:${on?'#00585C':'#C2CCCC'}"></span>Andares vagos: ${on?'ON':'OFF'}</button>`;
+  const btn=document.getElementById('vd-vacant');
+  if(btn) btn.onclick=()=>{ showVacant=!showVacant; _modelCache=null; render(); };
 }
 function renderFilterBadge(){
   if(!actorFilter){ filterEl.style.display='none'; return; }

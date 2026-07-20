@@ -1304,7 +1304,7 @@ async function boot(){
     if(!res.ok){ const body=await res.json().catch(()=>({})); throw new Error(body.error||('HTTP '+res.status)); }
     const json=await res.json();
     if(!Array.isArray(json.deals)||!json.deals.length) throw new Error('API sem deals utilizáveis.');
-    ALL_DEALS=json.deals; DEALS=activeNucleo?ALL_DEALS.filter(d=>d.nucleo===activeNucleo):ALL_DEALS; EDIFICIOS=Array.isArray(json.edificios)?json.edificios:[]; DATA_META=json.meta||null; DATA_SOURCE='hubspot';
+    ALL_DEALS=json.deals; DEALS=activeNucleo?ALL_DEALS.filter(d=>d.nucleo===activeNucleo):ALL_DEALS; EDIFICIOS=Array.isArray(json.edificios)?json.edificios:[]; window.FLOORS_BY_EDIFICIO_ID=json.floors_por_edificio_id||{}; DATA_META=json.meta||null; DATA_SOURCE='hubspot';
     setBadge('Dados HubSpot (ao vivo)',true);
     buildNucleoSelect();
     buildGraph(); buildUI();
@@ -1313,7 +1313,7 @@ async function boot(){
     setTimeout(fitView,1600);
   }catch(err){
     console.warn('[A Teia] fallback:',err.message);
-    ALL_DEALS=SIMULATED_DEALS; DEALS=SIMULATED_DEALS; EDIFICIOS=[]; DATA_SOURCE='simulado';
+    ALL_DEALS=SIMULATED_DEALS; DEALS=SIMULATED_DEALS; EDIFICIOS=[]; window.FLOORS_BY_EDIFICIO_ID={}; DATA_SOURCE='simulado';
     setBadge('Dados simulados (fallback)',false);
     buildNucleoSelect();
     buildGraph(); buildUI();

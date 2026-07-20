@@ -311,6 +311,42 @@ module.exports = async (req, res) => {
       return record;
     });
 
+    // ---- inventário de ANDARES por edifício (só dos edifícios com deal → leve) ----
+    // Permite a Vista Multi-Prédio mostrar a torre completa: andares ocupados
+    // (com deal) + andares vagos (sem negócio) — a "visão de andar + conjunto".
+    let floorsByEdificioId = {};
+    if (fase2Ok) {
+      try {
+        const edIds = [...new Set(
+          deals.flatMap((d) => (d.andares || []).map((a) => a.edificioId).filter(Boolean))
+        )];
+        if (edIds.length) {
+          const edAndarAssoc = await getAssociations(hs, OBJ_EDIFICIO, OBJ_ANDAR, edIds);
+          const floorIds = [...new Set(Object.values(edAndarAssoc).flatMap((arr) => arr.map((a) => a.toId)))];
+          const floorObjs = floorIds.length
+            ? await getObjectsById(hs, OBJ_ANDAR, floorIds, [PROP_ANDAR_NOME, PROP_ANDAR_NUMERO, 'disponibilidade', 'area_privativa_m2'])
+            : {};
+          edIds.forEach((edId) => {
+            floorsByEdificioId[edId] = (edAndarAssoc[edId] || [])
+              .map((a) => {
+                const o = floorObjs[a.toId];
+                if (!o) return null;
+                return {
+                  id: a.toId,
+                  numero: o.properties[PROP_ANDAR_NUMERO] || null,
+                  nome: o.properties[PROP_ANDAR_NOME] || null,
+                  disp: o.properties.disponibilidade || null,
+                  area: o.properties.area_privativa_m2 || null,
+                };
+              })
+              .filter(Boolean);
+          });
+        }
+      } catch (err) {
+        console.warn('[api/teia] inventário de andares indisponível:', err.message);
+      }
+    }
+
     // ---- inventário COMPLETO de edifícios (inclui os sem deal) ----
     // Sem isto a teia só mostra prédios referenciados por algum deal; o cliente
     // quer ver todos os edifícios da base (ex.: Platinum Tower, sem negócio ainda).
@@ -335,6 +371,7 @@ module.exports = async (req, res) => {
     const payload = {
       deals,
       edificios: edificiosInventario,
+      floors_por_edificio_id: floorsByEdificioId,
       meta: {
         total_deals_no_hubspot: allDeals.length,
         deals_com_associacao: rawDeals.length,
