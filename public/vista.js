@@ -85,16 +85,14 @@ function fmtVShort(v){ if(!v) return null; if(v>=1000000) return (v/1000000).toL
 const REL_CAP = 8;
 const REL_WEIGHT = { cliente:100, dono:40, broker:10, gerenciadora:8 };
 
-/* Funde dois deals do mesmo andar que diferem apenas no tipo (Projeto + Obra).
-   Retorna uma lista de deals onde pares P+O viram um único deal com tipo 'Projeto e Obra',
-   valor somado e stage = o mais avançado dos dois.
-   A condição "mesmo contexto" é relaxada: campos vazios/null/undefined são equivalentes. */
+/* Funde todos os deals do mesmo andar que compartilham o mesmo cliente final.
+   Regra: mesmo prédio + mesmo andar + mesmo cliente → slot único.
+   - valor: soma de todos os deals fundidos
+   - stage: o mais avançado
+   - tipo: se todos iguais usa o tipo; senão lista os tipos únicos (ex: "Projeto / Obra")
+   - _mergedFrom: array de ids originais (undefined se só 1 deal)
+   Deals de clientes diferentes no mesmo andar geram slots separados (como esperado). */
 function mergeAndarTipo(deals){
-  const byAndar = {};
-  deals.forEach(d=>{
-    const key = d.n;
-    (byAndar[key] = byAndar[key]||[]).push(d);
-  });
   const STAGE_ORDER = [
     'Recebido no Núcleo','Diagnóstico / Briefing / Test Fit','Estratégia Definida',
     'Proposta em Elaboração','Proposta Apresentada','Em Negociação / Short List',
@@ -102,33 +100,37 @@ function mergeAndarTipo(deals){
     'Perdido','Declinado',
   ];
   const stageRank = s => { const i=STAGE_ORDER.indexOf(s); return i<0?99:i; };
-  // dois valores são "iguais para efeito de merge" se ambos forem vazios ou idênticos
-  const sameVal = (a,b) => (a||'')===(b||'');
+
+  // chave de agrupamento: andar + cliente (null/undefined tratados como string vazia)
+  const groupKey = d => `${d.n}||${(d.cliente||'').trim().toLowerCase()}`;
+
+  const groups = {};
+  const order  = [];
+  deals.forEach(d=>{
+    const k = groupKey(d);
+    if(!groups[k]){ groups[k]=[]; order.push(k); }
+    groups[k].push(d);
+  });
+
   const out = [];
-  Object.values(byAndar).forEach(grupo=>{
-    if(grupo.length===2){
-      const [a,b]=grupo;
-      const tipoA=a.tipo||'', tipoB=b.tipo||'';
-      const isPO=(tipoA==='Projeto'&&tipoB==='Obra')||(tipoA==='Obra'&&tipoB==='Projeto');
-      if(isPO){
-        // mesmo contexto: cliente, broker, dono, gerenciadora coincidem (ou ambos vazios)
-        const sameCtx =
-          sameVal(a.cliente,b.cliente) && sameVal(a.broker,b.broker) &&
-          sameVal(a.dono,b.dono)       && sameVal(a.gerenciadora,b.gerenciadora);
-        if(sameCtx){
-          const [adv,oth] = stageRank(a.stage)<=stageRank(b.stage) ? [a,b] : [b,a];
-          out.push(Object.assign({}, adv, {
-            tipo: 'Projeto e Obra',
-            valor: (a.valor||0)+(b.valor||0),
-            _mergedFrom: [a.id, b.id],
-            _mergedTipos: [tipoA==='Projeto'?a:b, tipoA==='Obra'?a:b], // [proj, obra]
-            nome: adv.nome,
-          }));
-          return;
-        }
-      }
-    }
-    out.push(...grupo);
+  order.forEach(k=>{
+    const grupo = groups[k];
+    if(grupo.length === 1){ out.push(grupo[0]); return; }
+
+    // múltiplos deals: funde em slot único
+    const best = grupo.reduce((a,b)=> stageRank(a.stage)<=stageRank(b.stage)?a:b);
+    const tiposUnicos = [...new Set(grupo.map(d=>d.tipo).filter(Boolean))];
+    const tipoFinal = tiposUnicos.length===0 ? null
+                    : tiposUnicos.length===1 ? tiposUnicos[0]
+                    : tiposUnicos.join(' / ');
+    const valorTotal = grupo.reduce((s,d)=>s+(d.valor||0),0);
+    out.push(Object.assign({}, best, {
+      tipo: tipoFinal,
+      valor: valorTotal||null,
+      _mergedFrom: grupo.map(d=>d.id),
+      _mergedTipos: grupo,
+      nome: best.nome,
+    }));
   });
   return out;
 }
@@ -369,8 +371,13 @@ function render(){
       const andarStr = andarDisplay(d);
       const andarW = andarStr.length * 6.5 + 4; // px estimados + gap
 
-      // largura dos badges P/O à direita
-      const badgeW = d.tipo ? (d._mergedFrom ? 32 : 16) : 0;
+      // ── badges de tipo (P / O / P O lado a lado) ──
+      // Para deals fundidos: um badge por tipo único presente nos deals originais.
+      // Para deal simples: um badge com o tipo (se existir).
+      const badgeTipos = d._mergedFrom
+        ? [...new Set((d._mergedTipos||[]).map(x=>x.tipo).filter(Boolean))]
+        : (d.tipo ? [d.tipo] : []);
+      const badgeW = badgeTipos.length > 0 ? badgeTipos.length * 18 : 0;
 
       // largura da pílula de etapa — proporcional ao texto abreviado
       const stageLbl = STAGE_ABBR[d.stage]||d.stage;
@@ -379,7 +386,6 @@ function render(){
       // espaço total reservado à direita (etapa + badges + gaps)
       const rightW = stageW + (badgeW > 0 ? badgeW + 3 : 0) + PAD_R + 2;
 
-      // max-width do cliente: do fim do nº andar até o início da etapa
       // ── nº do andar (fora do slot, à esquerda) ──
       ov+=`<div data-novwrap style="left:${px(g.x-5)}%;top:${py(cy)}%;transform:translate(-100%,-50%);font-size:9px;font-family:var(--font-mono);color:rgba(14,26,26,.5);font-weight:700;opacity:${op*dealOp}">${esc(andarStr)}</div>`;
 
@@ -394,15 +400,14 @@ function render(){
       const stageLeft = g.x + g.w - PAD_R - (badgeW > 0 ? badgeW + 3 : 0) - stageW;
       ov+=`<div data-novwrap style="left:${px(stageLeft)}%;top:${py(cy)}%;transform:translateY(-50%);display:inline-block;background:rgba(0,0,0,0.2);color:${lcol};font-size:6.5px;font-family:var(--font-mono);font-weight:700;letter-spacing:.3px;text-transform:uppercase;padding:1px 5px;border-radius:2px;opacity:${0.92*op*dealOp}">${esc(stageLbl)}</div>`;
 
-      // ── badges P / O (extrema direita) ──
-      if(d.tipo && FH > 16){
+      // ── badges de tipo (extrema direita) ──
+      if(badgeTipos.length > 0 && FH > 16){
         const bRight = g.x + g.w - PAD_R;
-        if(d._mergedFrom){
-          ov+=`<div data-novwrap style="left:${px(bRight)}%;top:${py(cy)}%;transform:translate(-100%,-50%);display:inline-flex;gap:2px;opacity:${op*dealOp}"><span style="background:#00585C;color:#fff;font-size:${bFontSz}px;font-family:var(--font-mono);font-weight:700;padding:0 3px;border-radius:2px;line-height:1.9">P</span><span style="background:#E07800;color:#fff;font-size:${bFontSz}px;font-family:var(--font-mono);font-weight:700;padding:0 3px;border-radius:2px;line-height:1.9">O</span></div>`;
-        } else {
-          const tb = TIPO_BADGE[d.tipo];
-          if(tb) ov+=`<div data-novwrap style="left:${px(bRight)}%;top:${py(cy)}%;transform:translate(-100%,-50%);display:inline-block;background:${tb.bg};color:#fff;font-size:${bFontSz}px;font-family:var(--font-mono);font-weight:700;padding:0 4px;border-radius:2px;line-height:1.9;opacity:${op*dealOp}">${esc(tb.label)}</div>`;
-        }
+        const badgeSpans = badgeTipos.map(t=>{
+          const tb = TIPO_BADGE[t] || {label:t.charAt(0).toUpperCase(), bg:'#666'};
+          return `<span style="background:${tb.bg};color:#fff;font-size:${bFontSz}px;font-family:var(--font-mono);font-weight:700;padding:0 3px;border-radius:2px;line-height:1.9">${esc(tb.label)}</span>`;
+        }).join('');
+        ov+=`<div data-novwrap style="left:${px(bRight)}%;top:${py(cy)}%;transform:translate(-100%,-50%);display:inline-flex;gap:2px;opacity:${op*dealOp}">${badgeSpans}</div>`;
       }
     });
     ov+=`<div data-focus="${esc(m.ed)}" style="left:${px(g.x+g.w/2)}%;top:${py(GROUND+16)}%;transform:translate(-50%,-50%);font-size:11px;font-weight:${m.focal?700:600};color:${m.focal?'#0E1A1A':'#3a4a4a'};opacity:${op};${m.focal?'':'pointer-events:auto;cursor:pointer'}">${esc(m.ed)}</div>`;
@@ -477,20 +482,25 @@ function render(){
       const col=STAGE_COLORS[d.stage]||'#5BAEF0';
       tip.style.transform=`translate(${x}px,${y}px)`;
       tip.style.display='block';
-      // deal merged: link para ambos os deals originais no HubSpot
+      // deal merged: link para cada deal original no HubSpot
       const hubLinks = d._mergedFrom
-        ? d._mergedFrom.map((id,i)=>`<a href="https://app.hubspot.com/contacts/51253038/deal/${id}" target="_blank" style="color:inherit;text-decoration:underline">Deal ${i===0?'Projeto':'Obra'} ↗</a>`).join(' · ')
+        ? d._mergedFrom.map((id,i)=>{
+            const orig = (d._mergedTipos||[])[i];
+            const label = orig&&orig.tipo ? orig.tipo : `Deal ${i+1}`;
+            return `<a href="https://app.hubspot.com/contacts/51253038/deal/${id}" target="_blank" style="color:inherit;text-decoration:underline">${esc(label)} ↗</a>`;
+          }).join(' · ')
         : `<a href="https://app.hubspot.com/contacts/51253038/deal/${d.id}" target="_blank" style="color:inherit;text-decoration:underline">HubSpot ↗</a>`;
+      const mergedLabel = d._mergedFrom ? `<span style="font-size:9px;font-weight:400;opacity:.6"> · ${d._mergedFrom.length} deals (unificados por andar)</span>` : '';
       tip.innerHTML=`
         <div class="vd-tr"><span class="vd-stage" style="background:${col};color:${ink(col)}">${esc(d.stage)}</span><span class="vd-tf">${esc(d.andar||'')}</span>${d.conjunto?`<span class="vd-tf">Conj. ${esc(d.conjunto)}</span>`:''}</div>
-        <div class="vd-td">${esc(d.nome)}${d._mergedFrom?'<span style="font-size:9px;font-weight:400;opacity:.6"> · Projeto e Obra (unificado)</span>':''}</div>
+        <div class="vd-td">${esc(d.nome)}${mergedLabel}</div>
         <div class="vd-tm">${esc(d.edificio)}</div>
         <div class="vd-tg">
           <span>Broker</span><b>${esc(d.broker||'—')}</b>
           <span>Gerenciadora</span><b>${esc(d.gerenciadora||'—')}</b>
           <span>Dono do andar</span><b>${esc(d.dono||'—')}</b>
           ${d.tipo?`<span>Tipo</span><b style="color:${(TIPO_BADGE[d.tipo]||{bg:'#333'}).bg}">${esc(d.tipo)}</b>`:''}
-          ${d._mergedFrom?`<span>Valor total</span><b style="color:#00585C">${(()=>{const v=d.valor;return v>=1e6?(v/1e6).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})+'M':(v/1e3).toFixed(0)+'k';})()}</b>`:''}
+          ${d._mergedFrom?`<span>Valor total</span><b style="color:#00585C">${(()=>{const v=d.valor;if(!v)return '—';return v>=1e6?(v/1e6).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})+'M':(v/1e3).toFixed(0)+'k';})()}</b>`:''}
           ${d.contatos&&d.contatos.length?`<span>Contatos</span><b>${d.contatos.map(c=>esc(c.nome)+(c.cargo?` <span style="opacity:.6;font-weight:400">· ${esc(c.cargo)}</span>`:'')).join('<br>')}</b>`:''}
         </div>
         ${d.concorrente?`<div class="vd-tn">▲ Concorrente no deal: ${esc(d.concorrente)}</div>`:''}
@@ -536,7 +546,11 @@ function renderPin(){
     </div>
     <div class="vd-pinbtns">
       ${d._mergedFrom
-        ? d._mergedFrom.map((id,i)=>`<button class="vd-hs" onclick="window.open('https://app.hubspot.com/contacts/51253038/deal/${id}','_blank')">${i===0?'Projeto':'Obra'} no HubSpot ↗</button>`).join('')
+        ? d._mergedFrom.map((id,i)=>{
+            const orig=(d._mergedTipos||[])[i];
+            const label=orig&&orig.tipo?orig.tipo:`Deal ${i+1}`;
+            return `<button class="vd-hs" onclick="window.open('https://app.hubspot.com/contacts/51253038/deal/${id}','_blank')">${esc(label)} no HubSpot ↗</button>`;
+          }).join('')
         : `<button class="vd-hs" onclick="window.open('https://app.hubspot.com/contacts/51253038/deal/${d.id}','_blank')">Abrir no HubSpot ↗</button>`}
       <button class="vd-x" id="vd-unpin">fechar detalhe</button>
     </div>
