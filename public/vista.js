@@ -41,7 +41,7 @@ const STYLES = {
   corte: { label:'Corte 2.5D', body:'#EDF1F1', stroke:'#B7C3C3', sw:1, fl:'rgba(14,26,26,.10)', hatch:false, ground:'#2A3333', gw:3, depth:true }
 };
 let styleKey = 'corte';
-let showVacant = false; // mostrar andares/conjuntos VAGOS (sem deal) além dos ocupados
+let showVacant = true; // mostrar andares/conjuntos VAGOS (sem deal) além dos ocupados — ON por padrão
 let focalEd = null;   // label do edifício focal
 let pinned = null;    // deal id fixado
 // filtro por ator: { kind:'cliente'|'broker'|'gerenciadora', value:'Grupo Primo' }
