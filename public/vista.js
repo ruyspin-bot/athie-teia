@@ -371,6 +371,15 @@ function render(){
 
   // interações
   const tip = document.getElementById('vd-tip');
+  let _tipHover = false; // true enquanto o mouse está dentro do tooltip
+  // click delegation no tooltip: captura "Filtrar por X" mesmo com pointer-events:auto
+  tip.onclick = (e)=>{
+    const fc = e.target.closest('[data-filter-cliente]');
+    if(fc){ tip.style.display='none'; setActorFilter('cliente', fc.dataset.filterCliente); }
+  };
+  tip.addEventListener('mouseenter', ()=>{ _tipHover=true; });
+  tip.addEventListener('mouseleave', ()=>{ _tipHover=false; tip.style.display='none'; hideConns(); });
+
   function showConns(dealId){
     host.querySelectorAll('[data-conn]').forEach(p=>{
       const active = p.dataset.connA===dealId||p.dataset.connB===dealId;
@@ -410,13 +419,8 @@ function render(){
         ${d.concorrente?`<div class="vd-tn">▲ Concorrente no deal: ${esc(d.concorrente)}</div>`:''}
         <div class="vd-th">${d.cliente?`<b style="cursor:pointer;text-decoration:underline" data-filter-cliente="${esc(d.cliente)}">⊙ Filtrar por ${esc(d.cliente)}</b> · `:''}clique para fixar · <a href="https://app.hubspot.com/contacts/51253038/deal/${d.id}" target="_blank" style="color:inherit;text-decoration:underline">HubSpot ↗</a></div>`;
     });
-    r.addEventListener('mouseleave', ()=>{ tip.style.display='none'; hideConns(); });
-    r.addEventListener('click', (e)=>{
-      // clique no link "Filtrar por X" dentro do tooltip
-      const fc = e.target.closest('[data-filter-cliente]');
-      if(fc){ setActorFilter('cliente', fc.dataset.filterCliente); return; }
-      pinned = pinned===d.id?null:d.id; render();
-    });
+    r.addEventListener('mouseleave', ()=>{ if(!_tipHover){ tip.style.display='none'; hideConns(); } });
+    r.addEventListener('click', ()=>{ pinned = pinned===d.id?null:d.id; render(); });
   });
   host.querySelectorAll('[data-focus]').forEach(el=>{
     el.addEventListener('click', ()=>{ focalEd=el.dataset.focus; pinned=null; _modelCache=null; actorFilter=null; render(); const _en=NODES&&NODES.find(n=>n.type==='edificio'&&n.label===focalEd); if(typeof updateTableFromNode==='function') updateTableFromNode(_en||null); });
