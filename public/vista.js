@@ -47,6 +47,8 @@ let pinned = null;    // deal id fixado
 let actorFilter = null;
 // cache de model+conns por focalEd — evita recomputar O(n²) em re-renders visuais
 let _modelCache = null;  // { ed, model, conns }
+// mapa de todos os deals do model atual (incluindo merged): id → deal
+let _modelDealMap = {};
 function getModelConns(){
   if(_modelCache&&_modelCache.ed===focalEd) return _modelCache;
   const model = buildModel(focalEd);
@@ -69,6 +71,54 @@ function fmtVShort(v){ if(!v) return null; if(v>=1000000) return (v/1000000).toL
 const REL_CAP = 8;
 const REL_WEIGHT = { cliente:100, dono:40, broker:10, gerenciadora:8 };
 
+/* Funde dois deals do mesmo andar que diferem apenas no tipo (Projeto + Obra).
+   Retorna uma lista de deals onde pares P+O viram um único deal com tipo 'Projeto e Obra',
+   valor somado e stage = o mais avançado dos dois. */
+function mergeAndarTipo(deals){
+  // índice por andar normalizado (número inteiro)
+  const byAndar = {};
+  deals.forEach(d=>{
+    const key = d.n; // número do andar já calculado
+    (byAndar[key] = byAndar[key]||[]).push(d);
+  });
+  const TIPO_RANK = { 'Projeto':0, 'Obra':1, 'Projeto e Obra':2 };
+  const STAGE_ORDER = [
+    'Recebido no Núcleo','Diagnóstico / Briefing / Test Fit','Estratégia Definida',
+    'Proposta em Elaboração','Proposta Apresentada','Em Negociação / Short List',
+    'Go/No-Go 2 — Aprovação (Ivo)','Ganho — Preparo do Processo','Contrato Assinado',
+    'Perdido','Declinado',
+  ];
+  const stageRank = s => { const i=STAGE_ORDER.indexOf(s); return i<0?99:i; };
+  const out = [];
+  Object.values(byAndar).forEach(grupo=>{
+    if(grupo.length===2){
+      const [a,b]=grupo;
+      const tipoA=a.tipo, tipoB=b.tipo;
+      const isPO=(tipoA==='Projeto'&&tipoB==='Obra')||(tipoA==='Obra'&&tipoB==='Projeto');
+      if(isPO){
+        // verifica que só o tipo difere (mesmo cliente, broker, dono, andar)
+        const sameContext =
+          a.cliente===b.cliente && a.broker===b.broker &&
+          a.dono===b.dono && a.gerenciadora===b.gerenciadora;
+        if(sameContext){
+          // deal merged: mantém o id do mais avançado (para links HubSpot, pin, etc.)
+          const [adv,oth] = stageRank(a.stage)<=stageRank(b.stage) ? [a,b] : [b,a];
+          out.push(Object.assign({}, adv, {
+            tipo: 'Projeto e Obra',
+            valor: (a.valor||0)+(b.valor||0),
+            _mergedFrom: [a.id, b.id],  // ids originais (para conexões)
+            nome: adv.nome,             // nome do deal mais avançado
+          }));
+          return;
+        }
+      }
+    }
+    // sem merge: adiciona todos individualmente
+    out.push(...grupo);
+  });
+  return out;
+}
+
 function buildModel(focal){
   const byEd = {};
   DEALS.forEach(d=>{
@@ -76,6 +126,8 @@ function buildModel(focal){
     if(n==null) return;
     (byEd[d.edificio] = byEd[d.edificio]||[]).push(Object.assign({}, d, { n }));
   });
+  // Mescla deals do mesmo andar que só diferem por tipo (Projeto ↔ Obra)
+  Object.keys(byEd).forEach(ed=>{ byEd[ed] = mergeAndarTipo(byEd[ed]); });
 
   // ---- modo filtro por ator ----
   // Quando actorFilter está ativo, mostra TODOS os prédios que têm o ator
@@ -182,6 +234,12 @@ const TIPO_BADGE={
 function render(){
   const S = STYLES[styleKey];
   const { model, conns } = getModelConns();
+
+  // Mapa local de todos os deals do model (inclui merged): id → deal
+  // Necessário porque deals merged têm ids que não existem em DEALS global.
+  _modelDealMap = {};
+  model.forEach(m=>{ m.deals.forEach(d=>{ _modelDealMap[d.id]=d; }); });
+  const modelDealMap = _modelDealMap;
 
   // Compacto: só andares ocupados, altura fixa por slot
   const maxOccupied = Math.max(...model.map(m=>m.deals.length), 1);
@@ -404,7 +462,8 @@ function render(){
   }
 
   host.querySelectorAll('[data-deal]').forEach(r=>{
-    const d = DEALS.find(x=>x.id===r.dataset.deal);
+    const d = modelDealMap[r.dataset.deal];
+    if(!d) return; // segurança
     r.addEventListener('mouseenter', e=>{
       showConns(d.id);
       const hr=host.getBoundingClientRect(), rr=r.getBoundingClientRect();
@@ -415,19 +474,24 @@ function render(){
       const col=STAGE_COLORS[d.stage]||'#5BAEF0';
       tip.style.transform=`translate(${x}px,${y}px)`;
       tip.style.display='block';
+      // deal merged: link para ambos os deals originais no HubSpot
+      const hubLinks = d._mergedFrom
+        ? d._mergedFrom.map((id,i)=>`<a href="https://app.hubspot.com/contacts/51253038/deal/${id}" target="_blank" style="color:inherit;text-decoration:underline">Deal ${i===0?'Projeto':'Obra'} ↗</a>`).join(' · ')
+        : `<a href="https://app.hubspot.com/contacts/51253038/deal/${d.id}" target="_blank" style="color:inherit;text-decoration:underline">HubSpot ↗</a>`;
       tip.innerHTML=`
         <div class="vd-tr"><span class="vd-stage" style="background:${col};color:${ink(col)}">${esc(d.stage)}</span><span class="vd-tf">${esc(d.andar||'')}</span>${d.conjunto?`<span class="vd-tf">Conj. ${esc(d.conjunto)}</span>`:''}</div>
-        <div class="vd-td">${esc(d.nome)}</div>
+        <div class="vd-td">${esc(d.nome)}${d._mergedFrom?'<span style="font-size:9px;font-weight:400;opacity:.6"> · Projeto e Obra (unificado)</span>':''}</div>
         <div class="vd-tm">${esc(d.edificio)}</div>
         <div class="vd-tg">
           <span>Broker</span><b>${esc(d.broker||'—')}</b>
           <span>Gerenciadora</span><b>${esc(d.gerenciadora||'—')}</b>
           <span>Dono do andar</span><b>${esc(d.dono||'—')}</b>
           ${d.tipo?`<span>Tipo</span><b style="color:${(TIPO_BADGE[d.tipo]||{bg:'#333'}).bg}">${esc(d.tipo)}</b>`:''}
+          ${d._mergedFrom?`<span>Valor total</span><b style="color:#00585C">${(()=>{const v=d.valor;return v>=1e6?(v/1e6).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})+'M':(v/1e3).toFixed(0)+'k';})()}</b>`:''}
           ${d.contatos&&d.contatos.length?`<span>Contatos</span><b>${d.contatos.map(c=>esc(c.nome)+(c.cargo?` <span style="opacity:.6;font-weight:400">· ${esc(c.cargo)}</span>`:'')).join('<br>')}</b>`:''}
         </div>
         ${d.concorrente?`<div class="vd-tn">▲ Concorrente no deal: ${esc(d.concorrente)}</div>`:''}
-        <div class="vd-th">${d.cliente?`<b style="cursor:pointer;text-decoration:underline" data-filter-cliente="${esc(d.cliente)}">⊙ Filtrar por ${esc(d.cliente)}</b> · `:''}clique para fixar · <a href="https://app.hubspot.com/contacts/51253038/deal/${d.id}" target="_blank" style="color:inherit;text-decoration:underline">HubSpot ↗</a></div>`;
+        <div class="vd-th">${d.cliente?`<b style="cursor:pointer;text-decoration:underline" data-filter-cliente="${esc(d.cliente)}">⊙ Filtrar por ${esc(d.cliente)}</b> · `:''}clique para fixar · ${hubLinks}</div>`;
     });
     r.addEventListener('mouseleave', ()=>{ if(!_tipHover){ tip.style.display='none'; hideConns(); } });
     r.addEventListener('click', ()=>{ pinned = pinned===d.id?null:d.id; render(); });
@@ -457,7 +521,7 @@ function render(){
 
 function renderPin(){
   if(!pinned){ pinEl.innerHTML=''; return; }
-  const d=DEALS.find(x=>x.id===pinned);
+  const d=_modelDealMap[pinned]||DEALS.find(x=>x.id===pinned);
   const col=STAGE_COLORS[d.stage]||'#5BAEF0';
   pinEl.innerHTML=`<div class="vd-pinbox">
     <div class="vd-pinl">
@@ -476,7 +540,9 @@ function renderPin(){
       <div><div class="vd-kl">Nota</div><div class="vd-kvv" style="color:#6b5200">${esc(d.concorrente?('Concorrente: '+d.concorrente):(d.parceiro?('Parceiro: '+d.parceiro):'—'))}</div></div>
     </div>
     <div class="vd-pinbtns">
-      <button class="vd-hs" onclick="window.open('https://app.hubspot.com/contacts/51253038/deal/${d.id}','_blank')">Abrir no HubSpot ↗</button>
+      ${d._mergedFrom
+        ? d._mergedFrom.map((id,i)=>`<button class="vd-hs" onclick="window.open('https://app.hubspot.com/contacts/51253038/deal/${id}','_blank')">${i===0?'Projeto':'Obra'} no HubSpot ↗</button>`).join('')
+        : `<button class="vd-hs" onclick="window.open('https://app.hubspot.com/contacts/51253038/deal/${d.id}','_blank')">Abrir no HubSpot ↗</button>`}
       <button class="vd-x" id="vd-unpin">fechar detalhe</button>
     </div>
   </div>`;
@@ -529,10 +595,13 @@ function openVista(edLabel){
   window.dispatchEvent(new Event('resize'));
   const _en=NODES&&NODES.find(n=>n.type==='edificio'&&n.label===edLabel);
   if(typeof updateTableFromNode==='function') updateTableFromNode(_en||null);
+  // hook para URL state (configurado por index.html após carregamento)
+  if(typeof window._onOpenVista==='function') window._onOpenVista(edLabel);
 }
 function closeVista(){
   drawer.style.display='none';
   window.dispatchEvent(new Event('resize'));
+  if(typeof window._onCloseVista==='function') window._onCloseVista();
 }
 document.getElementById('vd-back').onclick=()=>{ closeVista(); if(typeof updateTableFromNode==='function') updateTableFromNode(null); };
 
@@ -573,4 +642,9 @@ renderDetail = function(id){
     (badge?badge.parentNode:panel).insertBefore(btn, panel.querySelector('.conn-group'));
   }
 };
+
+// Expõe openVista/closeVista globalmente para que index.html possa
+// chamar diretamente ao restaurar o estado da URL (?vista=...).
+window.openVista = openVista;
+window.closeVista = closeVista;
 })();

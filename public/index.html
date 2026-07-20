@@ -570,9 +570,54 @@ document.getElementById('nucleo-sel').addEventListener('change',e=>{
 });
 
 /* ============================================================
+   URL STATE — sincroniza view/vista com a URL para favoritos e compartilhamento
+   Parâmetros: ?v=grafo|table  &  ?vista=NomeDoPrédio
+   ============================================================ */
+function getUrlState(){
+  const p=new URLSearchParams(location.search);
+  return { v: p.get('v')||'grafo', vista: p.get('vista')||null };
+}
+function pushUrlState(v, vista, replace){
+  const p=new URLSearchParams();
+  if(v && v!=='grafo') p.set('v',v);
+  if(vista) p.set('vista',vista);
+  const qs=p.toString();
+  const url=qs ? (location.pathname+'?'+qs) : location.pathname;
+  if(replace) history.replaceState({v,vista},document.title,url);
+  else         history.pushState({v,vista},document.title,url);
+}
+// Restaura o estado a partir da URL (chamado após boot quando dados estão prontos)
+function restoreUrlState(){
+  const { v, vista } = getUrlState();
+  if(vista){
+    // openVista é definido em vista.js (carregado depois) — espera ele ficar disponível
+    const tryOpen=(n=0)=>{
+      if(typeof openVista==='function'){ openVista(vista); }
+      else if(n<20){ setTimeout(()=>tryOpen(n+1),100); }
+    };
+    tryOpen();
+  }
+  if(v==='table') _setViewSilent('table');
+  // replace o estado inicial para ter {v,vista} no history entry atual
+  pushUrlState(v, vista, true);
+}
+// Botão Voltar/Avançar do browser
+window.addEventListener('popstate', e=>{
+  const st=e.state||{};
+  const v=st.v||'grafo', vista=st.vista||null;
+  if(vista){
+    if(typeof openVista==='function') openVista(vista);
+  } else {
+    if(typeof closeVista==='function') closeVista();
+  }
+  _setViewSilent(v);
+});
+
+/* ============================================================
    VIEW TOGGLE
    ============================================================ */
-function setView(mode){
+// _setViewSilent: aplica o modo sem alterar a URL (usado por popstate e restoreUrlState)
+function _setViewSilent(mode){
   tableMode = mode==='table';
   const canvas=document.getElementById('cv');
   const tv=document.getElementById('table-view');
@@ -596,6 +641,11 @@ function setView(mode){
     tv.style.display='none';
     if(!running)draw();
   }
+}
+function setView(mode){
+  _setViewSilent(mode);
+  const { vista } = getUrlState();
+  pushUrlState(mode, vista);
 }
 document.getElementById('btn-grafo').onclick=()=>setView('grafo');
 document.getElementById('btn-table').onclick=()=>setView('table');
@@ -1199,5 +1249,20 @@ async function boot(){
 boot();
 </script>
 <script src="vista.js"></script>
+<script>
+// Hooks de URL state: vista.js chama window._onOpenVista/_onCloseVista
+// sempre que a Vista Multi-Prédio abre ou fecha, de qualquer origem.
+window._onOpenVista = function(ed){
+  pushUrlState(tableMode?'table':'grafo', ed);
+};
+window._onCloseVista = function(){
+  pushUrlState(tableMode?'table':'grafo', null);
+};
+// Restaura estado da URL após dados chegarem (boot() é assíncrono via fetch)
+(function waitDataAndRestore(n){
+  if(window.DEALS&&window.DEALS.length){ restoreUrlState(); }
+  else if(n<60){ setTimeout(()=>waitDataAndRestore(n+1),250); }
+})(0);
+</script>
 </body>
 </html>
