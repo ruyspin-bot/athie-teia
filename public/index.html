@@ -365,6 +365,7 @@ const SIMULATED_DEALS = [
 
 let ALL_DEALS = SIMULATED_DEALS;
 let DEALS = SIMULATED_DEALS;
+let EDIFICIOS = []; // inventário completo de edifícios do HubSpot (inclui os sem deal)
 let DATA_SOURCE = 'simulado';
 let DATA_META = null;
 let activeNucleo = 'Pipeline de vendas';
@@ -442,6 +443,18 @@ function buildGraph(){
     }
   });
 
+  // Inventário completo: garante um nó pra TODO edifício do HubSpot, mesmo sem
+  // deal. Se já existe (referenciado por deal), só completa id/meta.
+  (EDIFICIOS||[]).forEach(e=>{
+    if(!e.nome) return;
+    const ed=ensure('ED:'+e.nome,'edificio',{label:e.nome});
+    if(e.id && !ed.edificioId) ed.edificioId=e.id;
+    if(!ed.meta) ed.meta={};
+    if(e.endereco&&!ed.meta.endereco) ed.meta.endereco=e.endereco;
+    if(e.regiao&&!ed.meta.regiao)     ed.meta.regiao=e.regiao;
+    if(e.classe&&!ed.meta.classe)     ed.meta.classe=e.classe;
+  });
+
   NODES=[...nodesMap.values()];
   const deg={};
   edges.forEach(e=>{ deg[e.a]=(deg[e.a]||0)+1; deg[e.b]=(deg[e.b]||0)+1; });
@@ -450,6 +463,11 @@ function buildGraph(){
     n.deg=deg[n.id]||0;
     let v=0; n.deals.forEach(did=>{ const d=_dealById.get(did); if(d) v+=d.valor||0; }); n.value=v;
   });
+  // Edifícios sem nenhum deal = "órfãos": ficam FORA da física (num grid à parte),
+  // pra não virar um blobão de 800 bolinhas nem pesar o O(n²) da simulação.
+  const _orphans=[];
+  NODES.forEach(n=>{ n.orphan=(n.type==='edificio'&&n.deals.size===0); if(n.orphan)_orphans.push(n); });
+  layoutOrphans(_orphans);
   MAX_NODE_VALUE=Math.max(1,...NODES.filter(n=>n.type==='deal'||n.type==='edificio').map(n=>n.value));
   adj={};
   NODES.forEach(n=>{ adj[n.id]=new Set(); });
@@ -570,7 +588,7 @@ function buildNucleoSelect(){
 function applyFilter(){
   DEALS = activeNucleo ? ALL_DEALS.filter(d=>d.nucleo===activeNucleo) : ALL_DEALS;
   buildGraph(); buildUI();
-  NODES.forEach(n=>{ const a=Math.random()*Math.PI*2,d=80+Math.random()*320; n.x=Math.cos(a)*d; n.y=Math.sin(a)*d; n.vx=0; n.vy=0; });
+  NODES.forEach(n=>{ if(n.orphan) return; const a=Math.random()*Math.PI*2,d=80+Math.random()*320; n.x=Math.cos(a)*d; n.y=Math.sin(a)*d; n.vx=0; n.vy=0; });
   running=true; btnPause.textContent='⏸ Pausar';
   setTimeout(fitView,1200);
   if(tableMode) renderTable();
@@ -790,11 +808,22 @@ function resize(){ W=stage.clientWidth; H=stage.clientHeight; canvas.width=W*DPR
 resize();
 window.addEventListener('resize',()=>{ resize(); if(!running)draw(); });
 
+// Posiciona os edifícios órfãos (sem deal) num grid ordenado, à parte do cluster.
+// Ficam fixos aqui e são ignorados pela física — não se movem sozinhos.
+function layoutOrphans(orphans){
+  if(!orphans||!orphans.length) return;
+  const cols=Math.ceil(Math.sqrt(orphans.length))||1;
+  const sx=78, sy=68;
+  const x0=-(cols-1)*sx/2;
+  const y0=920; // abaixo do cluster conectado (que orbita a origem)
+  orphans.forEach((n,i)=>{ const r=Math.floor(i/cols), c=i%cols; n.x=x0+c*sx; n.y=y0+r*sy; n.vx=0; n.vy=0; });
+}
+
 function tick(){
   for(let i=0;i<NODES.length;i++){
-    const a=NODES[i]; if(!nodeVisible(a)) continue;
+    const a=NODES[i]; if(!nodeVisible(a)||a.orphan) continue;
     for(let j=i+1;j<NODES.length;j++){
-      const b=NODES[j]; if(!nodeVisible(b)) continue;
+      const b=NODES[j]; if(!nodeVisible(b)||b.orphan) continue;
       let dx=a.x-b.x, dy=a.y-b.y;
       let d2=dx*dx+dy*dy; if(d2<1)d2=1;
       const d=Math.sqrt(d2);
@@ -812,7 +841,7 @@ function tick(){
     b.vx-=dx/d*f; b.vy-=dy/d*f;
   });
   NODES.forEach(n=>{
-    if(!nodeVisible(n)) return;
+    if(!nodeVisible(n)||n.orphan) return;
     n.vx-=n.x*0.0006; n.vy-=n.y*0.0006;
     if(n.fixed){ n.vx=0; n.vy=0; return; }
     n.vx*=0.86; n.vy*=0.86;
@@ -826,6 +855,7 @@ function toWorld(sx,sy){ return [(sx-W/2)/cam.scale+cam.x,(sy-H/2)/cam.scale+cam
 // Raio em pixels de tela. Grau dá volume; deals/edifícios ganham realce pelo valor em jogo.
 function nodeRadius(n){
   const t=TYPES[n.type];
+  if(n.orphan) return 9*cam.scale; // edifício sem deal: bolinha pequena de inventário
   let r=t.r+Math.min(n.deg,7)*1.2;
   if((n.type==='deal'||n.type==='edificio')&&n.value>0)
     r+=6*Math.sqrt(n.value/MAX_NODE_VALUE);
@@ -917,6 +947,8 @@ function draw(){
     let dim=false, focused=false;
     if(hasSel){ focused=(n.id===selected)||selNeighbors.has(n.id); dim=!focused; }
     ctx.globalAlpha=dim?0.07:1;
+    // Órfãos (inventário sem deal) ficam translúcidos, salvo se em foco/hover.
+    if(n.orphan&&!dim&&!focused&&n.id!==hovered&&n.id!==selected) ctx.globalAlpha=0.42;
     if(n.id===selected){
       ctx.shadowBlur=24; ctx.shadowColor=hexA(t.color,0.55);
       ctx.beginPath(); ctx.arc(sx,sy,r+10,0,Math.PI*2);
@@ -931,7 +963,7 @@ function draw(){
       if(t.icon==='building') drawBuildingGlyph(sx,sy,r,t.ic);
       else if(t.icon==='deal') drawDealGlyph(sx,sy,r,t.ic);
     }
-    const showLabel=!dim&&(focused||n.type==='edificio'||n.type==='cliente'||n.id===hovered||cam.scale>1.2||(!hasSel&&n.deg>=3));
+    const showLabel=!dim&&(focused||(n.type==='edificio'&&!n.orphan)||n.type==='cliente'||n.id===hovered||cam.scale>1.2||(!hasSel&&n.deg>=3));
     if(showLabel&&n.type!=='andar'){
       const big=n.type==='edificio'||n.type==='cliente';
       const fs=big?11:10;
@@ -1033,6 +1065,10 @@ function renderDetail(id){
     h+=connGroup('Atores conectados',conns);
   } else if(n.type==='edificio'){
     const b=buildingStats.find(x=>x.edId===id), dh=b?b.deals:[];
+    const meta=n.meta||{};
+    const metaBits=[meta.classe?('Classe '+esc(meta.classe)):'', esc(meta.regiao||''), esc(meta.endereco||'')].filter(Boolean);
+    if(metaBits.length) h+=`<div class="detail-meta">${metaBits.join(' · ')}</div>`;
+    if(n.orphan) h+=`<div class="detail-meta" style="color:rgba(14,26,26,.45)">Edifício do inventário — sem negócio vinculado ainda.</div>`;
     h+=`<div class="sumchips">`;
     if(b) h+=`<span class="sumchip br">${b.brokers.length} broker${b.brokers.length>1?'s':''}</span><span class="sumchip do">${b.donos.length} dono${b.donos.length>1?'s':''}</span>`;
     h+=`</div>`;
@@ -1211,7 +1247,7 @@ canvas.addEventListener('wheel',e=>{
 const btnPause=document.getElementById('btn-pause');
 btnPause.onclick=()=>{ running=!running; btnPause.textContent=running?'⏸ Pausar':'▶ Retomar'; };
 document.getElementById('btn-reset').onclick=()=>{
-  NODES.forEach(n=>{ const a=Math.random()*Math.PI*2,d=80+Math.random()*320; n.x=Math.cos(a)*d; n.y=Math.sin(a)*d; n.vx=0; n.vy=0; });
+  NODES.forEach(n=>{ if(n.orphan) return; const a=Math.random()*Math.PI*2,d=80+Math.random()*320; n.x=Math.cos(a)*d; n.y=Math.sin(a)*d; n.vx=0; n.vy=0; });
   running=true; btnPause.textContent='⏸ Pausar';
 };
 document.getElementById('btn-fit').onclick=fitView;
@@ -1219,7 +1255,11 @@ document.getElementById('zin').onclick=()=>{ cam.scale=Math.min(4,cam.scale*1.2)
 document.getElementById('zout').onclick=()=>{ cam.scale=Math.max(0.3,cam.scale/1.2); if(!running)draw(); };
 
 function fitView(){
-  const vis=NODES.filter(nodeVisible); if(!vis.length) return;
+  // Enquadra o cluster de RELAÇÕES por padrão (ignora o grid de inventário órfão);
+  // o inventário fica acessível por scroll/zoom/busca.
+  let vis=NODES.filter(n=>nodeVisible(n)&&!n.orphan);
+  if(!vis.length) vis=NODES.filter(nodeVisible);
+  if(!vis.length) return;
   let x0=Infinity,y0=Infinity,x1=-Infinity,y1=-Infinity;
   vis.forEach(n=>{ x0=Math.min(x0,n.x);y0=Math.min(y0,n.y);x1=Math.max(x1,n.x);y1=Math.max(y1,n.y); });
   cam.x=(x0+x1)/2; cam.y=(y0+y1)/2;
@@ -1264,20 +1304,20 @@ async function boot(){
     if(!res.ok){ const body=await res.json().catch(()=>({})); throw new Error(body.error||('HTTP '+res.status)); }
     const json=await res.json();
     if(!Array.isArray(json.deals)||!json.deals.length) throw new Error('API sem deals utilizáveis.');
-    ALL_DEALS=json.deals; DEALS=activeNucleo?ALL_DEALS.filter(d=>d.nucleo===activeNucleo):ALL_DEALS; DATA_META=json.meta||null; DATA_SOURCE='hubspot';
+    ALL_DEALS=json.deals; DEALS=activeNucleo?ALL_DEALS.filter(d=>d.nucleo===activeNucleo):ALL_DEALS; EDIFICIOS=Array.isArray(json.edificios)?json.edificios:[]; DATA_META=json.meta||null; DATA_SOURCE='hubspot';
     setBadge('Dados HubSpot (ao vivo)',true);
     buildNucleoSelect();
     buildGraph(); buildUI();
-    NODES.forEach(n=>{ const a=Math.random()*Math.PI*2,d=80+Math.random()*320; n.x=Math.cos(a)*d; n.y=Math.sin(a)*d; n.vx=0; n.vy=0; });
+    NODES.forEach(n=>{ if(n.orphan) return; const a=Math.random()*Math.PI*2,d=80+Math.random()*320; n.x=Math.cos(a)*d; n.y=Math.sin(a)*d; n.vx=0; n.vy=0; });
     running=true; btnPause.textContent='⏸ Pausar';
     setTimeout(fitView,1600);
   }catch(err){
     console.warn('[A Teia] fallback:',err.message);
-    ALL_DEALS=SIMULATED_DEALS; DEALS=SIMULATED_DEALS; DATA_SOURCE='simulado';
+    ALL_DEALS=SIMULATED_DEALS; DEALS=SIMULATED_DEALS; EDIFICIOS=[]; DATA_SOURCE='simulado';
     setBadge('Dados simulados (fallback)',false);
     buildNucleoSelect();
     buildGraph(); buildUI();
-    NODES.forEach(n=>{ const a=Math.random()*Math.PI*2,d=80+Math.random()*320; n.x=Math.cos(a)*d; n.y=Math.sin(a)*d; n.vx=0; n.vy=0; });
+    NODES.forEach(n=>{ if(n.orphan) return; const a=Math.random()*Math.PI*2,d=80+Math.random()*320; n.x=Math.cos(a)*d; n.y=Math.sin(a)*d; n.vx=0; n.vy=0; });
     running=true; btnPause.textContent='⏸ Pausar';
     setTimeout(fitView,1600);
   }

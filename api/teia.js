@@ -50,6 +50,7 @@ const {
   getAssociations,
   getObjectsById,
   getCompanies,
+  listAllObjects,
 } = require('../lib/hubspot');
 const { isConfigured, isAuthed } = require('../lib/auth');
 
@@ -310,14 +311,37 @@ module.exports = async (req, res) => {
       return record;
     });
 
+    // ---- inventário COMPLETO de edifícios (inclui os sem deal) ----
+    // Sem isto a teia só mostra prédios referenciados por algum deal; o cliente
+    // quer ver todos os edifícios da base (ex.: Platinum Tower, sem negócio ainda).
+    let edificiosInventario = [];
+    try {
+      const raw = await listAllObjects(hs, OBJ_EDIFICIO, [
+        PROP_EDIFICIO_NOME, 'endereco', 'microrregiao', 'regiao', 'classe_edificio',
+      ]);
+      edificiosInventario = raw
+        .map((e) => ({
+          id: e.id,
+          nome: (e.properties[PROP_EDIFICIO_NOME] || '').trim(),
+          endereco: e.properties.endereco || null,
+          regiao: e.properties.microrregiao || e.properties.regiao || null,
+          classe: e.properties.classe_edificio || null,
+        }))
+        .filter((e) => e.nome && !/n[ãa]o\s*identificad/i.test(e.nome));
+    } catch (err) {
+      console.warn('[api/teia] inventário de edifícios indisponível:', err.message);
+    }
+
     const payload = {
       deals,
+      edificios: edificiosInventario,
       meta: {
         total_deals_no_hubspot: allDeals.length,
         deals_com_associacao: rawDeals.length,
         deals_incluidos: deals.length,
         deals_sem_edificio,
         deals_com_empresa_edificio,
+        total_edificios: edificiosInventario.length,
         unmatched_labels: [...unmatchedLabels],
         modelo: fase2Ok ? 'fase2_custom_objects' : 'fase1_texto_legado',
         fase2_erro: fase2Erro,
