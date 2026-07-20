@@ -49,6 +49,11 @@ function esc(s){ return String(s).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;'
 function fmtVShort(v){ if(!v) return null; if(v>=1000000) return (v/1000000).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})+'M'; return (v/1000).toFixed(0)+'k'; }
 
 /* ---- modelo: prédios + deals com andar ---- */
+// Vínculo entre prédios (cliente OU dono OU broker OU gerenciadora), com peso
+// por força da relação. Teto pra um vínculo onipresente (broker) não inundar.
+const REL_CAP = 8;
+const REL_WEIGHT = { cliente:100, dono:40, broker:10, gerenciadora:8 };
+
 function buildModel(focal){
   const byEd = {};
   DEALS.forEach(d=>{
@@ -57,19 +62,38 @@ function buildModel(focal){
     (byEd[d.edificio] = byEd[d.edificio]||[]).push(Object.assign({}, d, { n }));
   });
   const focalDeals = byEd[focal]||[];
-  const focalClients = new Set(focalDeals.map(d=>d.cliente).filter(Boolean));
-  // relacionados: TODOS os prédios que compartilham cliente com o focal (sem cap)
-  const rel = focalClients.size > 0
-    ? Object.keys(byEd).filter(ed=>ed!==focal && byEd[ed].some(d=>focalClients.has(d.cliente)))
-    : [];
+  const fSet = k => new Set(focalDeals.map(d=>d[k]).filter(Boolean));
+  const focalBy = { cliente:fSet('cliente'), dono:fSet('dono'), broker:fSet('broker'), gerenciadora:fSet('gerenciadora') };
+  // pontua cada outro prédio pela força do vínculo com o focal
+  const scored = Object.keys(byEd).filter(ed=>ed!==focal).map(ed=>{
+    const ds = byEd[ed];
+    let score = 0;
+    Object.keys(REL_WEIGHT).forEach(k=>{ if(ds.some(d=>d[k]&&focalBy[k].has(d[k]))) score += REL_WEIGHT[k]; });
+    return { ed, score };
+  }).filter(x=>x.score>0)
+    .sort((a,b)=> b.score-a.score || byEd[b.ed].length-byEd[a.ed].length);
+  const rel = scored.slice(0, REL_CAP);
   // focal primeiro, relacionados à direita (scroll horizontal revela o resto)
-  const order = [{ed:focal, ctx:false}, ...rel.map(ed=>({ed, ctx:false}))];
-  return order.map(o=>{
+  const order = [{ed:focal}, ...rel.map(r=>({ed:r.ed}))];
+  const model = order.map(o=>{
     const deals = byEd[o.ed];
     const donos = [...new Set(deals.map(d=>d.dono).filter(Boolean))];
     return { ed:o.ed, ctx:false, deals, dono: donos.join(' / ')||'—', focal:o.ed===focal };
   });
+  model.hiddenRel = Math.max(0, scored.length - rel.length);
+  return model;
 }
+
+const CLOSED_STAGES = ['Ganho — Preparo do Processo','Contrato Assinado'];
+// vínculo mais forte entre dois deals (cliente > dono > broker > gerenciadora)
+function pairLink(fd, od){
+  if(fd.cliente && od.cliente===fd.cliente)           return { kind:'cliente',      via:fd.cliente };
+  if(fd.dono && od.dono===fd.dono)                     return { kind:'dono',         via:fd.dono };
+  if(fd.broker && od.broker===fd.broker)               return { kind:'broker',       via:fd.broker };
+  if(fd.gerenciadora && od.gerenciadora===fd.gerenciadora) return { kind:'gerenciadora', via:fd.gerenciadora };
+  return null;
+}
+const LINK_LABEL = { cliente:'Mesmo cliente', dono:'Mesmo dono', broker:'Mesmo broker', gerenciadora:'Mesma gerenciadora' };
 
 function buildConns(model){
   const conns = [];
@@ -78,16 +102,15 @@ function buildConns(model){
     model.forEach(m=>{
       if(m.focal) return;
       m.deals.forEach(od=>{
-        if(od.cliente!==fd.cliente) return;
-        const CLOSED_STAGES = ['Ganho — Preparo do Processo','Contrato Assinado'];
+        const link = pairLink(fd, od);
+        if(!link) return;
         const dashed = !CLOSED_STAGES.includes(od.stage) && !CLOSED_STAGES.includes(fd.stage);
-        const sameBroker = od.broker && od.broker===fd.broker;
-        const sameDono   = od.dono   && od.dono===fd.dono;
-        const anot = sameBroker && sameDono ? ('Mesmo broker & dono · '+od.broker)
-                   : sameBroker ? ('Mesmo broker · '+od.broker)
-                   : sameDono   ? ('Mesmo dono · '+od.dono)
-                   : od.broker  ? ('Broker: '+od.broker) : 'Direto · sem broker';
-        conns.push({ cliente:fd.cliente, a:{ed:focal.ed,n:fd.n,id:fd.id}, b:{ed:m.ed,n:od.n,id:od.id}, dashed, anot, ctx:m.ctx });
+        conns.push({
+          kind:link.kind, via:link.via,
+          cliente: link.kind==='cliente' ? link.via : null,
+          a:{ed:focal.ed,n:fd.n,id:fd.id}, b:{ed:m.ed,n:od.n,id:od.id},
+          dashed, anot: LINK_LABEL[link.kind]+' · '+link.via, ctx:m.ctx
+        });
       });
     });
   });
@@ -265,7 +288,10 @@ function render(){
     const dxc=(x2-x1)*.4;
     const d=`M${x1},${y1} C${x1+dxc},${y1-lift} ${x2-dxc},${y2-lift} ${x2},${y2}`;
     const mx=(x1+3*(x1+dxc)+3*(x2-dxc)+x2)/8, my=(y1+3*(y1-lift)+3*(y2-lift)+y2)/8;
-    const col=clientColor[c.cliente]||'#3278DC';
+    const col = c.kind==='cliente' ? (clientColor[c.via]||'#3278DC')
+              : c.kind==='dono'    ? '#C8940A'
+              : c.kind==='broker'  ? '#00585C'
+              : '#9650DC';
     svg+=`<path d="${d}" fill="none" stroke="${col}" stroke-width="1.2" ${c.dashed?'stroke-dasharray="6 5"':''} opacity="0.18" stroke-linecap="round" data-conn="${ci}" data-conn-a="${c.a.id}" data-conn-b="${c.b.id}"></path>`;
     svg+=`<path d="${d}" fill="none" stroke="transparent" stroke-width="14" data-connhit="${ci}" style="cursor:pointer"></path>`;
     ov+=`<div style="left:${px(mx)}%;top:${py(my)}%;transform:translate(-50%,-50%);font-size:8.5px;font-family:var(--font-mono);color:#3a4a4a;background:#fff;border:1px solid rgba(14,26,26,.2);padding:2px 7px;border-radius:2px;opacity:${c.ctx?0.6:1};display:none" data-connbadge="${ci}">${esc(c.anot)}</div>`;
@@ -284,7 +310,10 @@ function render(){
   // header
   const focal = model.find(m=>m.focal);
   nomeEl.textContent = focal.ed;
-  metaEl.textContent = `Proprietário: ${focal.dono} · ${focal.deals.length} deal(s) no prédio · ${conns.length} conexão(ões) externa(s)`;
+  const relCount = model.length-1;
+  metaEl.textContent = `Proprietário: ${focal.dono} · ${focal.deals.length} deal(s) no prédio · ${relCount} prédio(s) relacionado(s)`
+    + (model.hiddenRel ? ` (+${model.hiddenRel} ocultos)` : '')
+    + ` · ${conns.length} conexão(ões)`;
 
   // interações
   const tip = document.getElementById('vd-tip');
@@ -376,14 +405,16 @@ function renderPin(){
   document.getElementById('vd-unpin').onclick=()=>{ pinned=null; render(); };
 }
 
+const LINK_LEG = { dono:{c:'#C8940A',l:'mesmo dono'}, broker:{c:'#00585C',l:'mesmo broker'}, gerenciadora:{c:'#9650DC',l:'mesma gerenc.'} };
 function renderLegend(model, conns){
-  const clients=[...new Set(conns.map(c=>c.cliente))];
+  const clients=[...new Set(conns.filter(c=>c.kind==='cliente').map(c=>c.via))];
+  const kinds=[...new Set(conns.map(c=>c.kind))].filter(k=>k!=='cliente');
   legendEl2.innerHTML =
     clients.map(c=>`<span><i style="background:${clientColor[c]}"></i>${esc(c)}</span>`).join('') +
+    kinds.map(k=>`<span><svg width="26" height="6" viewBox="0 0 26 6"><line x1="0" y1="3" x2="26" y2="3" stroke="${LINK_LEG[k].c}" stroke-width="2.4"></line></svg>${LINK_LEG[k].l}</span>`).join('') +
     `<span><svg width="26" height="6" viewBox="0 0 26 6"><line x1="0" y1="3" x2="26" y2="3" stroke="#3a4a4a" stroke-width="1.6"></line></svg>ganho / contrato</span>
      <span><svg width="26" height="6" viewBox="0 0 26 6"><line x1="0" y1="3" x2="26" y2="3" stroke="#3a4a4a" stroke-width="1.6" stroke-dasharray="5 4"></line></svg>em negociação</span>` +
-    ROLE_BARS.map(r=>`<span><i style="background:${r.color};border-radius:2px;width:10px;height:6px;display:inline-block"></i>${r.key}</span>`).join('') +
-    `<span class="vd-dim">cor da laje = etapa · barras = rótulos presentes</span>`;
+    `<span class="vd-dim">cor da laje = etapa · linha = vínculo entre prédios</span>`;
 }
 
 function renderStyleButtons(){
