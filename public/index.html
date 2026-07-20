@@ -1163,7 +1163,9 @@ function pickNode(sx,sy){
   NODES.forEach(n=>{
     if(!nodeVisible(n)) return;
     const [nx,ny]=toScreen(n.x,n.y);
-    const r=nodeRadius(n)+7;
+    // Alvo de clique/hover em PIXELS de tela, com mínimo fixo: assim o nó
+    // continua clicável mesmo com zoom afastado (nodeRadius encolhe com cam.scale).
+    const r=Math.max(nodeRadius(n)+9, 15);
     const d=Math.hypot(sx-nx,sy-ny);
     if(d<r&&d<bd){ best=n; bd=d; }
   });
