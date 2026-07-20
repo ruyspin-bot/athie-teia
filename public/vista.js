@@ -58,6 +58,15 @@ function getModelConns(){
 }
 
 function andarNum(a){ const m = a && a.match(/(\d+)/); return m ? +m[1] : null; }
+// Número legível do andar: usa andares[0].numero se existir,
+// senão extrai dígitos do nome (rejeitando IDs longos do HubSpot).
+function andarDisplay(d){
+  if(d.andares && d.andares.length && d.andares[0].numero != null && d.andares[0].numero !== '')
+    return String(d.andares[0].numero);
+  const m = (d.andar||'').match(/(\d+)/);
+  if(m && m[1].length <= 5) return m[1];
+  return d.n != null ? String(d.n) : '?';
+}
 function ink(hex){
   const n=parseInt(hex.slice(1),16), r=n>>16, g=(n>>8)&255, b=n&255;
   return (r*.299+g*.587+b*.114)>150 ? '#0E1A1A' : '#FFF';
@@ -255,7 +264,7 @@ function render(){
   const centY=(ed,did)=>GROUND-(slotMap[ed][did]+0.5)*FH;
 
   const GAP = 48;
-  const PAD = 32; // margem lateral (tudo fica dentro dos slots agora)
+  const PAD = 52; // margem esquerda para o nº do andar fora do slot
   const widths = model.map(m=>m.focal?220:160);
   const totalW = widths.reduce((a,c)=>a+c,0)+(model.length-1)*GAP;
   const SVGW = Math.max(860, totalW + PAD*2);
@@ -324,8 +333,9 @@ function render(){
       const PAD_R = 4;   // margem interna direita
       const bFontSz = 7; // tamanho fixo badges P/O
 
-      // nº do andar: só dígitos, largura calculada pelo nº de chars (font-mono 9px ≈ 6px/char)
-      const andarStr = d.andar ? d.andar.replace(/[^\d]/g,'') : String(d.n);
+      // nº do andar: usa andares[0].numero (campo estruturado) para evitar
+      // que IDs longos do HubSpot (ex: "32144440124440") apareçam no slot
+      const andarStr = andarDisplay(d);
       const andarW = andarStr.length * 6.5 + 4; // px estimados + gap
 
       // largura dos badges P/O à direita
@@ -339,13 +349,12 @@ function render(){
       const rightW = stageW + (badgeW > 0 ? badgeW + 3 : 0) + PAD_R + 2;
 
       // max-width do cliente: do fim do nº andar até o início da etapa
-      const clientLeft = g.x + PAD_L + andarW + 2;
-      const clientMaxW = Math.max(10, g.w - PAD_L - andarW - 2 - rightW);
+      // ── nº do andar (fora do slot, à esquerda) ──
+      ov+=`<div data-novwrap style="left:${px(g.x-5)}%;top:${py(cy)}%;transform:translate(-100%,-50%);font-size:9px;font-family:var(--font-mono);color:rgba(14,26,26,.5);font-weight:700;opacity:${op*dealOp}">${esc(andarStr)}</div>`;
 
-      // ── nº do andar (extrema esquerda, dentro do slot) ──
-      ov+=`<div data-novwrap style="left:${px(g.x+PAD_L)}%;top:${py(cy)}%;transform:translateY(-50%);font-size:9px;font-family:var(--font-mono);color:${lcol};font-weight:800;opacity:${op*dealOp*0.65}">${esc(andarStr)}</div>`;
-
-      // ── cliente final (logo após o nº, truncado) ──
+      // ── cliente final (dentro do slot, esquerda, truncado antes da etapa) ──
+      const clientLeft = g.x + PAD_L;
+      const clientMaxW = Math.max(10, g.w - PAD_L - PAD_R - rightW);
       if(d.cliente){
         ov+=`<div data-filter-actor="cliente" data-filter-val="${esc(d.cliente)}" style="left:${px(clientLeft)}%;top:${py(cy)}%;transform:translateY(-50%);display:inline-block;font-size:${g.w>=160?9:8}px;font-weight:600;color:${lcol};opacity:${op*dealOp};cursor:pointer;text-decoration:underline dotted;max-width:${clientMaxW}px;overflow:hidden;text-overflow:ellipsis;vertical-align:top;pointer-events:auto">${esc(d.cliente)}</div>`;
       }
