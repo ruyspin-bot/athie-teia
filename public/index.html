@@ -723,22 +723,27 @@ function renderTable(){
       <table class="tvt">
         <thead><tr>
           <th>Negócio</th><th>Cliente</th><th>Prédio</th><th>Broker</th>
-          <th>Gerenciadora</th><th>Etapa</th><th>Valor</th><th>Núcleo</th>
+          <th>Gerenciadora</th><th>Proprietário</th><th>Tipo</th>
+          <th>Parceiro</th><th>Concorrente</th><th>Etapa</th><th>Valor</th>
         </tr></thead>
         <tbody>
           ${filtered.map(d=>{
             const col=STAGE_COL[d.stage]||'#5BAEF0';
             const bs=buildingStats.find(b=>b.edificio===d.edificio);
             const star=bs&&bs.deals.length>1?'<span class="tv-star">*</span>':'';
+            const tipoBg = d.tipo==='Projeto'?'#00585C':d.tipo==='Obra'?'#E07800':d.tipo?'#9650DC':null;
             return `<tr data-id="${d.id}">
               <td>${esc(d.nome)}</td>
-              <td><span class="tv-dot" style="background:var(--c-cliente)"></span>${esc(d.cliente)}</td>
+              <td><span class="tv-dot" style="background:var(--c-cliente)"></span>${esc(d.cliente||'—')}</td>
               <td>${esc(d.edificio||'—')}${star}</td>
               <td style="color:var(--c-broker);font-weight:600">${esc(d.broker||'—')}</td>
               <td style="color:var(--c-gerenciadora)">${esc(d.gerenciadora||'—')}</td>
+              <td style="color:var(--c-dono)">${esc(d.dono||'—')}</td>
+              <td>${tipoBg?`<span style="background:${tipoBg};color:#fff;font-size:9px;font-weight:700;padding:1px 6px;border-radius:2px;white-space:nowrap">${esc(d.tipo)}</span>`:'—'}</td>
+              <td style="color:var(--c-broker);opacity:.75">${esc(d.parceiro||'—')}</td>
+              <td style="color:#888;font-size:10px">${esc(d.concorrente||'—')}</td>
               <td><span class="tv-stage-pill" style="background:${col};color:${ink(col)}">${esc(d.stage)}</span></td>
               <td class="tv-valor">${fmtBRL(d.valor)}</td>
-              <td>${d.nucleo?`<span class="tv-nucleo">${esc(d.nucleo)}</span>`:'—'}</td>
             </tr>`;
           }).join('')}
         </tbody>
