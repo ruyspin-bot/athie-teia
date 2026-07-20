@@ -662,6 +662,7 @@ function clearActorFilter(){
 // Toggle "Andares vagos" no header (usa o slot #vd-styles, antes ocioso).
 function renderVacantToggle(){
   if(!stylesEl) return;
+  stylesEl.style.display='flex'; // o CSS deixa #vd-styles oculto por padrão
   const on = showVacant;
   stylesEl.innerHTML =
     `<button id="vd-vacant" title="Mostrar andares/conjuntos sem negócio vinculado"
