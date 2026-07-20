@@ -679,15 +679,8 @@ function renderLegend(model){
 
 /* ---- abrir / fechar ---- */
 function openVista(edLabel){
-  focalEd=edLabel; pinned=null; _modelCache=null; actorFilter=null;
-  rebuildClientColor();
-  drawer.style.display='flex';
-  render();
-  window.dispatchEvent(new Event('resize'));
-  const _en=NODES&&NODES.find(n=>n.type==='edificio'&&n.label===edLabel);
-  if(typeof updateTableFromNode==='function') updateTableFromNode(_en||null);
-  // hook para URL state (configurado por index.html após carregamento)
-  if(typeof window._onOpenVista==='function') window._onOpenVista(edLabel);
+  // Roteia pelo mesmo caminho: mostra a vista se houver relação, senão o vazio.
+  enterVista({ ed: edLabel, kind: null, value: null }, null);
 }
 function closeVista(){
   drawer.style.display='none';
@@ -745,28 +738,60 @@ function resolveVistaTarget(n){
   return { ed, kind, value: n.label };
 }
 
+/* ---- entrar na vista para um alvo (ou mostrar vazio se não houver relação) ---- */
+// A Vista Multi-Prédio só faz sentido quando há RELAÇÃO entre edifícios: o modelo
+// precisa ter >=2 prédios (focal + ao menos um relacionado, ou >=2 prédios com o
+// ator no modo filtro). Se o nó não resolve prédio nenhum, ou o prédio focal não
+// se relaciona com nenhum outro, mostra o estado vazio em vez de abrir a vista.
+function enterVista(target, nodeForEmpty){
+  if(!target){ showVistaEmpty(nodeForEmpty, null); return; }
+  focalEd     = target.ed;
+  pinned      = null;
+  _modelCache = null;
+  actorFilter = target.kind ? { kind: target.kind, value: target.value } : null;
+  rebuildClientColor();
+  drawer.style.display='flex';
+  const { model } = getModelConns(); // usa focalEd/actorFilter recém-definidos
+  if(model.length < 2){ showVistaEmpty(nodeForEmpty, target.ed); return; }
+  render();
+  window.dispatchEvent(new Event('resize'));
+  const _en = NODES && NODES.find(x=>x.type==='edificio' && x.label===target.ed);
+  if(typeof updateTableFromNode==='function') updateTableFromNode(_en||null);
+  if(typeof window._onOpenVista==='function') window._onOpenVista(target.ed);
+}
+
+// Estado vazio: painel aberto, sem prédios, com a mensagem pedida.
+function showVistaEmpty(n, ed){
+  drawer.style.display='flex';
+  pinned=null; actorFilter=null; _modelCache=null;
+  const label = ed || (n && n.label) || 'Nó selecionado';
+  nomeEl.textContent = label;
+  metaEl.textContent = 'Sem relação entre edifícios';
+  filterEl.style.display='none';
+  pinEl.innerHTML=''; legendEl2.innerHTML='';
+  const entEl=document.getElementById('vd-entities'); if(entEl) entEl.innerHTML='';
+  host.style.overflowX='hidden';
+  host.innerHTML=`<div style="padding:56px 32px;text-align:center;line-height:1.65">
+       <div style="font-size:34px;margin-bottom:14px;opacity:.32">🏢</div>
+       <div style="font-size:14px;font-weight:600;color:rgba(14,26,26,.7)">Não existe relação entre edifícios para este nó</div>
+       <div style="font-size:12px;margin-top:8px;color:rgba(14,26,26,.5)">Este nó não compartilha cliente, dono, broker ou gerenciadora com outros prédios.</div>
+     </div>`;
+  window.dispatchEvent(new Event('resize'));
+  // Só reflete na URL/tabela quando é um prédio real (evita ?vista=<rótulo> inválido).
+  if(ed){
+    const _en = NODES && NODES.find(x=>x.type==='edificio' && x.label===ed);
+    if(typeof updateTableFromNode==='function') updateTableFromNode(_en||null);
+    if(typeof window._onOpenVista==='function') window._onOpenVista(ed);
+  }
+}
+
 /* ---- abrir direto ao clicar num nó ---- */
 const _selectNode = selectNode;
 selectNode = function(id, center, skipVista){
   _selectNode(id, center);
   if(skipVista) return;
   const n = nodesMap.get(id);
-  const target = resolveVistaTarget(n);
-  if(target){
-    focalEd = target.ed;
-    pinned = null;
-    _modelCache = null;
-    actorFilter = target.kind ? { kind: target.kind, value: target.value } : null;
-    rebuildClientColor();
-    drawer.style.display='flex';
-    render();
-    window.dispatchEvent(new Event('resize'));
-    const _en=NODES&&NODES.find(x=>x.type==='edificio'&&x.label===target.ed);
-    if(typeof updateTableFromNode==='function') updateTableFromNode(_en||null);
-    if(typeof window._onOpenVista==='function') window._onOpenVista(target.ed);
-  } else {
-    closeVista();
-  }
+  enterVista(resolveVistaTarget(n), n);
 };
 
 /* ---- botão "Ver Vista" no painel de detalhes para qualquer nó com prédio ---- */
@@ -786,19 +811,7 @@ renderDetail = function(id){
   btn.style.cssText='width:100%;background:var(--tiffany,#00DEDB);color:#0E1A1A;border:none;border-radius:3px;padding:11px 14px;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;margin-top:12px;';
   btn.onmouseenter=()=>btn.style.background='#3FE9E6';
   btn.onmouseleave=()=>btn.style.background='var(--tiffany,#00DEDB)';
-  btn.onclick=()=>{
-    focalEd = target.ed;
-    pinned = null;
-    _modelCache = null;
-    actorFilter = target.kind ? { kind: target.kind, value: target.value } : null;
-    rebuildClientColor();
-    drawer.style.display='flex';
-    render();
-    window.dispatchEvent(new Event('resize'));
-    const _en=NODES&&NODES.find(x=>x.type==='edificio'&&x.label===target.ed);
-    if(typeof updateTableFromNode==='function') updateTableFromNode(_en||null);
-    if(typeof window._onOpenVista==='function') window._onOpenVista(target.ed);
-  };
+  btn.onclick=()=>{ enterVista(target, n); };
   const panel=document.getElementById('detail-panel');
   const firstGroup=panel.querySelector('.conn-group,.detail-meta,.sumchips');
   panel.insertBefore(btn, firstGroup||null);
