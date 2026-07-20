@@ -1181,8 +1181,20 @@ window.addEventListener('mousemove',e=>{
 });
 window.addEventListener('mouseup',e=>{
   const p=ep(e), dist=Math.hypot(p.x-downAt.x,p.y-downAt.y);
-  if(dragNode){ dragNode.fixed=false; if(dist<5){ selected===dragNode.id?clearSelection():selectNode(dragNode.id,false); } dragNode=null; }
-  else if(panning&&dist<5) clearSelection();
+  // Zera o estado de arraste ANTES de qualquer seleção: se selectNode()
+  // lançar exceção, o nó não pode ficar "preso" ao mouse (dragNode órfão).
+  const wasDrag=dragNode, wasPan=panning;
+  if(dragNode){ dragNode.fixed=false; dragNode=null; }
+  panning=false; canvas.classList.remove('grabbing');
+  try{
+    if(wasDrag){ if(dist<5){ selected===wasDrag.id?clearSelection():selectNode(wasDrag.id,false); } }
+    else if(wasPan&&dist<5) clearSelection();
+  }catch(err){ console.error('[teia] erro ao selecionar nó:',err); }
+});
+// Rede de segurança: se o mouseup se perder (foco fora da janela, menu do SO,
+// arrastar pra fora do viewport), solta o nó ao voltar o foco.
+window.addEventListener('blur',()=>{
+  if(dragNode){ dragNode.fixed=false; dragNode=null; }
   panning=false; canvas.classList.remove('grabbing');
 });
 canvas.addEventListener('wheel',e=>{
