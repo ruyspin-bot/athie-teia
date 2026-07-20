@@ -131,8 +131,17 @@ function mergeAndarTipo(deals){
 function buildModel(focal){
   const byEd = {};
   DEALS.forEach(d=>{
-    const n = andarNum(d.andar);
-    if(n==null) return;
+    // Usa andares[0].numero como chave real do andar (número legível, ex: 7).
+    // Fallback para andarNum(d.andar) apenas se o campo estruturado não existir.
+    // Isso evita que dois deals do mesmo andar físico tenham chaves diferentes
+    // por causa de IDs internos do HubSpot no campo d.andar.
+    let n = null;
+    if(d.andares && d.andares.length && d.andares[0].numero != null && d.andares[0].numero !== ''){
+      n = Number(d.andares[0].numero);
+      if(isNaN(n)) n = null;
+    }
+    if(n == null) n = andarNum(d.andar);
+    if(n == null) return;
     (byEd[d.edificio] = byEd[d.edificio]||[]).push(Object.assign({}, d, { n }));
   });
   // Mescla deals do mesmo andar que só diferem por tipo (Projeto ↔ Obra)
