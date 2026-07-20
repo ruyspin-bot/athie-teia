@@ -255,7 +255,7 @@ function render(){
   const centY=(ed,did)=>GROUND-(slotMap[ed][did]+0.5)*FH;
 
   const GAP = 48;
-  const PAD = 80; // margem esquerda generosa para textos fora da coluna (nº andar, valor)
+  const PAD = 32; // margem lateral (tudo fica dentro dos slots agora)
   const widths = model.map(m=>m.focal?220:160);
   const totalW = widths.reduce((a,c)=>a+c,0)+(model.length-1)*GAP;
   const SVGW = Math.max(860, totalW + PAD*2);
@@ -304,88 +304,64 @@ function render(){
     }
     m.deals.forEach(d=>{
       const slot=slotMap[m.ed][d.id];
-      // no modo filtro por ator, deals que não pertencem ao ator ficam dimmed
       const dealDim = actorFilter && d._actorMatch===false;
       const col=STAGE_COLORS[d.stage]||'#5BAEF0';
       const isPin=pinned===d.id;
-      const fill=S.hatch?`url(#vh-${col.slice(1)})`:col;
       const floorY=GROUND-(slot+1)*FH+0.5;
       const dealOp = dealDim ? 0.15 : 1;
+      const cy=centY(m.ed,d.id);
+      const lcol=ink(col);
+
+      // ── retângulo do slot ──
       svg+=`<rect x="${g.x+1}" y="${floorY}" width="${g.w-2}" height="${FH-1}"
-        fill="${fill}" fill-opacity="${S.hatch?dealOp:0.88*dealOp}"
-        stroke="${isPin?'#00DEDB':(S.hatch?col:'none')}" stroke-width="${isPin?2.5:(S.hatch?1:0)}"
+        fill="${col}" fill-opacity="${0.88*dealOp}"
+        stroke="${isPin?'#00DEDB':'none'}" stroke-width="${isPin?2.5:0}"
         opacity="${dealOp}"
         data-deal="${d.id}" style="cursor:pointer"></rect>`;
-      const roles=ROLE_BARS.filter(r=>d[r.key]);
-      roles.forEach((r,ri)=>{
-        svg+=`<rect x="${g.x+2+ri*7}" y="${floorY+FH-7}" width="5" height="4" fill="${r.color}" rx="1" opacity="0.9" pointer-events="none"></rect>`;
-      });
-      const lcol=S.hatch?'#0E1A1A':ink(col);
-      const cy=centY(m.ed,d.id);
-      // Label principal: cliente (preferido) ou primeiras palavras do nome do deal
-      // NUNCA exibe o nome completo do deal — ele pode ter 60+ chars e quebrar o layout
-      const rawLabel = d.cliente||'';
-      const label = rawLabel
-        ? rawLabel                                  // usa o cliente se existir
-        : (d.nome||'—').replace(/^\d+[ºo°]\s*[Aa]ndar\s*[—–-]\s*/i,'') // remove prefixo "Xº Andar — "
-                       .split(' ').slice(0,3).join(' ');  // máx 3 palavras
-      const stageLbl=STAGE_ABBR[d.stage]||d.stage;
-      const hasDono=d.dono&&FH>30;
-      const textY=hasDono?cy-FH*0.14:cy;
 
-      // badge tipo — canto inferior esquerdo do slot
-      if(d.tipo&&TIPO_BADGE[d.tipo]&&FH>20){
-        const tb=TIPO_BADGE[d.tipo];
-        // deal merged P+O: exibe dois badges P e O lado a lado
-        if(d._mergedFrom&&FH>26){
-          ov+=`<div data-novwrap style="left:${px(g.x+3)}%;top:${py(floorY+FH-4)}%;transform:translateY(-100%);display:inline-flex;gap:3px;opacity:${op*dealOp*0.95}"><span style="background:#00585C;color:#fff;font-size:${FH>40?7.5:6.5}px;font-family:var(--font-mono);font-weight:700;padding:0 4px;border-radius:2px;line-height:1.7">P</span><span style="background:#E07800;color:#fff;font-size:${FH>40?7.5:6.5}px;font-family:var(--font-mono);font-weight:700;padding:0 4px;border-radius:2px;line-height:1.7">O</span></div>`;
-        } else {
-          const tipoLabel=tb.label;
-          ov+=`<div data-novwrap style="left:${px(g.x+3)}%;top:${py(floorY+FH-4)}%;transform:translateY(-100%);background:${tb.bg};color:#fff;font-size:${FH>40?7.5:6.5}px;font-family:var(--font-mono);font-weight:700;padding:0 4px;border-radius:2px;line-height:1.7;opacity:${op*dealOp*0.95}">${esc(tipoLabel)}</div>`;
+      // Larguras reservadas à direita: badges P/O + etapa
+      const bFontSz = FH>32 ? 7.5 : 6.5;
+      const badgeW = d.tipo ? (d._mergedFrom ? 30 : 18) : 0;  // largura px dos badges P/O
+      const stageW = 48;   // largura px da pílula de etapa
+      const PAD_L = 5;     // margem interna esquerda
+      const PAD_R = 5;     // margem interna direita
+      // espaço disponível para nº andar + cliente
+      const innerW = g.w - PAD_L - PAD_R - stageW - (badgeW>0 ? badgeW+3 : 0);
+
+      // ── nº do andar (dentro do slot, à esquerda) ──
+      const andarStr = d.andar ? d.andar.replace(/[^\d]/g,'') : String(d.n);
+      const andarW = 16; // px fixo para o número
+      ov+=`<div data-novwrap style="left:${px(g.x+PAD_L)}%;top:${py(cy)}%;transform:translateY(-50%);font-size:9px;font-family:var(--font-mono);color:${lcol};font-weight:800;opacity:${op*dealOp*0.7}">${esc(andarStr)}</div>`;
+
+      // ── cliente final (à direita do nº, truncado antes da etapa) ──
+      const clientMaxW = Math.max(20, innerW - andarW - 4);
+      if(d.cliente){
+        ov+=`<div data-filter-actor="cliente" data-filter-val="${esc(d.cliente)}" style="left:${px(g.x+PAD_L+andarW+4)}%;top:${py(cy)}%;transform:translateY(-50%);display:inline-block;font-size:${g.w>=160?9:8}px;font-weight:600;color:${lcol};opacity:${op*dealOp};cursor:pointer;text-decoration:underline dotted;max-width:${clientMaxW}px;overflow:hidden;text-overflow:ellipsis;vertical-align:top;pointer-events:auto">${esc(d.cliente)}</div>`;
+      }
+
+      // ── valor (segunda linha, abaixo do cliente, se FH comportar) ──
+      if(FH>32){
+        const vShort = fmtVShort(d.valor);
+        if(vShort){
+          ov+=`<div data-novwrap style="left:${px(g.x+PAD_L+andarW+4)}%;top:${py(floorY+FH-5)}%;transform:translateY(-100%);font-size:7px;font-family:var(--font-mono);color:${lcol};font-weight:600;opacity:${op*dealOp*0.65}">${esc(vShort)}</div>`;
         }
       }
 
-      // nome do cliente — truncado ao espaço disponível (deixa margem pra pílula de etapa)
-      // usa display:inline-block para que max-width + overflow:hidden funcionem com position:absolute
-      const maxW = Math.floor(g.w * 0.68);
-      if(!m.ctx||g.w>=130){
-        const hasCliente=!!(d.cliente);
-        ov+=`<div ${hasCliente?`data-filter-actor="cliente" data-filter-val="${esc(d.cliente)}" style="left:${px(g.x+6)}%;top:${py(textY)}%;transform:translateY(-50%);display:inline-block;font-size:${g.w>=160?9.5:8.5}px;font-weight:600;color:${lcol};opacity:${op*dealOp};cursor:pointer;text-decoration:underline dotted;max-width:${maxW}px;overflow:hidden;text-overflow:ellipsis;vertical-align:top;pointer-events:auto"`:
-          `style="left:${px(g.x+6)}%;top:${py(textY)}%;transform:translateY(-50%);display:inline-block;font-size:${g.w>=160?9.5:8.5}px;font-weight:600;color:${lcol};opacity:${op*dealOp};max-width:${maxW}px;overflow:hidden;text-overflow:ellipsis;vertical-align:top"`}>${esc(label)}</div>`;
+      // ── etapa (direita do slot, antes dos badges) ──
+      const stageLbl=STAGE_ABBR[d.stage]||d.stage;
+      const stageLeft = g.x+g.w-PAD_R-(badgeW>0?badgeW+3:0)-stageW;
+      ov+=`<div data-novwrap style="left:${px(stageLeft)}%;top:${py(cy)}%;transform:translateY(-50%);display:inline-block;background:rgba(0,0,0,0.2);color:${lcol};font-size:6.5px;font-family:var(--font-mono);font-weight:700;letter-spacing:.3px;text-transform:uppercase;padding:1px 5px;border-radius:2px;opacity:${0.92*op*dealOp}">${esc(stageLbl)}</div>`;
+
+      // ── badges P / O (extrema direita do slot) ──
+      if(d.tipo && FH>18){
+        const bRight = g.x+g.w-PAD_R;
+        if(d._mergedFrom){
+          ov+=`<div data-novwrap style="left:${px(bRight)}%;top:${py(cy)}%;transform:translate(-100%,-50%);display:inline-flex;gap:2px;opacity:${op*dealOp}"><span style="background:#00585C;color:#fff;font-size:${bFontSz}px;font-family:var(--font-mono);font-weight:700;padding:0 3px;border-radius:2px;line-height:1.8">P</span><span style="background:#E07800;color:#fff;font-size:${bFontSz}px;font-family:var(--font-mono);font-weight:700;padding:0 3px;border-radius:2px;line-height:1.8">O</span></div>`;
+        } else {
+          const tb=TIPO_BADGE[d.tipo];
+          if(tb) ov+=`<div data-novwrap style="left:${px(bRight)}%;top:${py(cy)}%;transform:translate(-100%,-50%);display:inline-block;background:${tb.bg};color:#fff;font-size:${bFontSz}px;font-family:var(--font-mono);font-weight:700;padding:0 4px;border-radius:2px;line-height:1.8;opacity:${op*dealOp}">${esc(tb.label)}</div>`;
+        }
       }
-      if(hasDono&&(!m.ctx||g.w>=130)){
-        ov+=`<div style="left:${px(g.x+6)}%;top:${py(cy+FH*0.18)}%;transform:translateY(-50%);display:inline-block;font-size:7.5px;font-style:italic;color:${lcol};opacity:${op*dealOp*0.6};overflow:hidden;text-overflow:ellipsis;max-width:${Math.floor(g.w*0.6)}px;vertical-align:top">${esc(d.dono)}</div>`;
-      }
-      const pillBg=S.hatch?'rgba(255,255,255,0.55)':col;
-      const pillCol=S.hatch?'#0E1A1A':ink(col);
-      ov+=`<div data-novwrap style="left:${px(g.x+g.w-5)}%;top:${py(cy)}%;transform:translate(-100%,-50%);display:inline-block;background:${pillBg};color:${pillCol};font-size:${g.w>=160?7.5:7}px;font-family:var(--font-mono);font-weight:700;letter-spacing:.3px;text-transform:uppercase;padding:1px 5px;border-radius:2px;opacity:${.92*op}">${esc(stageLbl)}</div>`;
-      // badge contatos — canto superior direito
-      if(d.contatos&&d.contatos.length&&FH>26){
-        ov+=`<div data-novwrap style="left:${px(g.x+g.w-4)}%;top:${py(floorY+3)}%;transform:translate(-100%,0);display:inline-block;background:rgba(14,26,26,.22);color:#fff;font-size:6px;font-family:var(--font-mono);padding:0 3px;border-radius:2px;line-height:1.6;opacity:${op*0.85}">●${d.contatos.length}</div>`;
-      }
-      // número do andar — sempre visível à esquerda, usando white-space:nowrap individual
-      const andarLbl = d.andar ? d.andar.replace(/andar/i,'').trim().replace(/\s+/g,'') : `${d.n}º`;
-      ov+=`<div data-novwrap style="left:${px(g.x-4)}%;top:${py(cy)}%;transform:translate(-100%,-50%);font-size:8px;font-family:var(--font-mono);color:rgba(14,26,26,.55);font-weight:700;opacity:${op}">${esc(andarLbl)}</div>`;
-      // valor monetário abaixo do número do andar (se couber)
-      const vShort = fmtVShort(d.valor);
-      if(vShort && FH>36){
-        ov+=`<div data-novwrap style="left:${px(g.x-4)}%;top:${py(cy+FH*0.28)}%;transform:translate(-100%,-50%);font-size:7px;font-family:var(--font-mono);color:#00585C;font-weight:700;opacity:${op}">${esc(vShort)}</div>`;
-      }
-    });
-    // colchete de mesmo-dono
-    const donoGroups={};
-    m.deals.forEach(d=>{ if(d.dono){ (donoGroups[d.dono]=donoGroups[d.dono]||[]).push(d); } });
-    Object.entries(donoGroups).forEach(([dono,ds])=>{
-      if(ds.length<2) return;
-      const slots=ds.map(d=>slotMap[m.ed][d.id]);
-      const topSlot=Math.max(...slots), botSlot=Math.min(...slots);
-      const y1=GROUND-(topSlot+1)*FH+4, y2=GROUND-botSlot*FH-4;
-      const bx=g.x+g.w+5;
-      svg+=`<line x1="${bx}" y1="${y1}" x2="${bx}" y2="${y2}" stroke="#C8940A" stroke-width="1.5" opacity="${op*0.8}" pointer-events="none"></line>`;
-      svg+=`<line x1="${bx}" y1="${y1}" x2="${bx+5}" y2="${y1}" stroke="#C8940A" stroke-width="1.5" opacity="${op*0.8}" pointer-events="none"></line>`;
-      svg+=`<line x1="${bx}" y1="${y2}" x2="${bx+5}" y2="${y2}" stroke="#C8940A" stroke-width="1.5" opacity="${op*0.8}" pointer-events="none"></line>`;
-      const lbl=dono.length>12?dono.slice(0,11)+'…':dono;
-      ov+=`<div style="left:${px(bx+8)}%;top:${py((y1+y2)/2)}%;transform:translateY(-50%);font-size:7px;color:#C8940A;font-weight:600;white-space:nowrap;opacity:${op}">${esc(lbl)}</div>`;
     });
     ov+=`<div data-focus="${esc(m.ed)}" style="left:${px(g.x+g.w/2)}%;top:${py(GROUND+16)}%;transform:translate(-50%,-50%);font-size:11px;font-weight:${m.focal?700:600};color:${m.focal?'#0E1A1A':'#3a4a4a'};opacity:${op};${m.focal?'':'pointer-events:auto;cursor:pointer'}">${esc(m.ed)}</div>`;
     if(m.focal) svg+=`<rect x="${g.x+g.w/2-20}" y="${GROUND+37}" width="40" height="2.5" fill="#00DEDB"></rect>`;
