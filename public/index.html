@@ -366,6 +366,7 @@ let NODES    = [];
 let adj      = {};
 let buildingStats = [];
 let overlaps      = [];
+let MAX_NODE_VALUE = 1;   // maior valor entre deals/edifícios — normaliza o tamanho por valor
 
 function buildGraph(){
   nodesMap = new Map();
@@ -418,7 +419,12 @@ function buildGraph(){
   NODES=[...nodesMap.values()];
   const deg={};
   edges.forEach(e=>{ deg[e.a]=(deg[e.a]||0)+1; deg[e.b]=(deg[e.b]||0)+1; });
-  NODES.forEach(n=>{ n.deg=deg[n.id]||0; });
+  const _dealById=new Map(DEALS.map(d=>[d.id,d]));
+  NODES.forEach(n=>{
+    n.deg=deg[n.id]||0;
+    let v=0; n.deals.forEach(did=>{ const d=_dealById.get(did); if(d) v+=d.valor||0; }); n.value=v;
+  });
+  MAX_NODE_VALUE=Math.max(1,...NODES.filter(n=>n.type==='deal'||n.type==='edificio').map(n=>n.value));
   adj={};
   NODES.forEach(n=>{ adj[n.id]=new Set(); });
   edges.forEach(e=>{ adj[e.a].add(e.b); adj[e.b].add(e.a); });
@@ -731,6 +737,14 @@ function tick(){
 
 function toScreen(x,y){ return [(x-cam.x)*cam.scale+W/2,(y-cam.y)*cam.scale+H/2]; }
 function toWorld(sx,sy){ return [(sx-W/2)/cam.scale+cam.x,(sy-H/2)/cam.scale+cam.y]; }
+// Raio em pixels de tela. Grau dá volume; deals/edifícios ganham realce pelo valor em jogo.
+function nodeRadius(n){
+  const t=TYPES[n.type];
+  let r=t.r+Math.min(n.deg,7)*1.2;
+  if((n.type==='deal'||n.type==='edificio')&&n.value>0)
+    r+=6*Math.sqrt(n.value/MAX_NODE_VALUE);
+  return r*cam.scale;
+}
 function hexA(hex,a){
   const h=hex.replace('#','');
   const r=parseInt(h.slice(0,2),16),g=parseInt(h.slice(2,4),16),b=parseInt(h.slice(4,6),16);
@@ -808,11 +822,12 @@ function draw(){
       ctx.fillText(e.label,(ax+bx)/2,(ay+by)/2-4);
     }
   });
+  const labelQueue=[];
   NODES.forEach(n=>{
     if(!nodeVisible(n)) return;
     const t=TYPES[n.type];
     const [sx,sy]=toScreen(n.x,n.y);
-    const r=(t.r+Math.min(n.deg,7)*1.2)*cam.scale;
+    const r=nodeRadius(n);
     let dim=false, focused=false;
     if(hasSel){ focused=(n.id===selected)||selNeighbors.has(n.id); dim=!focused; }
     ctx.globalAlpha=dim?0.07:1;
@@ -832,19 +847,46 @@ function draw(){
     }
     const showLabel=!dim&&(focused||n.type==='edificio'||n.type==='cliente'||n.id===hovered||cam.scale>1.2||(!hasSel&&n.deg>=3));
     if(showLabel&&n.type!=='andar'){
-      const fs=n.type==='edificio'||n.type==='cliente'?'600 11':'10';
-      ctx.font=fs+'px "Segoe UI",Calibri,sans-serif';
-      ctx.textAlign='center';
-      ctx.shadowBlur=3; ctx.shadowColor='rgba(240,248,248,0.95)';
-      ctx.fillStyle='rgba(14,26,26,0.88)';
-      ctx.fillText(n.label,sx,sy+r+13);
-      ctx.shadowBlur=0;
+      const big=n.type==='edificio'||n.type==='cliente';
+      const fs=big?11:10;
+      // prioridade: quem desenha primeiro tem preferência quando há disputa de espaço
+      let pr;
+      if(n.id===selected) pr=1000;
+      else if(n.id===hovered) pr=900;
+      else if(focused) pr=820;
+      else if(n.type==='edificio') pr=560;
+      else if(n.type==='cliente') pr=460;
+      else pr=120+n.deg*8;
+      pr+=Math.min(80,(n.value||0)/MAX_NODE_VALUE*80);
+      labelQueue.push({ text:n.label, x:sx, y:sy+r+13, fs,
+        font:(big?'600 ':'')+fs+'px "Segoe UI",Calibri,sans-serif',
+        color:'rgba(14,26,26,0.88)', shadow:true, pr,
+        force:(n.id===selected||n.id===hovered||focused) });
     }
     if(n.type==='andar'&&(focused||n.id===hovered)&&!dim){
-      ctx.font='9px "Segoe UI",Calibri,sans-serif';
-      ctx.fillStyle='rgba(14,26,26,0.70)'; ctx.textAlign='center';
-      ctx.fillText(n.label,sx,sy+r+11);
+      labelQueue.push({ text:n.label, x:sx, y:sy+r+11, fs:9,
+        font:'9px "Segoe UI",Calibri,sans-serif',
+        color:'rgba(14,26,26,0.70)', shadow:false, pr:700, force:true });
     }
+  });
+  // --- passe de labels com anti-sobreposição (maior prioridade primeiro) ---
+  labelQueue.sort((a,b)=>b.pr-a.pr);
+  const placed=[];
+  labelQueue.forEach(L=>{
+    ctx.font=L.font;
+    const w=ctx.measureText(L.text).width;
+    const rect={x1:L.x-w/2-2, x2:L.x+w/2+2, y1:L.y-L.fs, y2:L.y+3};
+    if(!L.force){
+      for(const p of placed){
+        if(rect.x1<p.x2&&rect.x2>p.x1&&rect.y1<p.y2&&rect.y2>p.y1) return;
+      }
+    }
+    placed.push(rect);
+    ctx.textAlign='center';
+    if(L.shadow){ ctx.shadowBlur=3; ctx.shadowColor='rgba(240,248,248,0.95)'; }
+    ctx.fillStyle=L.color;
+    ctx.fillText(L.text,L.x,L.y);
+    ctx.shadowBlur=0;
   });
   ctx.globalAlpha=1;
 }
@@ -1019,8 +1061,8 @@ function pickNode(sx,sy){
   let best=null, bd=Infinity;
   NODES.forEach(n=>{
     if(!nodeVisible(n)) return;
-    const t=TYPES[n.type], [nx,ny]=toScreen(n.x,n.y);
-    const r=(t.r+Math.min(n.deg,7)*1.2)*cam.scale+7;
+    const [nx,ny]=toScreen(n.x,n.y);
+    const r=nodeRadius(n)+7;
     const d=Math.hypot(sx-nx,sy-ny);
     if(d<r&&d<bd){ best=n; bd=d; }
   });
