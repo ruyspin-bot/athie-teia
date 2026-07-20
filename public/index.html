@@ -281,6 +281,7 @@
       <div class="vd-head">
         <button id="vd-back">← Voltar à Teia</button>
         <div class="vd-title"><div id="vd-nome"></div><div id="vd-meta"></div></div>
+        <div id="vd-filter" style="display:none"></div>
         <div class="vd-styles" id="vd-styles"></div>
       </div>
       <div id="vd-host"></div>
@@ -462,13 +463,18 @@ const visibleTypes=new Set(Object.keys(TYPES).filter(k=>!HIDDEN_BY_DEFAULT.has(k
 
 function buildUI(){
   kpiEl.innerHTML='';
-  const totalValor = DEALS.reduce((a,d)=>a+(d.valor||0),0);
-  const disputados=buildingStats.filter(b=>b.deals.length>1);
+  const filtered=getFilteredDeals();
+  const isFiltered=(filtered.length!==DEALS.length);
+  const totalValor = filtered.reduce((a,d)=>a+(d.valor||0),0);
+  // "Prédios em disputa" scoped to filtered deals
+  const edCounts={}; filtered.forEach(d=>{ if(d.edificio) edCounts[d.edificio]=(edCounts[d.edificio]||0)+1; });
+  const disputadosFil=Object.values(edCounts).filter(c=>c>1).length;
+  const dealsLabel=(isFiltered?`${filtered.length} de ${DEALS.length}`:`${DEALS.length}`)+(activeNucleo?' · '+activeNucleo:'');
 
   const kpis=[
-    { v:DEALS.length,             l:'Deals'+(activeNucleo?' · '+activeNucleo:''), cls:'' },
-    { v:fmtBRLShort(totalValor),  l:'Valor total', cls:'hot' },
-    { v:disputados.length,        l:'Prédios em disputa', x:'2+ deals no mesmo edifício', cls:'hot', filter:'disputados' },
+    { v:dealsLabel,               l:'Deals', cls:'' },
+    { v:fmtBRLShort(totalValor),  l:'Valor total'+(isFiltered?' (filtrado)':''), cls:'hot' },
+    { v:disputadosFil,            l:'Prédios em disputa', x:'2+ deals no mesmo edifício', cls:'hot', filter:'disputados' },
   ];
   kpis.forEach(k=>{
     const d=document.createElement('div');
@@ -600,12 +606,10 @@ document.getElementById('btn-table').onclick=()=>setView('table');
 let tvFilterBroker='', tvFilterEd='', tvFilterStage='';
 let tvNodeFilter=null; // { type, label } — set by graph navigation
 
-function renderTable(){
-  const tv=document.getElementById('table-view');
-  const brokers=[...new Set(DEALS.map(d=>d.broker).filter(Boolean))].sort();
-  const edificios=[...new Set(DEALS.map(d=>d.edificio).filter(Boolean))].sort();
-  const stages=[...new Set(DEALS.map(d=>d.stage).filter(Boolean))].sort();
-  const filtered=DEALS.filter(d=>{
+/* Returns the subset of DEALS that matches all active filters.
+   Used by both renderTable() and buildUI() so KPIs always mirror the table. */
+function getFilteredDeals(){
+  return DEALS.filter(d=>{
     if(tvFilterBroker && d.broker!==tvFilterBroker) return false;
     if(tvFilterEd && d.edificio!==tvFilterEd) return false;
     if(tvFilterStage && d.stage!==tvFilterStage) return false;
@@ -618,6 +622,14 @@ function renderTable(){
     }
     return true;
   });
+}
+
+function renderTable(){
+  const tv=document.getElementById('table-view');
+  const brokers=[...new Set(DEALS.map(d=>d.broker).filter(Boolean))].sort();
+  const edificios=[...new Set(DEALS.map(d=>d.edificio).filter(Boolean))].sort();
+  const stages=[...new Set(DEALS.map(d=>d.stage).filter(Boolean))].sort();
+  const filtered=getFilteredDeals();
   const totalFil=filtered.reduce((a,d)=>a+(d.valor||0),0);
   const _typeNames={edificio:'Prédio',broker:'Broker',gerenciadora:'Gerenciadora',cliente:'Cliente',deal:'Deal'};
   const nfBar=tvNodeFilter?`<div class="tv-nf">
@@ -678,6 +690,8 @@ function renderTable(){
   document.getElementById('tvf-broker').onchange=e=>{ tvFilterBroker=e.target.value; renderTable(); };
   document.getElementById('tvf-ed').onchange=e=>{ tvFilterEd=e.target.value; renderTable(); };
   document.getElementById('tvf-stage').onchange=e=>{ tvFilterStage=e.target.value; renderTable(); };
+  // sync KPIs with current filter
+  buildUI();
 }
 
 /* ============================================================
@@ -930,6 +944,15 @@ function renderDetail(id){
   h+=`<span class="node-badge" style="background:${hexA(t.color,.14)};color:${t.color}">
     <span class="dot" style="width:9px;height:9px;background:${t.color}"></span>${t.label}</span>`;
   h+=`<div class="detail-name">${esc(n.label)}</div>`;
+  // Botão Abrir no HubSpot — deal abre direto pelo ID; companies abrem por busca de nome
+  (function(){
+    let hsUrl = null;
+    if(n.type==='deal')            hsUrl = `https://app.hubspot.com/contacts/51253038/deal/${n.id}`;
+    else if(n.type==='cliente'||n.type==='broker'||n.type==='gerenciadora'||n.type==='escritorio'||n.type==='dono')
+                                   hsUrl = `https://app.hubspot.com/contacts/51253038/companies?query=${encodeURIComponent(n.label)}`;
+    else if(n.type==='edificio')   hsUrl = `https://app.hubspot.com/contacts/51253038/companies?query=${encodeURIComponent(n.label)}`;
+    if(hsUrl) h+=`<a href="${hsUrl}" target="_blank" style="display:inline-block;margin-bottom:14px;background:var(--tiffany,#00DEDB);color:#0E1A1A;border-radius:3px;padding:6px 13px;font-family:inherit;font-size:11px;font-weight:700;text-decoration:none">Abrir no HubSpot ↗</a>`;
+  })();
   if(n.type==='deal'){
     h+=`<div class="detail-meta"><span class="chip s">${esc(n.meta.stage)}</span></div>`;
     const conns=edges.filter(e=>e.a===id||e.b===id).map(e=>{
@@ -941,9 +964,6 @@ function renderDetail(id){
     h+=`<div class="sumchips">`;
     if(b) h+=`<span class="sumchip br">${b.brokers.length} broker${b.brokers.length>1?'s':''}</span><span class="sumchip do">${b.donos.length} dono${b.donos.length>1?'s':''}</span>`;
     h+=`</div>`;
-    if(b&&b.brokers.length>1){
-      h+=`<div class="overlap-warn"><div class="ot">▲ O que a teia revela</div><div class="od"><b>${b.brokers.length} brokers</b> (${b.brokers.map(esc).join(', ')}).</div></div>`;
-    }
     h+=`<div class="conn-group"><div class="conn-lbl">Deals no prédio (${dh.length})</div>
       <table class="ftable"><thead><tr><th>Andar</th><th>Cliente</th><th>Broker</th><th>Valor</th></tr></thead><tbody>`;
     dh.forEach(d=>{ h+=`<tr data-goto="${d.id}"><td class="andar">${esc(d.andar||'—')}</td><td>${esc(d.cliente)}</td><td class="broker">${esc(d.broker||'—')}</td><td style="font-family:var(--font-mono);font-size:10px;color:var(--green)">${fmtBRLShort(d.valor)}</td></tr>`; });

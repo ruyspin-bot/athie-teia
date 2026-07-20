@@ -6,12 +6,13 @@
 (function(){
 'use strict';
 
-const drawer = document.getElementById('vista-drawer');
-const host   = document.getElementById('vd-host');
-const pinEl  = document.getElementById('vd-pin');
-const nomeEl = document.getElementById('vd-nome');
-const metaEl = document.getElementById('vd-meta');
-const stylesEl = document.getElementById('vd-styles');
+const drawer    = document.getElementById('vista-drawer');
+const host      = document.getElementById('vd-host');
+const pinEl     = document.getElementById('vd-pin');
+const nomeEl    = document.getElementById('vd-nome');
+const metaEl    = document.getElementById('vd-meta');
+const filterEl  = document.getElementById('vd-filter');
+const stylesEl  = document.getElementById('vd-styles');
 const legendEl2 = document.getElementById('vd-legend');
 
 const STAGE_COLORS = {
@@ -42,6 +43,8 @@ const STYLES = {
 let styleKey = 'corte';
 let focalEd = null;   // label do edifício focal
 let pinned = null;    // deal id fixado
+// filtro por ator: { kind:'cliente'|'broker'|'gerenciadora', value:'Grupo Primo' }
+let actorFilter = null;
 // cache de model+conns por focalEd — evita recomputar O(n²) em re-renders visuais
 let _modelCache = null;  // { ed, model, conns }
 function getModelConns(){
@@ -73,10 +76,32 @@ function buildModel(focal){
     if(n==null) return;
     (byEd[d.edificio] = byEd[d.edificio]||[]).push(Object.assign({}, d, { n }));
   });
+
+  // ---- modo filtro por ator ----
+  // Quando actorFilter está ativo, mostra TODOS os prédios que têm o ator
+  // e destaca apenas os deals desse ator dentro de cada prédio.
+  if(actorFilter){
+    const { kind, value } = actorFilter;
+    const matchingEds = Object.keys(byEd).filter(ed => byEd[ed].some(d => d[kind]===value));
+    // focal primeiro se estiver no conjunto, senão primeiro da lista
+    const focalFirst = matchingEds.includes(focal) ? focal : matchingEds[0];
+    const others = matchingEds.filter(ed => ed !== focalFirst);
+    const order = [focalFirst, ...others].filter(Boolean);
+    const model = order.map(ed=>{
+      const deals = byEd[ed];
+      const donos = [...new Set(deals.map(d=>d.dono).filter(Boolean))];
+      // marca quais deals pertencem ao ator filtrado (para highlight visual)
+      const dealsFiltered = deals.map(d => Object.assign({}, d, { _actorMatch: d[kind]===value }));
+      return { ed, ctx:false, deals:dealsFiltered, dono:donos.join(' / ')||'—', focal:ed===focalFirst };
+    });
+    model.hiddenRel = 0;
+    return model;
+  }
+
+  // ---- modo normal (focal + relacionados por score) ----
   const focalDeals = byEd[focal]||[];
   const fSet = k => new Set(focalDeals.map(d=>d[k]).filter(Boolean));
   const focalBy = { cliente:fSet('cliente'), dono:fSet('dono'), broker:fSet('broker'), gerenciadora:fSet('gerenciadora') };
-  // pontua cada outro prédio pela força do vínculo com o focal
   const scored = Object.keys(byEd).filter(ed=>ed!==focal).map(ed=>{
     const ds = byEd[ed];
     let score = 0;
@@ -85,7 +110,6 @@ function buildModel(focal){
   }).filter(x=>x.score>0)
     .sort((a,b)=> b.score-a.score || byEd[b.ed].length-byEd[a.ed].length);
   const rel = scored.slice(0, REL_CAP);
-  // focal primeiro, relacionados à direita (scroll horizontal revela o resto)
   const order = [{ed:focal}, ...rel.map(r=>({ed:r.ed}))];
   const model = order.map(o=>{
     const deals = byEd[o.ed];
@@ -222,13 +246,17 @@ function render(){
     }
     m.deals.forEach(d=>{
       const slot=slotMap[m.ed][d.id];
+      // no modo filtro por ator, deals que não pertencem ao ator ficam dimmed
+      const dealDim = actorFilter && d._actorMatch===false;
       const col=STAGE_COLORS[d.stage]||'#5BAEF0';
       const isPin=pinned===d.id;
       const fill=S.hatch?`url(#vh-${col.slice(1)})`:col;
       const floorY=GROUND-(slot+1)*FH+0.5;
+      const dealOp = dealDim ? 0.15 : 1;
       svg+=`<rect x="${g.x+1}" y="${floorY}" width="${g.w-2}" height="${FH-1}"
-        fill="${fill}" fill-opacity="${S.hatch?1:0.88}"
+        fill="${fill}" fill-opacity="${S.hatch?dealOp:0.88*dealOp}"
         stroke="${isPin?'#00DEDB':(S.hatch?col:'none')}" stroke-width="${isPin?2.5:(S.hatch?1:0)}"
+        opacity="${dealOp}"
         data-deal="${d.id}" style="cursor:pointer"></rect>`;
       const roles=ROLE_BARS.filter(r=>d[r.key]);
       roles.forEach((r,ri)=>{
@@ -246,10 +274,10 @@ function render(){
         const tb=TIPO_BADGE[d.tipo];
         ov+=`<div style="left:${px(g.x+3)}%;top:${py(floorY+3)}%;background:${tb.bg};color:#fff;font-size:6px;font-family:var(--font-mono);font-weight:700;padding:0 3px;border-radius:2px;line-height:1.6;opacity:${op*0.9}">${tb.label}</div>`;
       }
-      if(!m.ctx||g.w>=130) ov+=`<div style="left:${px(g.x+6)}%;top:${py(textY)}%;transform:translateY(-50%);font-size:${g.w>=160?9.5:8.5}px;font-weight:600;color:${lcol};opacity:${op}">${esc(short)}</div>`;
+      if(!m.ctx||g.w>=130) ov+=`<div style="left:${px(g.x+6)}%;top:${py(textY)}%;transform:translateY(-50%);font-size:${g.w>=160?9.5:8.5}px;font-weight:600;color:${lcol};opacity:${op*dealOp}">${esc(short)}</div>`;
       if(hasDono&&(!m.ctx||g.w>=130)){
         const donoShort=g.w<140?d.dono.split(' ')[0]:d.dono;
-        ov+=`<div style="left:${px(g.x+6)}%;top:${py(cy+FH*0.18)}%;transform:translateY(-50%);font-size:7.5px;font-style:italic;color:${lcol};opacity:${op*0.6};white-space:nowrap;overflow:hidden;max-width:${g.w*0.6}px">${esc(donoShort)}</div>`;
+        ov+=`<div style="left:${px(g.x+6)}%;top:${py(cy+FH*0.18)}%;transform:translateY(-50%);font-size:7.5px;font-style:italic;color:${lcol};opacity:${op*dealOp*0.6};white-space:nowrap;overflow:hidden;max-width:${g.w*0.6}px">${esc(donoShort)}</div>`;
       }
       const pillBg=S.hatch?'rgba(255,255,255,0.55)':col;
       const pillCol=S.hatch?'#0E1A1A':ink(col);
@@ -312,7 +340,8 @@ function render(){
               : c.kind==='dono'    ? '#C8940A'
               : c.kind==='broker'  ? '#00585C'
               : '#9650DC';
-    svg+=`<path d="${d}" fill="none" stroke="${col}" stroke-width="1.8" ${c.dashed?'stroke-dasharray="6 5"':''} opacity="0.55" stroke-linecap="round" data-conn="${ci}" data-conn-a="${c.a.id}" data-conn-b="${c.b.id}"></path>`;
+    const connOp = actorFilter ? 0.90 : 0.55;
+    svg+=`<path d="${d}" fill="none" stroke="${col}" stroke-width="${actorFilter?2.4:1.8}" ${c.dashed?'stroke-dasharray="6 5"':''} opacity="${connOp}" stroke-linecap="round" data-conn="${ci}" data-conn-a="${c.a.id}" data-conn-b="${c.b.id}"></path>`;
     svg+=`<path d="${d}" fill="none" stroke="transparent" stroke-width="14" data-connhit="${ci}" style="cursor:pointer"></path>`;
     ov+=`<div style="left:${px(mx)}%;top:${py(my)}%;transform:translate(-50%,-50%);font-size:8.5px;font-family:var(--font-mono);color:#3a4a4a;background:#fff;border:1px solid rgba(14,26,26,.2);padding:2px 7px;border-radius:2px;opacity:1;display:none" data-connbadge="${ci}">${esc(c.anot)}</div>`;
   });
@@ -331,9 +360,14 @@ function render(){
   const focal = model.find(m=>m.focal);
   nomeEl.textContent = focal.ed;
   const relCount = model.length-1;
-  metaEl.textContent = `Proprietário: ${focal.dono} · ${focal.deals.length} deal(s) no prédio · ${relCount} prédio(s) relacionado(s)`
-    + (model.hiddenRel ? ` (+${model.hiddenRel} ocultos)` : '')
-    + ` · ${conns.length} conexão(ões)`;
+  if(actorFilter){
+    metaEl.textContent = `${model.length} prédio(s) · ${conns.length} conexão(ões)`;
+  } else {
+    metaEl.textContent = `Proprietário: ${focal.dono} · ${focal.deals.length} deal(s) no prédio · ${relCount} prédio(s) relacionado(s)`
+      + (model.hiddenRel ? ` (+${model.hiddenRel} ocultos)` : '')
+      + ` · ${conns.length} conexão(ões)`;
+  }
+  renderFilterBadge();
 
   // interações
   const tip = document.getElementById('vd-tip');
@@ -374,13 +408,18 @@ function render(){
           ${d.contatos&&d.contatos.length?`<span>Contatos</span><b>${d.contatos.map(c=>esc(c.nome)+(c.cargo?` <span style="opacity:.6;font-weight:400">· ${esc(c.cargo)}</span>`:'')).join('<br>')}</b>`:''}
         </div>
         ${d.concorrente?`<div class="vd-tn">▲ Concorrente no deal: ${esc(d.concorrente)}</div>`:''}
-        <div class="vd-th">clique para fixar os detalhes · Abrir no HubSpot ↗</div>`;
+        <div class="vd-th">${d.cliente?`<b style="cursor:pointer;text-decoration:underline" data-filter-cliente="${esc(d.cliente)}">⊙ Filtrar por ${esc(d.cliente)}</b> · `:''}clique para fixar · <a href="https://app.hubspot.com/contacts/51253038/deal/${d.id}" target="_blank" style="color:inherit;text-decoration:underline">HubSpot ↗</a></div>`;
     });
     r.addEventListener('mouseleave', ()=>{ tip.style.display='none'; hideConns(); });
-    r.addEventListener('click', ()=>{ pinned = pinned===d.id?null:d.id; render(); });
+    r.addEventListener('click', (e)=>{
+      // clique no link "Filtrar por X" dentro do tooltip
+      const fc = e.target.closest('[data-filter-cliente]');
+      if(fc){ setActorFilter('cliente', fc.dataset.filterCliente); return; }
+      pinned = pinned===d.id?null:d.id; render();
+    });
   });
   host.querySelectorAll('[data-focus]').forEach(el=>{
-    el.addEventListener('click', ()=>{ focalEd=el.dataset.focus; pinned=null; _modelCache=null; render(); const _en=NODES&&NODES.find(n=>n.type==='edificio'&&n.label===focalEd); if(typeof updateTableFromNode==='function') updateTableFromNode(_en||null); });
+    el.addEventListener('click', ()=>{ focalEd=el.dataset.focus; pinned=null; _modelCache=null; actorFilter=null; render(); const _en=NODES&&NODES.find(n=>n.type==='edificio'&&n.label===focalEd); if(typeof updateTableFromNode==='function') updateTableFromNode(_en||null); });
   });
   host.querySelector('[data-clear]').addEventListener('click', ()=>{ if(pinned){ pinned=null; render(); } });
   host.querySelectorAll('[data-connhit]').forEach(p=>{
@@ -417,11 +456,32 @@ function renderPin(){
       <div><div class="vd-kl">Nota</div><div class="vd-kvv" style="color:#6b5200">${esc(d.concorrente?('Concorrente: '+d.concorrente):(d.parceiro?('Parceiro: '+d.parceiro):'—'))}</div></div>
     </div>
     <div class="vd-pinbtns">
-      <button class="vd-hs">Abrir no HubSpot ↗</button>
+      <button class="vd-hs" onclick="window.open('https://app.hubspot.com/contacts/51253038/deal/${d.id}','_blank')">Abrir no HubSpot ↗</button>
       <button class="vd-x" id="vd-unpin">fechar detalhe</button>
     </div>
   </div>`;
   document.getElementById('vd-unpin').onclick=()=>{ pinned=null; render(); };
+}
+
+/* ---- filtro por ator ---- */
+function setActorFilter(kind, value){
+  actorFilter = { kind, value };
+  _modelCache = null;
+  pinned = null;
+  render();
+}
+function clearActorFilter(){
+  actorFilter = null;
+  _modelCache = null;
+  render();
+}
+function renderFilterBadge(){
+  if(!actorFilter){ filterEl.style.display='none'; return; }
+  const LABEL = { cliente:'Cliente', broker:'Broker', gerenciadora:'Gerenciadora', dono:'Dono' };
+  filterEl.style.display='flex';
+  filterEl.style.cssText='display:flex;align-items:center;gap:8px;background:#00DEDB22;border:1px solid #00DEDB;border-radius:3px;padding:4px 10px;font-size:11px;font-weight:600;color:#005554;white-space:nowrap';
+  filterEl.innerHTML=`<span>⊙ ${LABEL[actorFilter.kind]||actorFilter.kind}: <b>${esc(actorFilter.value)}</b></span><button id="vd-clear-filter" style="background:none;border:none;font-size:14px;cursor:pointer;color:#005554;line-height:1;padding:0">✕</button>`;
+  document.getElementById('vd-clear-filter').onclick=()=>clearActorFilter();
 }
 
 const LINK_LEG = { dono:{c:'#C8940A',l:'mesmo dono'}, broker:{c:'#00585C',l:'mesmo broker'}, gerenciadora:{c:'#9650DC',l:'mesma gerenc.'} };
@@ -442,7 +502,7 @@ function renderLegend(model, conns){
 
 /* ---- abrir / fechar ---- */
 function openVista(edLabel){
-  focalEd=edLabel; pinned=null; _modelCache=null;
+  focalEd=edLabel; pinned=null; _modelCache=null; actorFilter=null;
   rebuildClientColor();
   drawer.style.display='flex';
   render();
