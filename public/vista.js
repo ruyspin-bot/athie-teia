@@ -59,10 +59,15 @@ function getModelConns(){
 
 function andarNum(a){ const m = a && a.match(/(\d+)/); return m ? +m[1] : null; }
 // Número legível do andar: usa andares[0].numero se existir,
-// senão extrai dígitos do nome (rejeitando IDs longos do HubSpot).
+// senão tenta o nome do objeto Andar, senão d.andar texto legado.
+// Rejeita IDs HubSpot (>5 dígitos consecutivos) como número de andar.
 function andarDisplay(d){
-  if(d.andares && d.andares.length && d.andares[0].numero != null && d.andares[0].numero !== '')
-    return String(d.andares[0].numero);
+  for(const a of (d.andares||[])){
+    if(a.numero != null && a.numero !== '') return String(a.numero);
+  }
+  for(const a of (d.andares||[])){
+    if(a.nome){ const m=a.nome.match(/(\d+)/); if(m && m[1].length<=5) return m[1]; }
+  }
   const m = (d.andar||'').match(/(\d+)/);
   if(m && m[1].length <= 5) return m[1];
   return d.n != null ? String(d.n) : '?';
@@ -131,16 +136,33 @@ function mergeAndarTipo(deals){
 function buildModel(focal){
   const byEd = {};
   DEALS.forEach(d=>{
-    // Usa andares[0].numero como chave real do andar (número legível, ex: 7).
-    // Fallback para andarNum(d.andar) apenas se o campo estruturado não existir.
-    // Isso evita que dois deals do mesmo andar físico tenham chaves diferentes
-    // por causa de IDs internos do HubSpot no campo d.andar.
-    let n = null;
-    if(d.andares && d.andares.length && d.andares[0].numero != null && d.andares[0].numero !== ''){
-      n = Number(d.andares[0].numero);
-      if(isNaN(n)) n = null;
+    // Resolve o número do andar para uso como chave de agrupamento.
+    // Prioridade:
+    //   1. andares[0].numero  (campo estruturado "numero_do_andar" do HubSpot — ex: "7")
+    //   2. andares[0].nome    (nome do objeto Andar — ex: "Andar 7"; rejeita IDs longos)
+    //   3. d.andar            (texto legado no deal — ex: "Andar 7"; rejeita IDs longos)
+    // "Rejeitar IDs longos" = string com mais de 5 dígitos consecutivos → não é nº de andar.
+    function resolveN(d){
+      // 1. campo numero estruturado
+      for(const a of (d.andares||[])){
+        if(a.numero != null && a.numero !== ''){
+          const v = Number(a.numero);
+          if(!isNaN(v)) return v;
+        }
+      }
+      // 2. nome do objeto Andar (ex: "Andar 7")
+      for(const a of (d.andares||[])){
+        if(a.nome){
+          const m = a.nome.match(/(\d+)/);
+          if(m && m[1].length <= 5) return Number(m[1]);
+        }
+      }
+      // 3. texto legado d.andar — rejeita IDs do HubSpot (>5 dígitos)
+      const m = (d.andar||'').match(/(\d+)/);
+      if(m && m[1].length <= 5) return Number(m[1]);
+      return null;
     }
-    if(n == null) n = andarNum(d.andar);
+    const n = resolveN(d);
     if(n == null) return;
     (byEd[d.edificio] = byEd[d.edificio]||[]).push(Object.assign({}, d, { n }));
   });
