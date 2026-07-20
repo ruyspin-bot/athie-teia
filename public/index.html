@@ -812,10 +812,11 @@ window.addEventListener('resize',()=>{ resize(); if(!running)draw(); });
 // Ficam fixos aqui e são ignorados pela física — não se movem sozinhos.
 function layoutOrphans(orphans){
   if(!orphans||!orphans.length) return;
-  const cols=Math.ceil(Math.sqrt(orphans.length))||1;
-  const sx=78, sy=68;
+  const N=orphans.length;
+  const cols=Math.ceil(Math.sqrt(N*1.7))||1; // bloco em paisagem (cabe melhor na tela)
+  const sx=58, sy=52;
   const x0=-(cols-1)*sx/2;
-  const y0=920; // abaixo do cluster conectado (que orbita a origem)
+  const y0=760; // logo abaixo do cluster de relações (que orbita a origem)
   orphans.forEach((n,i)=>{ const r=Math.floor(i/cols), c=i%cols; n.x=x0+c*sx; n.y=y0+r*sy; n.vx=0; n.vy=0; });
 }
 
@@ -1238,7 +1239,7 @@ window.addEventListener('blur',()=>{
 canvas.addEventListener('wheel',e=>{
   e.preventDefault();
   const p=ep(e), [wx,wy]=toWorld(p.x,p.y);
-  cam.scale=Math.max(0.3,Math.min(4,cam.scale*(e.deltaY<0?1.13:1/1.13)));
+  cam.scale=Math.max(0.18,Math.min(4,cam.scale*(e.deltaY<0?1.13:1/1.13)));
   const [nx,ny]=toWorld(p.x,p.y); cam.x+=wx-nx; cam.y+=wy-ny;
   if(!running)draw();
 },{passive:false});
@@ -1252,18 +1253,17 @@ document.getElementById('btn-reset').onclick=()=>{
 };
 document.getElementById('btn-fit').onclick=fitView;
 document.getElementById('zin').onclick=()=>{ cam.scale=Math.min(4,cam.scale*1.2); if(!running)draw(); };
-document.getElementById('zout').onclick=()=>{ cam.scale=Math.max(0.3,cam.scale/1.2); if(!running)draw(); };
+document.getElementById('zout').onclick=()=>{ cam.scale=Math.max(0.18,cam.scale/1.2); if(!running)draw(); };
 
 function fitView(){
-  // Enquadra o cluster de RELAÇÕES por padrão (ignora o grid de inventário órfão);
-  // o inventário fica acessível por scroll/zoom/busca.
-  let vis=NODES.filter(n=>nodeVisible(n)&&!n.orphan);
-  if(!vis.length) vis=NODES.filter(nodeVisible);
-  if(!vis.length) return;
+  // Enquadra TODOS os nós visíveis — inclusive o inventário de edifícios —
+  // pra que "todos os prédios" apareçam de cara. O cluster de relações fica
+  // em cima; o bloco de inventário logo abaixo.
+  const vis=NODES.filter(nodeVisible); if(!vis.length) return;
   let x0=Infinity,y0=Infinity,x1=-Infinity,y1=-Infinity;
   vis.forEach(n=>{ x0=Math.min(x0,n.x);y0=Math.min(y0,n.y);x1=Math.max(x1,n.x);y1=Math.max(y1,n.y); });
   cam.x=(x0+x1)/2; cam.y=(y0+y1)/2;
-  cam.scale=Math.max(0.3,Math.min(1.6,Math.min(W/(x1-x0+140),H/(y1-y0+140))));
+  cam.scale=Math.max(0.18,Math.min(1.6,Math.min(W/(x1-x0+140),H/(y1-y0+140))));
   if(!running)draw();
 }
 // fitView chamado pelo boot() após dados carregados
