@@ -181,10 +181,7 @@
   .vd-title{flex:1;min-width:0;}
   #vd-nome{font-family:var(--font-head);font-size:16px;font-weight:700;letter-spacing:-.2px;line-height:1.25;}
   #vd-meta{font-size:10.5px;color:rgba(14,26,26,.45);font-weight:300;}
-  .vd-styles{display:flex;border:1px solid rgba(14,26,26,.15);border-radius:3px;overflow:hidden;}
-  .vd-styles button{background:#fff;border:none;border-right:1px solid rgba(14,26,26,.1);padding:6px 11px;font-family:inherit;font-size:10px;cursor:pointer;color:rgba(14,26,26,.55);}
-  .vd-styles button:last-child{border-right:none;}
-  .vd-styles button.on{background:var(--dark-tiffany);color:#fff;}
+  .vd-styles{display:none;}
   #vd-host{position:relative;flex-shrink:0;}
   .vd-tip{display:none;position:absolute;left:0;top:0;width:258px;max-height:290px;overflow-y:auto;background:#fff;border:1px solid rgba(14,26,26,.15);box-shadow:0 10px 26px rgba(14,26,26,.2);border-radius:3px;padding:12px 14px;pointer-events:none;z-index:20;}
   .vd-stage{font-size:8.5px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;padding:3px 8px;border-radius:2px;display:inline-block;}
@@ -908,6 +905,13 @@ function updateTableFromNode(n){
 }
 function selectNode(id, center){
   selected=id; selNeighbors=adj[id]?new Set(adj[id]):new Set();
+  // Expandir 2 hops somente via nós do tipo 'andar', para que edifícios fiquem
+  // visíveis ao selecionar um deal sem iluminar todo o grafo ao clicar em hubs.
+  const firstHop=[...selNeighbors];
+  firstHop.forEach(nb=>{
+    const nbNode=nodesMap.get(nb);
+    if(nbNode&&nbNode.type==='andar'&&adj[nb]) adj[nb].forEach(nb2=>selNeighbors.add(nb2));
+  });
   renderDetail(id);
   if(center){ const n=nodesMap.get(id); if(n){ cam.x=n.x; cam.y=n.y; if(cam.scale<0.9)cam.scale=1; } }
   updateTableFromNode(nodesMap.get(id));

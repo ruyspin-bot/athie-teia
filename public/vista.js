@@ -29,16 +29,28 @@ const STAGE_COLORS = {
 };
 const CLIENT_PALETTE = ['#3278DC','#9650DC','#E63232','#00AA50','#E0A800','#00585C','#DC6432','#3232AA'];
 const clientColor = {};
-[...new Set(DEALS.map(d=>d.cliente))].forEach((c,i)=>{ clientColor[c]=CLIENT_PALETTE[i%CLIENT_PALETTE.length]; });
+function rebuildClientColor(){
+  // chamado em openVista() para garantir que DEALS já tem os dados reais do HubSpot
+  const clients = [...new Set(DEALS.map(d=>d.cliente).filter(Boolean))];
+  clients.forEach((c,i)=>{ if(!clientColor[c]) clientColor[c]=CLIENT_PALETTE[i%CLIENT_PALETTE.length]; });
+}
 
+// Estilo único: Corte 2.5D (visualização 3D isométrica)
 const STYLES = {
-  solida:  { label:'Fachada sólida', body:'#E8ECEC', stroke:'#C0CACA', sw:1,  fl:'rgba(14,26,26,.10)', hatch:false, ground:'#2A3333', gw:2,   depth:false },
-  traco:   { label:'Traço técnico',  body:'#FFFFFF', stroke:'#00585C', sw:.9, fl:'rgba(0,88,92,.16)',  hatch:true,  ground:'#00585C', gw:1.5, depth:false },
-  corte:   { label:'Corte 2.5D',     body:'#EDF1F1', stroke:'#B7C3C3', sw:1,  fl:'rgba(14,26,26,.10)', hatch:false, ground:'#2A3333', gw:3,   depth:true }
+  corte: { label:'Corte 2.5D', body:'#EDF1F1', stroke:'#B7C3C3', sw:1, fl:'rgba(14,26,26,.10)', hatch:false, ground:'#2A3333', gw:3, depth:true }
 };
 let styleKey = 'corte';
 let focalEd = null;   // label do edifício focal
 let pinned = null;    // deal id fixado
+// cache de model+conns por focalEd — evita recomputar O(n²) em re-renders visuais
+let _modelCache = null;  // { ed, model, conns }
+function getModelConns(){
+  if(_modelCache&&_modelCache.ed===focalEd) return _modelCache;
+  const model = buildModel(focalEd);
+  const conns = buildConns(model);
+  _modelCache = { ed:focalEd, model, conns };
+  return _modelCache;
+}
 
 function andarNum(a){ const m = a && a.match(/(\d+)/); return m ? +m[1] : null; }
 function ink(hex){
@@ -97,21 +109,30 @@ const LINK_LABEL = { cliente:'Mesmo cliente', dono:'Mesmo dono', broker:'Mesmo b
 
 function buildConns(model){
   const conns = [];
+  // Para cada par (focal-deal, outro-deal), guarda o vínculo mais forte encontrado
+  // por par de edifícios (focal → ed), evitando linhas sobrepostas.
   const focal = model.find(m=>m.focal);
-  focal.deals.forEach(fd=>{
-    model.forEach(m=>{
-      if(m.focal) return;
+  model.forEach(m=>{
+    if(m.focal) return;
+    // Melhor vínculo entre qualquer fd do focal e qualquer od do prédio m
+    let bestLink=null, bestFd=null, bestOd=null;
+    focal.deals.forEach(fd=>{
       m.deals.forEach(od=>{
         const link = pairLink(fd, od);
         if(!link) return;
-        const dashed = !CLOSED_STAGES.includes(od.stage) && !CLOSED_STAGES.includes(fd.stage);
-        conns.push({
-          kind:link.kind, via:link.via,
-          cliente: link.kind==='cliente' ? link.via : null,
-          a:{ed:focal.ed,n:fd.n,id:fd.id}, b:{ed:m.ed,n:od.n,id:od.id},
-          dashed, anot: LINK_LABEL[link.kind]+' · '+link.via, ctx:m.ctx
-        });
+        // prioridade: menor índice em REL_WEIGHT keys = maior peso
+        if(!bestLink || Object.keys(REL_WEIGHT).indexOf(link.kind) < Object.keys(REL_WEIGHT).indexOf(bestLink.kind)){
+          bestLink=link; bestFd=fd; bestOd=od;
+        }
       });
+    });
+    if(!bestLink) return;
+    const dashed = !CLOSED_STAGES.includes(bestOd.stage) && !CLOSED_STAGES.includes(bestFd.stage);
+    conns.push({
+      kind:bestLink.kind, via:bestLink.via,
+      cliente: bestLink.kind==='cliente' ? bestLink.via : null,
+      a:{ed:focal.ed,n:bestFd.n,id:bestFd.id}, b:{ed:m.ed,n:bestOd.n,id:bestOd.id},
+      dashed, anot: LINK_LABEL[bestLink.kind]+' · '+bestLink.via, ctx:m.ctx
     });
   });
   return conns;
@@ -136,8 +157,7 @@ const TIPO_BADGE={
 
 function render(){
   const S = STYLES[styleKey];
-  const model = buildModel(focalEd);
-  const conns = buildConns(model);
+  const { model, conns } = getModelConns();
 
   // Compacto: só andares ocupados, altura fixa por slot
   const maxOccupied = Math.max(...model.map(m=>m.deals.length), 1);
@@ -292,9 +312,9 @@ function render(){
               : c.kind==='dono'    ? '#C8940A'
               : c.kind==='broker'  ? '#00585C'
               : '#9650DC';
-    svg+=`<path d="${d}" fill="none" stroke="${col}" stroke-width="1.2" ${c.dashed?'stroke-dasharray="6 5"':''} opacity="0.18" stroke-linecap="round" data-conn="${ci}" data-conn-a="${c.a.id}" data-conn-b="${c.b.id}"></path>`;
+    svg+=`<path d="${d}" fill="none" stroke="${col}" stroke-width="1.8" ${c.dashed?'stroke-dasharray="6 5"':''} opacity="0.55" stroke-linecap="round" data-conn="${ci}" data-conn-a="${c.a.id}" data-conn-b="${c.b.id}"></path>`;
     svg+=`<path d="${d}" fill="none" stroke="transparent" stroke-width="14" data-connhit="${ci}" style="cursor:pointer"></path>`;
-    ov+=`<div style="left:${px(mx)}%;top:${py(my)}%;transform:translate(-50%,-50%);font-size:8.5px;font-family:var(--font-mono);color:#3a4a4a;background:#fff;border:1px solid rgba(14,26,26,.2);padding:2px 7px;border-radius:2px;opacity:${c.ctx?0.6:1};display:none" data-connbadge="${ci}">${esc(c.anot)}</div>`;
+    ov+=`<div style="left:${px(mx)}%;top:${py(my)}%;transform:translate(-50%,-50%);font-size:8.5px;font-family:var(--font-mono);color:#3a4a4a;background:#fff;border:1px solid rgba(14,26,26,.2);padding:2px 7px;border-radius:2px;opacity:1;display:none" data-connbadge="${ci}">${esc(c.anot)}</div>`;
   });
 
   host.style.overflowX = 'auto';
@@ -320,13 +340,13 @@ function render(){
   function showConns(dealId){
     host.querySelectorAll('[data-conn]').forEach(p=>{
       const active = p.dataset.connA===dealId||p.dataset.connB===dealId;
-      p.setAttribute('opacity', active ? (p.getAttribute('stroke-dasharray')?'0.75':'0.9') : '0.08');
+      p.setAttribute('opacity', active ? (p.getAttribute('stroke-dasharray')?'0.85':'0.95') : '0.15');
     });
     host.querySelectorAll('[data-connbadge]').forEach(b=>{ b.style.display='none'; });
   }
   function hideConns(){
     if(pinned) return;
-    host.querySelectorAll('[data-conn]').forEach(p=>p.setAttribute('opacity','0.18'));
+    host.querySelectorAll('[data-conn]').forEach(p=>p.setAttribute('opacity','0.55'));
     host.querySelectorAll('[data-connbadge]').forEach(b=>{ b.style.display='none'; });
   }
 
@@ -360,7 +380,7 @@ function render(){
     r.addEventListener('click', ()=>{ pinned = pinned===d.id?null:d.id; render(); });
   });
   host.querySelectorAll('[data-focus]').forEach(el=>{
-    el.addEventListener('click', ()=>{ focalEd=el.dataset.focus; pinned=null; render(); const _en=NODES&&NODES.find(n=>n.type==='edificio'&&n.label===focalEd); if(typeof updateTableFromNode==='function') updateTableFromNode(_en||null); });
+    el.addEventListener('click', ()=>{ focalEd=el.dataset.focus; pinned=null; _modelCache=null; render(); const _en=NODES&&NODES.find(n=>n.type==='edificio'&&n.label===focalEd); if(typeof updateTableFromNode==='function') updateTableFromNode(_en||null); });
   });
   host.querySelector('[data-clear]').addEventListener('click', ()=>{ if(pinned){ pinned=null; render(); } });
   host.querySelectorAll('[data-connhit]').forEach(p=>{
@@ -374,7 +394,6 @@ function render(){
   if(pinned) showConns(pinned);
   renderPin();
   renderLegend(model, conns);
-  renderStyleButtons();
 }
 
 function renderPin(){
@@ -409,28 +428,22 @@ const LINK_LEG = { dono:{c:'#C8940A',l:'mesmo dono'}, broker:{c:'#00585C',l:'mes
 function renderLegend(model, conns){
   const clients=[...new Set(conns.filter(c=>c.kind==='cliente').map(c=>c.via))];
   const kinds=[...new Set(conns.map(c=>c.kind))].filter(k=>k!=='cliente');
+  // Exibe apenas as barras de papel (ROLE_BARS) que aparecem nos deals visíveis
+  const activeRoles=ROLE_BARS.filter(r=>model.some(m=>m.deals.some(d=>d[r.key])));
   legendEl2.innerHTML =
-    clients.map(c=>`<span><i style="background:${clientColor[c]}"></i>${esc(c)}</span>`).join('') +
+    clients.map(c=>`<span><i style="background:${clientColor[c]||'#3278DC'}"></i>${esc(c)}</span>`).join('') +
     kinds.map(k=>`<span><svg width="26" height="6" viewBox="0 0 26 6"><line x1="0" y1="3" x2="26" y2="3" stroke="${LINK_LEG[k].c}" stroke-width="2.4"></line></svg>${LINK_LEG[k].l}</span>`).join('') +
     `<span><svg width="26" height="6" viewBox="0 0 26 6"><line x1="0" y1="3" x2="26" y2="3" stroke="#3a4a4a" stroke-width="1.6"></line></svg>ganho / contrato</span>
      <span><svg width="26" height="6" viewBox="0 0 26 6"><line x1="0" y1="3" x2="26" y2="3" stroke="#3a4a4a" stroke-width="1.6" stroke-dasharray="5 4"></line></svg>em negociação</span>` +
+    (activeRoles.length ? '<span class="vd-dim" style="margin-left:6px">barras no andar: </span>'
+      + activeRoles.map(r=>`<span><i style="background:${r.color}"></i>${r.key}</span>`).join('') : '') +
     `<span class="vd-dim">cor da laje = etapa · linha = vínculo entre prédios</span>`;
-}
-
-function renderStyleButtons(){
-  stylesEl.innerHTML='';
-  Object.entries(STYLES).forEach(([k,s])=>{
-    const b=document.createElement('button');
-    b.textContent=s.label;
-    b.className=k===styleKey?'on':'';
-    b.onclick=()=>{ styleKey=k; render(); };
-    stylesEl.appendChild(b);
-  });
 }
 
 /* ---- abrir / fechar ---- */
 function openVista(edLabel){
-  focalEd=edLabel; pinned=null;
+  focalEd=edLabel; pinned=null; _modelCache=null;
+  rebuildClientColor();
   drawer.style.display='flex';
   render();
   window.dispatchEvent(new Event('resize'));
