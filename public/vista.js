@@ -527,13 +527,13 @@ function render(){
         <div class="vd-th">${d.cliente?`<b style="cursor:pointer;text-decoration:underline" data-filter-cliente="${esc(d.cliente)}">⊙ Filtrar por ${esc(d.cliente)}</b> · `:''}clique para fixar · ${hubLinks}</div>`;
     });
     r.addEventListener('mouseleave', ()=>{ if(!_tipHover){ tip.style.display='none'; } });
-    r.addEventListener('click', ()=>{ pinned = pinned===d.id?null:d.id; render(); });
+    r.addEventListener('click', ()=>{ pinned = pinned===d.id?null:d.id; render(); syncDetail(pinned ? d.id : edNodeId(focalEd)); });
   });
   host.querySelectorAll('[data-focus]').forEach(el=>{
-    el.addEventListener('click', ()=>{ focalEd=el.dataset.focus; pinned=null; _modelCache=null; actorFilter=null; render(); const _en=NODES&&NODES.find(n=>n.type==='edificio'&&n.label===focalEd); if(typeof updateTableFromNode==='function') updateTableFromNode(_en||null); });
+    el.addEventListener('click', ()=>{ focalEd=el.dataset.focus; pinned=null; _modelCache=null; actorFilter=null; render(); const _en=NODES&&NODES.find(n=>n.type==='edificio'&&n.label===focalEd); if(typeof updateTableFromNode==='function') updateTableFromNode(_en||null); syncDetail(_en?_en.id:edNodeId(focalEd)); });
   });
   host.querySelector('[data-clear]').addEventListener('click', ()=>{
-    if(pinned || actorFilter){ pinned=null; if(actorFilter){ actorFilter=null; _modelCache=null; } render(); }
+    if(pinned || actorFilter){ pinned=null; if(actorFilter){ actorFilter=null; _modelCache=null; } render(); syncDetail(edNodeId(focalEd)); }
   });
   // clique direto no label do ator no slot (overlay HTML) → actor filter
   host.querySelectorAll('[data-filter-actor]').forEach(el=>{
@@ -573,11 +573,13 @@ function setActorFilter(kind, value){
   _modelCache = null;
   pinned = null;
   render();
+  syncDetail(actorNodeId(kind, value)); // Detalhe acompanha o ator filtrado
 }
 function clearActorFilter(){
   actorFilter = null;
   _modelCache = null;
   render();
+  syncDetail(edNodeId(focalEd)); // volta o Detalhe ao prédio focal
 }
 function renderFilterBadge(){
   if(!actorFilter){ filterEl.style.display='none'; return; }
@@ -736,6 +738,19 @@ function resolveVistaTarget(n){
   dealsDoAtor.forEach(d=>{ edCount[d.edificio]=(edCount[d.edificio]||0)+1; });
   const ed = Object.entries(edCount).sort((a,b)=>b[1]-a[1])[0][0];
   return { ed, kind, value: n.label };
+}
+
+/* ---- sincroniza o painel "Detalhe" (lateral) com a interação na vista ---- */
+// Prefixos de id de nó no grafo (definidos em index.html ao montar NODES).
+const NODE_PFX = { cliente:'C:', broker:'B:', gerenciadora:'G:', dono:'DO:', parceiro:'E:', concorrente:'E:' };
+function actorNodeId(kind, value){ const p=NODE_PFX[kind]; return p ? p+value : null; }
+function edNodeId(edLabel){ return 'ED:'+edLabel; }
+// Atualiza o Detalhe para um nó SEM reabrir/alterar a vista (skipVista=true evita
+// recursão de volta para enterVista/render). No-op se o nó não existir.
+function syncDetail(nodeId){
+  if(nodeId && typeof selectNode==='function' && typeof nodesMap!=='undefined' && nodesMap.has(nodeId)){
+    selectNode(nodeId, false, true);
+  }
 }
 
 /* ---- entrar na vista para um alvo (ou mostrar vazio se não houver relação) ---- */
