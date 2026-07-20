@@ -699,42 +699,112 @@ function closeVista(){
 }
 document.getElementById('vd-back').onclick=()=>{ closeVista(); if(typeof updateTableFromNode==='function') updateTableFromNode(null); };
 
-/* ---- abrir direto ao clicar num nó de Edifício ou Andar no grafo ---- */
+/* ---- helpers: resolve edifício focal + actorFilter a partir de qualquer nó ---- */
+// Retorna { ed, kind, value } ou null se não houver prédio com andares para esse nó.
+// kind/value preenchidos apenas para atores (broker, gerenciadora, etc.) → actorFilter.
+function resolveVistaTarget(n){
+  if(!n) return null;
+  const ACTOR_KEYS = ['broker','gerenciadora','cliente','dono','parceiro','concorrente'];
+
+  if(n.type==='edificio'){
+    if(!DEALS.some(d=>d.edificio===n.label)) return null;
+    return { ed: n.label, kind: null, value: null };
+  }
+  if(n.type==='andar'){
+    const ed = n.meta && n.meta.edificio;
+    if(!ed) return null;
+    return { ed, kind: null, value: null };
+  }
+  if(n.type==='deal'){
+    const d = DEALS.find(x=>x.id===n.id);
+    if(!d || !d.edificio) return null;
+    return { ed: d.edificio, kind: null, value: null };
+  }
+  // ator: broker, gerenciadora, cliente, dono, parceiro, concorrente
+  const actorKey = ACTOR_KEYS.find(k=>{
+    if(k==='broker')       return n.type==='broker';
+    if(k==='gerenciadora') return n.type==='gerenciadora';
+    if(k==='cliente')      return n.type==='cliente';
+    if(k==='dono')         return n.type==='dono';
+    // parceiro e concorrente mapeados como 'escritorio' na teia
+    if(k==='parceiro'||k==='concorrente') return n.type==='escritorio';
+    return false;
+  });
+  if(!actorKey && n.type!=='escritorio') return null;
+
+  // para escritorio precisamos descobrir se é parceiro ou concorrente
+  let kind = actorKey;
+  if(n.type==='escritorio'){
+    // tenta parceiro primeiro, depois concorrente
+    kind = DEALS.some(d=>d.parceiro===n.label) ? 'parceiro' : 'concorrente';
+  }
+
+  const dealsDoAtor = DEALS.filter(d=>d[kind]===n.label && d.edificio);
+  if(!dealsDoAtor.length) return null;
+  // prédio focal = o que tem mais deals desse ator
+  const edCount = {};
+  dealsDoAtor.forEach(d=>{ edCount[d.edificio]=(edCount[d.edificio]||0)+1; });
+  const ed = Object.entries(edCount).sort((a,b)=>b[1]-a[1])[0][0];
+  return { ed, kind, value: n.label };
+}
+
+/* ---- abrir direto ao clicar num nó ---- */
 const _selectNode = selectNode;
 selectNode = function(id, center, skipVista){
   _selectNode(id, center);
   if(skipVista) return;
   const n = nodesMap.get(id);
-  if(!n) return;
-  let ed = null;
-  if(n.type==='edificio') ed = n.label;
-  else if(n.type==='andar') ed = n.meta && n.meta.edificio;
-  if(ed && DEALS.some(d=>d.edificio===ed && andarNum(d.andar)!=null)){
-    openVista(ed);
+  const target = resolveVistaTarget(n);
+  if(target){
+    focalEd = target.ed;
+    pinned = null;
+    _modelCache = null;
+    actorFilter = target.kind ? { kind: target.kind, value: target.value } : null;
+    rebuildClientColor();
+    drawer.style.display='flex';
+    render();
+    window.dispatchEvent(new Event('resize'));
+    const _en=NODES&&NODES.find(x=>x.type==='edificio'&&x.label===target.ed);
+    if(typeof updateTableFromNode==='function') updateTableFromNode(_en||null);
+    if(typeof window._onOpenVista==='function') window._onOpenVista(target.ed);
   } else {
     closeVista();
   }
 };
 
-/* ---- gancho no painel de detalhe: botão no detalhe de Edifício ---- */
+/* ---- botão "Ver Vista" no painel de detalhes para qualquer nó com prédio ---- */
 const _renderDetail = renderDetail;
 renderDetail = function(id){
   _renderDetail(id);
   if(!id) return;
   const n=nodesMap.get(id);
-  if(n && n.type==='edificio'){
-    const hasFloors = DEALS.some(d=>d.edificio===n.label && andarNum(d.andar)!=null);
-    if(!hasFloors) return;
-    const btn=document.createElement('button');
-    btn.textContent='Ver Vista Multi-Prédio →';
-    btn.style.cssText='width:100%;background:var(--tiffany,#00DEDB);color:#0E1A1A;border:none;border-radius:3px;padding:11px 14px;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;margin-top:12px;';
-    btn.onmouseenter=()=>btn.style.background='#3FE9E6';
-    btn.onmouseleave=()=>btn.style.background='var(--tiffany,#00DEDB)';
-    btn.onclick=()=>openVista(n.label);
-    const panel=document.getElementById('detail-panel');
-    const badge=panel.querySelector('.node-badge');
-    (badge?badge.parentNode:panel).insertBefore(btn, panel.querySelector('.conn-group'));
-  }
+  const target=resolveVistaTarget(n);
+  if(!target) return;
+  const isActor = !!target.kind;
+  const btnLabel = isActor
+    ? `Ver Vista · ${n.label} →`
+    : 'Ver Vista Multi-Prédio →';
+  const btn=document.createElement('button');
+  btn.textContent=btnLabel;
+  btn.style.cssText='width:100%;background:var(--tiffany,#00DEDB);color:#0E1A1A;border:none;border-radius:3px;padding:11px 14px;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;margin-top:12px;';
+  btn.onmouseenter=()=>btn.style.background='#3FE9E6';
+  btn.onmouseleave=()=>btn.style.background='var(--tiffany,#00DEDB)';
+  btn.onclick=()=>{
+    focalEd = target.ed;
+    pinned = null;
+    _modelCache = null;
+    actorFilter = target.kind ? { kind: target.kind, value: target.value } : null;
+    rebuildClientColor();
+    drawer.style.display='flex';
+    render();
+    window.dispatchEvent(new Event('resize'));
+    const _en=NODES&&NODES.find(x=>x.type==='edificio'&&x.label===target.ed);
+    if(typeof updateTableFromNode==='function') updateTableFromNode(_en||null);
+    if(typeof window._onOpenVista==='function') window._onOpenVista(target.ed);
+  };
+  const panel=document.getElementById('detail-panel');
+  const firstGroup=panel.querySelector('.conn-group,.detail-meta,.sumchips');
+  panel.insertBefore(btn, firstGroup||null);
 };
 
 // Expõe openVista/closeVista globalmente para que index.html possa
