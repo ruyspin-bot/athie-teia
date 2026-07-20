@@ -68,6 +68,7 @@ const PROP_EDIFICIO = process.env.HUBSPOT_PROP_EDIFICIO || 'aw_edificio_id';
 const PROP_ANDAR = process.env.HUBSPOT_PROP_ANDAR || 'aw_andar_de_interesse';
 const NUCLEO_SOURCE = process.env.HUBSPOT_NUCLEO_SOURCE || 'pipeline'; // 'pipeline' | 'property'
 const PROP_NUCLEO = process.env.HUBSPOT_PROP_NUCLEO || 'nucleo';
+const PROP_TIPO = process.env.HUBSPOT_PROP_TIPO || 'aw_tipo_de_negocio'; // "Tipo de Negócio AW"
 
 // ---- mapeia o RÓTULO da associação Deal<->Company para um papel conhecido ----
 // Confirmado em 09/07 direto na tela de edição de associação (Deal<->Company)
@@ -137,6 +138,7 @@ module.exports = async (req, res) => {
       PROP_EDIFICIO,
       PROP_ANDAR,
       PROP_NUCLEO,
+      PROP_TIPO,
     ]);
     if (!allDeals.length) {
       const payload = { deals: [], meta: { total_deals: 0, deals_incluidos: 0, gerado_em: new Date().toISOString(), fonte: 'hubspot' } };
@@ -238,6 +240,7 @@ module.exports = async (req, res) => {
         id: d.id,
         nome: p.dealname || `Deal ${d.id}`,
         nucleo,
+        tipo: p[PROP_TIPO] || null,  // "Tipo de Negócio AW" (ex: "Projeto", "Obra")
         stage: stageNamesById[p.dealstage] || p.dealstage || '—',
         valor: p.amount ? parseFloat(p.amount) : null,
         cliente: null,
