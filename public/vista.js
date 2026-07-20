@@ -403,27 +403,7 @@ function render(){
     svg+=`<g opacity="0.72"><line x1="${tx}" y1="${GROUND}" x2="${tx}" y2="${GROUND-11*s}" stroke="#2A3333" stroke-width="1.5"></line><circle cx="${tx}" cy="${GROUND-15*s}" r="${5.5*s}" fill="#2A3333"></circle></g>`;
   });
 
-  // conexões
-  conns.forEach((c,ci)=>{
-    const ga=geo[c.a.ed], gb=geo[c.b.ed];
-    const aC=ga.x+ga.w/2, bC=gb.x+gb.w/2;
-    let x1,x2;
-    if(aC<bC){ x1=ga.x+ga.w; x2=gb.x; } else { x1=ga.x; x2=gb.x+gb.w; }
-    if(S.depth && aC<bC) x1+=dxo;
-    const y1=centY(c.a.ed,c.a.id), y2=centY(c.b.ed,c.b.id);
-    const lift = Math.abs(ga.i-gb.i)>1 ? 58 : 0;
-    const dxc=(x2-x1)*.4;
-    const d=`M${x1},${y1} C${x1+dxc},${y1-lift} ${x2-dxc},${y2-lift} ${x2},${y2}`;
-    const mx=(x1+3*(x1+dxc)+3*(x2-dxc)+x2)/8, my=(y1+3*(y1-lift)+3*(y2-lift)+y2)/8;
-    const col = c.kind==='cliente' ? (clientColor[c.via]||'#3278DC')
-              : c.kind==='dono'    ? '#C8940A'
-              : c.kind==='broker'  ? '#00585C'
-              : '#9650DC';
-    const connOp = actorFilter ? 0.90 : 0.55;
-    svg+=`<path d="${d}" fill="none" stroke="${col}" stroke-width="${actorFilter?2.4:1.8}" ${c.dashed?'stroke-dasharray="6 5"':''} opacity="${connOp}" stroke-linecap="round" data-conn="${ci}" data-conn-a="${c.a.id}" data-conn-b="${c.b.id}"></path>`;
-    svg+=`<path d="${d}" fill="none" stroke="transparent" stroke-width="14" data-connhit="${ci}" style="cursor:pointer"></path>`;
-    ov+=`<div style="left:${px(mx)}%;top:${py(my)}%;transform:translate(-50%,-50%);font-size:8.5px;font-family:var(--font-mono);color:#3a4a4a;background:#fff;border:1px solid rgba(14,26,26,.2);padding:2px 7px;border-radius:2px;opacity:1;display:none" data-connbadge="${ci}">${esc(c.anot)}</div>`;
-  });
+  // conexões entre prédios removidas — vínculos visíveis no painel de entidades abaixo
 
   host.style.overflowX = 'auto';
   // Injeta os prefixos de estilo corretos em cada div do overlay:
@@ -447,11 +427,10 @@ function render(){
   nomeEl.textContent = focal.ed;
   const relCount = model.length-1;
   if(actorFilter){
-    metaEl.textContent = `${model.length} prédio(s) · ${conns.length} conexão(ões)`;
+    metaEl.textContent = `${model.length} prédio(s)`;
   } else {
     metaEl.textContent = `Proprietário: ${focal.dono} · ${focal.deals.length} deal(s) no prédio · ${relCount} prédio(s) relacionado(s)`
-      + (model.hiddenRel ? ` (+${model.hiddenRel} ocultos)` : '')
-      + ` · ${conns.length} conexão(ões)`;
+      + (model.hiddenRel ? ` (+${model.hiddenRel} ocultos)` : '');
   }
   renderFilterBadge();
 
@@ -466,26 +445,12 @@ function render(){
     if(fa){ tip.style.display='none'; setActorFilter(fa.dataset.filterActor, fa.dataset.filterVal); }
   };
   tip.addEventListener('mouseenter', ()=>{ _tipHover=true; });
-  tip.addEventListener('mouseleave', ()=>{ _tipHover=false; tip.style.display='none'; hideConns(); });
-
-  function showConns(dealId){
-    host.querySelectorAll('[data-conn]').forEach(p=>{
-      const active = p.dataset.connA===dealId||p.dataset.connB===dealId;
-      p.setAttribute('opacity', active ? (p.getAttribute('stroke-dasharray')?'0.85':'0.95') : '0.15');
-    });
-    host.querySelectorAll('[data-connbadge]').forEach(b=>{ b.style.display='none'; });
-  }
-  function hideConns(){
-    if(pinned) return;
-    host.querySelectorAll('[data-conn]').forEach(p=>p.setAttribute('opacity','0.55'));
-    host.querySelectorAll('[data-connbadge]').forEach(b=>{ b.style.display='none'; });
-  }
+  tip.addEventListener('mouseleave', ()=>{ _tipHover=false; tip.style.display='none'; });
 
   host.querySelectorAll('[data-deal]').forEach(r=>{
     const d = modelDealMap[r.dataset.deal];
     if(!d) return; // segurança
     r.addEventListener('mouseenter', e=>{
-      showConns(d.id);
       const hr=host.getBoundingClientRect(), rr=r.getBoundingClientRect();
       let x=rr.right-hr.left+12;
       if(x>hr.width-270) x=rr.left-hr.left-272;
@@ -513,7 +478,7 @@ function render(){
         ${d.concorrente?`<div class="vd-tn">▲ Concorrente no deal: ${esc(d.concorrente)}</div>`:''}
         <div class="vd-th">${d.cliente?`<b style="cursor:pointer;text-decoration:underline" data-filter-cliente="${esc(d.cliente)}">⊙ Filtrar por ${esc(d.cliente)}</b> · `:''}clique para fixar · ${hubLinks}</div>`;
     });
-    r.addEventListener('mouseleave', ()=>{ if(!_tipHover){ tip.style.display='none'; hideConns(); } });
+    r.addEventListener('mouseleave', ()=>{ if(!_tipHover){ tip.style.display='none'; } });
     r.addEventListener('click', ()=>{ pinned = pinned===d.id?null:d.id; render(); });
   });
   host.querySelectorAll('[data-focus]').forEach(el=>{
@@ -526,17 +491,8 @@ function render(){
   host.querySelectorAll('[data-filter-actor]').forEach(el=>{
     el.addEventListener('click', (e)=>{ e.stopPropagation(); setActorFilter(el.dataset.filterActor, el.dataset.filterVal); });
   });
-  host.querySelectorAll('[data-connhit]').forEach(p=>{
-    const ci=p.dataset.connhit;
-    const line=host.querySelector(`[data-conn="${ci}"]`);
-    const badge=host.querySelector(`[data-connbadge="${ci}"]`);
-    p.addEventListener('mouseenter',()=>{ line.setAttribute('stroke-width','2.6'); if(badge){badge.style.display='block';badge.style.borderColor=line.getAttribute('stroke');} });
-    p.addEventListener('mouseleave',()=>{ line.setAttribute('stroke-width','1.2'); if(badge){badge.style.display='none';} });
-  });
-
-  if(pinned) showConns(pinned);
   renderPin();
-  renderLegend(model, conns);
+  renderLegend(model);
   renderEntityPanel(model);
 }
 
@@ -667,20 +623,13 @@ function renderEntityPanel(model){
   });
 }
 
-const LINK_LEG = { dono:{c:'#C8940A',l:'mesmo dono'}, broker:{c:'#00585C',l:'mesmo broker'}, gerenciadora:{c:'#9650DC',l:'mesma gerenc.'} };
-function renderLegend(model, conns){
-  const clients=[...new Set(conns.filter(c=>c.kind==='cliente').map(c=>c.via))];
-  const kinds=[...new Set(conns.map(c=>c.kind))].filter(k=>k!=='cliente');
+function renderLegend(model){
   // Exibe apenas as barras de papel (ROLE_BARS) que aparecem nos deals visíveis
   const activeRoles=ROLE_BARS.filter(r=>model.some(m=>m.deals.some(d=>d[r.key])));
   legendEl2.innerHTML =
-    clients.map(c=>`<span><i style="background:${clientColor[c]||'#3278DC'}"></i>${esc(c)}</span>`).join('') +
-    kinds.map(k=>`<span><svg width="26" height="6" viewBox="0 0 26 6"><line x1="0" y1="3" x2="26" y2="3" stroke="${LINK_LEG[k].c}" stroke-width="2.4"></line></svg>${LINK_LEG[k].l}</span>`).join('') +
-    `<span><svg width="26" height="6" viewBox="0 0 26 6"><line x1="0" y1="3" x2="26" y2="3" stroke="#3a4a4a" stroke-width="1.6"></line></svg>ganho / contrato</span>
-     <span><svg width="26" height="6" viewBox="0 0 26 6"><line x1="0" y1="3" x2="26" y2="3" stroke="#3a4a4a" stroke-width="1.6" stroke-dasharray="5 4"></line></svg>em negociação</span>` +
-    (activeRoles.length ? '<span class="vd-dim" style="margin-left:6px">barras no andar: </span>'
-      + activeRoles.map(r=>`<span><i style="background:${r.color}"></i>${r.key}</span>`).join('') : '') +
-    `<span class="vd-dim">cor da laje = etapa · linha = vínculo entre prédios</span>`;
+    `<span class="vd-dim">cor da laje = etapa</span>` +
+    (activeRoles.length ? '<span class="vd-dim" style="margin-left:6px">barras: </span>'
+      + activeRoles.map(r=>`<span><i style="background:${r.color}"></i>${r.key}</span>`).join('') : '');
 }
 
 /* ---- abrir / fechar ---- */
