@@ -275,7 +275,12 @@ function render(){
         const tipoLabel=FH>40?d.tipo:tb.label; // label completo se espaço, abrev. se compacto
         ov+=`<div style="left:${px(g.x+3)}%;top:${py(floorY+FH-4)}%;transform:translateY(-100%);background:${tb.bg};color:#fff;font-size:${FH>40?7.5:6.5}px;font-family:var(--font-mono);font-weight:700;padding:0 4px;border-radius:2px;line-height:1.7;opacity:${op*dealOp*0.95}">${esc(tipoLabel)}</div>`;
       }
-      if(!m.ctx||g.w>=130) ov+=`<div style="left:${px(g.x+6)}%;top:${py(textY)}%;transform:translateY(-50%);font-size:${g.w>=160?9.5:8.5}px;font-weight:600;color:${lcol};opacity:${op*dealOp}">${esc(short)}</div>`;
+      // nome do cliente: clicável para filtrar (só se tiver cliente real)
+      if(!m.ctx||g.w>=130){
+        const hasCliente=d.cliente&&d.cliente!==d.nome;
+        ov+=`<div ${hasCliente?`data-filter-cliente="${esc(d.cliente)}" style="left:${px(g.x+6)}%;top:${py(textY)}%;transform:translateY(-50%);font-size:${g.w>=160?9.5:8.5}px;font-weight:600;color:${lcol};opacity:${op*dealOp};cursor:pointer;text-decoration:underline dotted"`:
+          `style="left:${px(g.x+6)}%;top:${py(textY)}%;transform:translateY(-50%);font-size:${g.w>=160?9.5:8.5}px;font-weight:600;color:${lcol};opacity:${op*dealOp}"`}>${esc(short)}</div>`;
+      }
       if(hasDono&&(!m.ctx||g.w>=130)){
         const donoShort=g.w<140?d.dono.split(' ')[0]:d.dono;
         ov+=`<div style="left:${px(g.x+6)}%;top:${py(cy+FH*0.18)}%;transform:translateY(-50%);font-size:7.5px;font-style:italic;color:${lcol};opacity:${op*dealOp*0.6};white-space:nowrap;overflow:hidden;max-width:${g.w*0.6}px">${esc(donoShort)}</div>`;
@@ -429,6 +434,10 @@ function render(){
     el.addEventListener('click', ()=>{ focalEd=el.dataset.focus; pinned=null; _modelCache=null; actorFilter=null; render(); const _en=NODES&&NODES.find(n=>n.type==='edificio'&&n.label===focalEd); if(typeof updateTableFromNode==='function') updateTableFromNode(_en||null); });
   });
   host.querySelector('[data-clear]').addEventListener('click', ()=>{ if(pinned){ pinned=null; render(); } });
+  // clique direto no nome do cliente no slot (overlay HTML) → actor filter
+  host.querySelectorAll('[data-filter-cliente]').forEach(el=>{
+    el.addEventListener('click', (e)=>{ e.stopPropagation(); setActorFilter('cliente', el.dataset.filterCliente); });
+  });
   host.querySelectorAll('[data-connhit]').forEach(p=>{
     const ci=p.dataset.connhit;
     const line=host.querySelector(`[data-conn="${ci}"]`);
