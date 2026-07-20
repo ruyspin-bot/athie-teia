@@ -232,6 +232,7 @@ function addVacantFloors(model){
       occupied.add(num);
       m.deals.push({ id:`_vac_${edId}_${num}`, n:num, _vacant:true,
         nome:f.nome||('Andar '+num), disp:f.disp||null, area:f.area||null,
+        conjuntos:f.conjuntos||[],
         cliente:null, stage:null, valor:null, tipo:null, edificio:m.ed });
     });
   });
@@ -371,17 +372,28 @@ function render(){
     m.deals.forEach(d=>{
       const slot=slotMap[m.ed][d.id];
 
-      // ── andar VAGO (sem deal): slot cinza tracejado, sem interação ──
+      // ── andar VAGO (sem deal): slot cinza tracejado; mostra o(s) conjunto(s) ──
       if(d._vacant){
         const fyv=GROUND-(slot+1)*FH+0.5;
         const cyv=centY(m.ed,d.id);
+        const cj=d.conjuntos||[];
         svg+=`<rect x="${g.x+1}" y="${fyv}" width="${g.w-2}" height="${FH-1}"
           fill="#E7ECEC" fill-opacity="0.9" stroke="#C2CCCC" stroke-width="0.8" stroke-dasharray="3 2"
-          data-vacant="1" style="cursor:default" pointer-events="none"></rect>`;
+          data-vacant="${esc(d.id)}" style="cursor:${cj.length?'help':'default'}"></rect>`;
         ov+=`<div data-novwrap style="left:${px(g.x-5)}%;top:${py(cyv)}%;transform:translate(-100%,-50%);font-size:9px;font-family:var(--font-mono);color:rgba(14,26,26,.32);font-weight:700;opacity:${op}">${esc(andarDisplay(d))}</div>`;
         if(FH>13){
-          const vlabel = d.disp ? esc(d.disp) : (d.area?`${esc(String(d.area))} m²`:'Disponível');
-          ov+=`<div style="left:${px(g.x+5)}%;top:${py(cyv)}%;transform:translateY(-50%);font-size:7.5px;font-style:italic;color:rgba(14,26,26,.42);opacity:${op}">${vlabel}</div>`;
+          let vlabel;
+          if(cj.length){
+            const main=cj[0];
+            const extra=cj.length>1?` +${cj.length-1}`:'';
+            vlabel=(main.proprietario?esc(main.proprietario):'Conjunto')
+              + (main.area?` · ${esc(String(main.area))}m²`:'') + extra;
+          } else {
+            vlabel=d.disp?esc(d.disp):(d.area?`${esc(String(d.area))} m²`:'Disponível');
+          }
+          // nº de conjuntos: badge à direita quando >1
+          const badge = cj.length>1 ? `<span style="background:#00585C;color:#fff;font-size:6.5px;font-weight:700;padding:0 3px;border-radius:2px;margin-left:4px">${cj.length} conj</span>` : '';
+          ov+=`<div style="left:${px(g.x+5)}%;top:${py(cyv)}%;transform:translateY(-50%);max-width:${g.w-12}px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:7.5px;color:rgba(14,26,26,.55);opacity:${op}">${vlabel}${badge}</div>`;
         }
         return;
       }
@@ -570,6 +582,30 @@ function render(){
     });
     r.addEventListener('mouseleave', ()=>{ if(!_tipHover){ tip.style.display='none'; } });
     r.addEventListener('click', ()=>{ pinned = pinned===d.id?null:d.id; render(); syncDetail(pinned ? d.id : edNodeId(focalEd)); });
+  });
+  // tooltip dos andares VAGOS: lista os conjuntos (nome, proprietário, área, disp.)
+  host.querySelectorAll('[data-vacant]').forEach(r=>{
+    const d = modelDealMap[r.dataset.vacant]; if(!d) return;
+    const cj = d.conjuntos||[];
+    if(!cj.length) return; // andar sem conjunto cadastrado
+    r.addEventListener('mouseenter', ()=>{
+      const hr=host.getBoundingClientRect(), rr=r.getBoundingClientRect();
+      const sl=host.scrollLeft||0;
+      const rectLeft=rr.left-hr.left+sl, rectRight=rr.right-hr.left+sl, visW=hr.width;
+      let x=rectRight+12; if(x-sl+270>visW) x=rectLeft-272; x=Math.max(sl+4,x);
+      const y=Math.max(6,Math.min(rr.top-hr.top-8, hr.height-260));
+      tip.style.transform=`translate(${x}px,${y}px)`;
+      tip.style.display='block';
+      const rows = cj.map(c=>`<div style="padding:5px 0;border-top:1px solid rgba(14,26,26,.07)">
+          <div style="font-weight:600">${esc(c.nome||'Conjunto')}</div>
+          <div class="vd-tg" style="margin-top:2px">
+            <span>Proprietário</span><b>${esc(c.proprietario||'—')}</b>
+            <span>Área</span><b>${c.area?esc(String(c.area))+' m²':'—'}</b>
+            <span>Disponibilidade</span><b>${esc(c.disp||'—')}</b>
+          </div></div>`).join('');
+      tip.innerHTML=`<div class="vd-tr"><span class="vd-tf">Andar ${esc(andarDisplay(d))}</span> · ${cj.length} conjunto(s)</div>${rows}`;
+    });
+    r.addEventListener('mouseleave', ()=>{ if(!_tipHover){ tip.style.display='none'; } });
   });
   host.querySelectorAll('[data-focus]').forEach(el=>{
     el.addEventListener('click', ()=>{ focalEd=el.dataset.focus; pinned=null; _modelCache=null; actorFilter=null; render(); const _en=NODES&&NODES.find(n=>n.type==='edificio'&&n.label===focalEd); if(typeof updateTableFromNode==='function') updateTableFromNode(_en||null); syncDetail(_en?_en.id:edNodeId(focalEd)); });
@@ -841,15 +877,18 @@ function edIdForBuilding(nome){
   const n = (typeof NODES!=='undefined') && NODES.find(x=>x.type==='edificio' && x.label===nome);
   return n ? (n.edificioId || null) : null;
 }
-// Carrega sob demanda os andares de um edifício (se ainda não estiverem em cache).
+// Carrega sob demanda os andares (com conjuntos) de um edifício. Busca 1x por
+// prédio, sobrescrevendo floors do payload (que não trazem conjuntos).
+const _floorsFetched = new Set();
 async function ensureFloors(edId){
-  if(!edId) return;
+  if(!edId || _floorsFetched.has(edId)) return;
+  _floorsFetched.add(edId);
   const F = window.FLOORS_BY_EDIFICIO_ID = window.FLOORS_BY_EDIFICIO_ID || {};
-  if(F[edId]) return; // já veio no payload (prédios com deal) ou já buscado
   try{
     const r = await fetch('/api/andares?edificioId='+encodeURIComponent(edId), {cache:'no-store'});
-    F[edId] = r.ok ? ((await r.json()).andares || []) : [];
-  }catch(_){ F[edId] = []; }
+    if(r.ok) F[edId] = (await r.json()).andares || [];
+    else if(!F[edId]) F[edId] = [];
+  }catch(_){ if(!F[edId]) F[edId] = []; }
 }
 
 // Estado vazio: painel aberto, sem prédios, com a mensagem pedida.

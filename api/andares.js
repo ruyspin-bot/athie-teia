@@ -15,8 +15,35 @@ const { isConfigured, isAuthed } = require('../lib/auth');
 
 const OBJ_ANDAR = process.env.HUBSPOT_OBJECT_ANDAR || 'p51253038_andares';
 const OBJ_EDIFICIO = process.env.HUBSPOT_OBJECT_EDIFICIO || 'p51253038_edificios';
+const OBJ_CONJUNTO = process.env.HUBSPOT_OBJECT_CONJUNTO || 'p51253038_conjuntos';
 const PROP_ANDAR_NOME = process.env.HUBSPOT_PROP_ANDAR_NOME || 'nome_do_andar';
 const PROP_ANDAR_NUMERO = process.env.HUBSPOT_PROP_ANDAR_NUMERO || 'numero_do_andar';
+
+// Cada andar pode ter N conjuntos (unidades). Cada conjunto traz seu próprio
+// proprietário, área e disponibilidade — vira o "mapa de ocupação" do andar.
+async function fetchConjuntosByAndar(hs, andarIds) {
+  const map = {};
+  if (!andarIds.length) return map;
+  const ac = await getAssociations(hs, OBJ_ANDAR, OBJ_CONJUNTO, andarIds);
+  const conjIds = [...new Set(Object.values(ac).flatMap((a) => a.map((x) => x.toId)))];
+  const conjObjs = conjIds.length
+    ? await getObjectsById(hs, OBJ_CONJUNTO, conjIds, ['nome_do_conjunto', 'nome_do_proprietario', 'disponibilidade', 'area_m2'])
+    : {};
+  andarIds.forEach((aid) => {
+    map[aid] = (ac[aid] || []).map((x) => {
+      const o = conjObjs[x.toId];
+      if (!o) return null;
+      return {
+        id: x.toId,
+        nome: o.properties.nome_do_conjunto || null,
+        proprietario: o.properties.nome_do_proprietario || null,
+        disp: o.properties.disponibilidade || null,
+        area: o.properties.area_m2 || null,
+      };
+    }).filter(Boolean);
+  });
+  return map;
+}
 
 module.exports = async (req, res) => {
   try {
@@ -35,9 +62,10 @@ module.exports = async (req, res) => {
     const hs = makeClient(token);
     const assoc = await getAssociations(hs, OBJ_EDIFICIO, OBJ_ANDAR, [String(edId)]);
     const floorIds = (assoc[String(edId)] || []).map((a) => a.toId);
-    const objs = floorIds.length
-      ? await getObjectsById(hs, OBJ_ANDAR, floorIds, [PROP_ANDAR_NOME, PROP_ANDAR_NUMERO, 'disponibilidade', 'area_privativa_m2'])
-      : {};
+    const [objs, conjuntosByAndar] = await Promise.all([
+      floorIds.length ? getObjectsById(hs, OBJ_ANDAR, floorIds, [PROP_ANDAR_NOME, PROP_ANDAR_NUMERO, 'disponibilidade', 'area_privativa_m2']) : {},
+      fetchConjuntosByAndar(hs, floorIds),
+    ]);
     const andares = floorIds.map((id) => {
       const o = objs[id];
       if (!o) return null;
@@ -47,6 +75,7 @@ module.exports = async (req, res) => {
         nome: o.properties[PROP_ANDAR_NOME] || null,
         disp: o.properties.disponibilidade || null,
         area: o.properties.area_privativa_m2 || null,
+        conjuntos: conjuntosByAndar[id] || [],
       };
     }).filter(Boolean);
 
