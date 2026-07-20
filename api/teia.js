@@ -51,6 +51,7 @@ const {
   getObjectsById,
   getCompanies,
 } = require('../lib/hubspot');
+const { isConfigured, isAuthed } = require('../lib/auth');
 
 const HUBSPOT_BASE = 'https://api.hubapi.com';
 
@@ -100,6 +101,15 @@ const CACHE_TTL_MS = 2 * 60 * 1000; // 2 minutos
 
 module.exports = async (req, res) => {
   try {
+    // ---- gate de senha: exige cookie de sessão válido (ver lib/auth.js) ----
+    // Enquanto APP_PASSWORD não estiver configurada, mantém aberto pra não
+    // derrubar o ambiente antes de a senha ser definida na Vercel.
+    if (isConfigured() && !isAuthed(req)) {
+      res.setHeader('Cache-Control', 'no-store');
+      res.status(401).json({ error: 'Não autenticado.', auth_required: true });
+      return;
+    }
+
     const token = process.env.HUBSPOT_TOKEN;
     if (!token) {
       res.status(500).json({ error: 'Faltou configurar HUBSPOT_TOKEN nas variáveis de ambiente da Vercel.' });
