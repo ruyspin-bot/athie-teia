@@ -276,14 +276,16 @@ function render(){
         ov+=`<div style="left:${px(g.x+3)}%;top:${py(floorY+FH-4)}%;transform:translateY(-100%);background:${tb.bg};color:#fff;font-size:${FH>40?7.5:6.5}px;font-family:var(--font-mono);font-weight:700;padding:0 4px;border-radius:2px;line-height:1.7;opacity:${op*dealOp*0.95}">${esc(tipoLabel)}</div>`;
       }
       // nome do cliente: clicável para filtrar (só se tiver cliente real)
+      // max-width limitado à largura da coluna (com margem pra pílula de etapa)
+      const maxW = Math.floor(g.w * 0.72);
       if(!m.ctx||g.w>=130){
         const hasCliente=d.cliente&&d.cliente!==d.nome;
-        ov+=`<div ${hasCliente?`data-filter-cliente="${esc(d.cliente)}" style="left:${px(g.x+6)}%;top:${py(textY)}%;transform:translateY(-50%);font-size:${g.w>=160?9.5:8.5}px;font-weight:600;color:${lcol};opacity:${op*dealOp};cursor:pointer;text-decoration:underline dotted"`:
-          `style="left:${px(g.x+6)}%;top:${py(textY)}%;transform:translateY(-50%);font-size:${g.w>=160?9.5:8.5}px;font-weight:600;color:${lcol};opacity:${op*dealOp}"`}>${esc(short)}</div>`;
+        ov+=`<div ${hasCliente?`data-filter-cliente="${esc(d.cliente)}" style="left:${px(g.x+6)}%;top:${py(textY)}%;transform:translateY(-50%);font-size:${g.w>=160?9.5:8.5}px;font-weight:600;color:${lcol};opacity:${op*dealOp};cursor:pointer;text-decoration:underline dotted;max-width:${maxW}px;overflow:hidden;text-overflow:ellipsis;pointer-events:auto"`:
+          `style="left:${px(g.x+6)}%;top:${py(textY)}%;transform:translateY(-50%);font-size:${g.w>=160?9.5:8.5}px;font-weight:600;color:${lcol};opacity:${op*dealOp};max-width:${maxW}px;overflow:hidden;text-overflow:ellipsis"`}>${esc(short)}</div>`;
       }
       if(hasDono&&(!m.ctx||g.w>=130)){
-        const donoShort=g.w<140?d.dono.split(' ')[0]:d.dono;
-        ov+=`<div style="left:${px(g.x+6)}%;top:${py(cy+FH*0.18)}%;transform:translateY(-50%);font-size:7.5px;font-style:italic;color:${lcol};opacity:${op*dealOp*0.6};white-space:nowrap;overflow:hidden;max-width:${g.w*0.6}px">${esc(donoShort)}</div>`;
+        const donoShort=d.dono;
+        ov+=`<div style="left:${px(g.x+6)}%;top:${py(cy+FH*0.18)}%;transform:translateY(-50%);font-size:7.5px;font-style:italic;color:${lcol};opacity:${op*dealOp*0.6};overflow:hidden;text-overflow:ellipsis;max-width:${Math.floor(g.w*0.6)}px">${esc(donoShort)}</div>`;
       }
       const pillBg=S.hatch?'rgba(255,255,255,0.55)':col;
       const pillCol=S.hatch?'#0E1A1A':ink(col);
