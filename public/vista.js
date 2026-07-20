@@ -487,9 +487,17 @@ function render(){
     if(!d) return; // segurança
     r.addEventListener('mouseenter', e=>{
       const hr=host.getBoundingClientRect(), rr=r.getBoundingClientRect();
-      let x=rr.right-hr.left+12;
-      if(x>hr.width-270) x=rr.left-hr.left-272;
-      if(x<4) x=4;
+      // scrollLeft compensa o scroll horizontal do host (overflow-x:auto)
+      const sl=host.scrollLeft||0;
+      // posição do rect em coordenadas do conteúdo do host
+      const rectLeft  = rr.left  - hr.left + sl;
+      const rectRight = rr.right - hr.left + sl;
+      // largura visível do host (sem scroll)
+      const visW = hr.width;
+      // tenta abrir à direita do slot; se não couber, abre à esquerda
+      let x = rectRight + 12;
+      if(x - sl + 270 > visW) x = rectLeft - 272;
+      x = Math.max(sl + 4, x);
       const y=Math.max(6,Math.min(rr.top-hr.top-8, hr.height-300));
       const col=STAGE_COLORS[d.stage]||'#5BAEF0';
       tip.style.transform=`translate(${x}px,${y}px)`;
