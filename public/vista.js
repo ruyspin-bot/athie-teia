@@ -371,44 +371,56 @@ function render(){
       const andarStr = andarDisplay(d);
       const andarW = andarStr.length * 6.5 + 4; // px estimados + gap
 
-      // ── badges de tipo (P / O / P O lado a lado) ──
-      // Para deals fundidos: um badge por tipo único presente nos deals originais.
-      // Para deal simples: um badge com o tipo (se existir).
+      // ── badges de tipo (P / O lado a lado, extrema direita) ──
+      // Para deals fundidos: um badge por tipo único; para deal simples: um badge se tiver tipo.
       const badgeTipos = d._mergedFrom
         ? [...new Set((d._mergedTipos||[]).map(x=>x.tipo).filter(Boolean))]
         : (d.tipo ? [d.tipo] : []);
       const badgeW = badgeTipos.length > 0 ? badgeTipos.length * 18 : 0;
 
-      // largura da pílula de etapa — proporcional ao texto abreviado
-      const stageLbl = STAGE_ABBR[d.stage]||d.stage;
-      const stageW = stageLbl.length * 4.8 + 10; // estimativa font-mono 6.5px
+      // ── valor (ex: "2.1M" ou "850k") — exibe quando tem valor e slot tem altura suficiente ──
+      const valorStr = d.valor ? fmtVShort(d.valor) : null;
+      const valorW = valorStr ? (valorStr.length * 5.5 + 8) : 0; // estimativa px
 
-      // espaço total reservado à direita (etapa + badges + gaps)
-      const rightW = stageW + (badgeW > 0 ? badgeW + 3 : 0) + PAD_R + 2;
+      // largura da pílula de etapa
+      const stageLbl = STAGE_ABBR[d.stage]||d.stage;
+      const stageW = stageLbl.length * 4.8 + 10;
+
+      // espaço total reservado à direita: badges + valor + etapa + gaps
+      const rightW = (badgeW > 0 ? badgeW + 3 : 0) + (valorW > 0 ? valorW + 3 : 0) + stageW + PAD_R + 2;
 
       // ── nº do andar (fora do slot, à esquerda) ──
       ov+=`<div data-novwrap style="left:${px(g.x-5)}%;top:${py(cy)}%;transform:translate(-100%,-50%);font-size:9px;font-family:var(--font-mono);color:rgba(14,26,26,.5);font-weight:700;opacity:${op*dealOp}">${esc(andarStr)}</div>`;
 
-      // ── cliente final (dentro do slot, esquerda, truncado antes da etapa) ──
+      // ── cliente final (dentro do slot, esquerda, truncado antes da área direita) ──
       const clientLeft = g.x + PAD_L;
-      const clientMaxW = Math.max(10, g.w - PAD_L - PAD_R - rightW);
+      const clientMaxW = Math.max(10, g.w - PAD_L - rightW);
       if(d.cliente){
         ov+=`<div data-filter-actor="cliente" data-filter-val="${esc(d.cliente)}" style="left:${px(clientLeft)}%;top:${py(cy)}%;transform:translateY(-50%);display:inline-block;font-size:${g.w>=160?9:8}px;font-weight:600;color:${lcol};opacity:${op*dealOp};cursor:pointer;text-decoration:underline dotted;max-width:${clientMaxW}px;overflow:hidden;text-overflow:ellipsis;vertical-align:top;pointer-events:auto">${esc(d.cliente)}</div>`;
       }
 
-      // ── etapa (centralizada verticalmente, à direita dos badges) ──
-      const stageLeft = g.x + g.w - PAD_R - (badgeW > 0 ? badgeW + 3 : 0) - stageW;
-      ov+=`<div data-novwrap style="left:${px(stageLeft)}%;top:${py(cy)}%;transform:translateY(-50%);display:inline-block;background:rgba(0,0,0,0.2);color:${lcol};font-size:6.5px;font-family:var(--font-mono);font-weight:700;letter-spacing:.3px;text-transform:uppercase;padding:1px 5px;border-radius:2px;opacity:${0.92*op*dealOp}">${esc(stageLbl)}</div>`;
+      // constrói a área direita da direita para a esquerda: badges → valor → etapa
+      let curRight = g.x + g.w - PAD_R;
 
-      // ── badges de tipo (extrema direita) ──
+      // ── badges P/O (extrema direita) ──
       if(badgeTipos.length > 0 && FH > 16){
-        const bRight = g.x + g.w - PAD_R;
         const badgeSpans = badgeTipos.map(t=>{
           const tb = TIPO_BADGE[t] || {label:t.charAt(0).toUpperCase(), bg:'#666'};
           return `<span style="background:${tb.bg};color:#fff;font-size:${bFontSz}px;font-family:var(--font-mono);font-weight:700;padding:0 3px;border-radius:2px;line-height:1.9">${esc(tb.label)}</span>`;
         }).join('');
-        ov+=`<div data-novwrap style="left:${px(bRight)}%;top:${py(cy)}%;transform:translate(-100%,-50%);display:inline-flex;gap:2px;opacity:${op*dealOp}">${badgeSpans}</div>`;
+        ov+=`<div data-novwrap style="left:${px(curRight)}%;top:${py(cy)}%;transform:translate(-100%,-50%);display:inline-flex;gap:2px;opacity:${op*dealOp}">${badgeSpans}</div>`;
+        curRight -= badgeW + 3;
       }
+
+      // ── valor (entre badges e etapa) ──
+      if(valorStr && FH > 16){
+        ov+=`<div data-novwrap style="left:${px(curRight)}%;top:${py(cy)}%;transform:translate(-100%,-50%);font-size:7.5px;font-family:var(--font-mono);font-weight:700;color:${lcol};opacity:${0.75*op*dealOp}">${esc(valorStr)}</div>`;
+        curRight -= valorW + 3;
+      }
+
+      // ── etapa ──
+      const stageLeft = curRight - stageW;
+      ov+=`<div data-novwrap style="left:${px(stageLeft)}%;top:${py(cy)}%;transform:translateY(-50%);display:inline-block;background:rgba(0,0,0,0.2);color:${lcol};font-size:6.5px;font-family:var(--font-mono);font-weight:700;letter-spacing:.3px;text-transform:uppercase;padding:1px 5px;border-radius:2px;opacity:${0.92*op*dealOp}">${esc(stageLbl)}</div>`;
     });
     ov+=`<div data-focus="${esc(m.ed)}" style="left:${px(g.x+g.w/2)}%;top:${py(GROUND+16)}%;transform:translate(-50%,-50%);font-size:11px;font-weight:${m.focal?700:600};color:${m.focal?'#0E1A1A':'#3a4a4a'};opacity:${op};${m.focal?'':'pointer-events:auto;cursor:pointer'}">${esc(m.ed)}</div>`;
     if(m.focal) svg+=`<rect x="${g.x+g.w/2-20}" y="${GROUND+37}" width="40" height="2.5" fill="#00DEDB"></rect>`;
