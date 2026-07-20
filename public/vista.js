@@ -207,7 +207,7 @@ function buildModel(focal){
   const rel = scored.slice(0, REL_CAP);
   const order = [{ed:focal}, ...rel.map(r=>({ed:r.ed}))];
   const model = order.map(o=>{
-    const deals = byEd[o.ed];
+    const deals = byEd[o.ed] || []; // prédio focal órfão (sem deal) → array vazio
     const donos = [...new Set(deals.map(d=>d.dono).filter(Boolean))];
     return { ed:o.ed, ctx:false, deals, dono: donos.join(' / ')||'—', focal:o.ed===focal };
   });
@@ -222,7 +222,7 @@ function addVacantFloors(model){
   if(!showVacant) return model;
   const FLOORS = window.FLOORS_BY_EDIFICIO_ID || {};
   model.forEach(m=>{
-    const edId = (m.deals.find(d=>d.edificioId)||{}).edificioId;
+    const edId = (m.deals.find(d=>d.edificioId)||{}).edificioId || edIdForBuilding(m.ed);
     const floors = edId && FLOORS[edId];
     if(!floors || !floors.length) return;
     const occupied = new Set(m.deals.map(d=>d.n));
@@ -632,7 +632,7 @@ function renderVacantToggle(){
        style="height:30px;border:1px solid ${on?'#00585C':'rgba(14,26,26,.18)'};background:${on?'rgba(0,222,219,.12)':'#fff'};color:${on?'#00585C':'rgba(14,26,26,.6)'};border-radius:3px;padding:0 11px;font-family:inherit;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;gap:6px">
        <span style="width:9px;height:9px;border-radius:2px;background:${on?'#00585C':'#C2CCCC'}"></span>Andares vagos: ${on?'ON':'OFF'}</button>`;
   const btn=document.getElementById('vd-vacant');
-  if(btn) btn.onclick=()=>{ showVacant=!showVacant; _modelCache=null; render(); };
+  if(btn) btn.onclick=async ()=>{ showVacant=!showVacant; if(showVacant){ await ensureFloors(edIdForBuilding(focalEd)); } _modelCache=null; render(); };
 }
 function renderFilterBadge(){
   if(!actorFilter){ filterEl.style.display='none'; return; }
@@ -752,8 +752,9 @@ function resolveVistaTarget(n){
   const ACTOR_KEYS = ['broker','gerenciadora','cliente','dono','parceiro','concorrente'];
 
   if(n.type==='edificio'){
-    if(!DEALS.some(d=>d.edificio===n.label)) return null;
-    return { ed: n.label, kind: null, value: null };
+    // Abre mesmo sem deal: com "Andares vagos" ligado, mostra a torre completa
+    // do inventário (ex.: Platinum Tower, sem negócio). edId vem do nó.
+    return { ed: n.label, edId: n.edificioId || null, kind: null, value: null };
   }
   if(n.type==='andar'){
     const ed = n.meta && n.meta.edificio;
@@ -811,7 +812,7 @@ function syncDetail(nodeId){
 // precisa ter >=2 prédios (focal + ao menos um relacionado, ou >=2 prédios com o
 // ator no modo filtro). Se o nó não resolve prédio nenhum, ou o prédio focal não
 // se relaciona com nenhum outro, mostra o estado vazio em vez de abrir a vista.
-function enterVista(target, nodeForEmpty){
+async function enterVista(target, nodeForEmpty){
   if(!target){ showVistaEmpty(nodeForEmpty, null); return; }
   focalEd     = target.ed;
   pinned      = null;
@@ -819,13 +820,36 @@ function enterVista(target, nodeForEmpty){
   actorFilter = target.kind ? { kind: target.kind, value: target.value } : null;
   rebuildClientColor();
   drawer.style.display='flex';
+  // Garante o inventário de andares do prédio focal (busca sob demanda se não
+  // veio no payload — caso dos prédios sem deal, como o Platinum).
+  await ensureFloors(target.edId || edIdForBuilding(target.ed));
   const { model } = getModelConns(); // usa focalEd/actorFilter recém-definidos
-  if(model.length < 2){ showVistaEmpty(nodeForEmpty, target.ed); return; }
+  const focal = model.find(m=>m.focal) || model[0];
+  // Mostra a vista se há relação entre prédios (>=2) OU se o prédio focal tem
+  // algo pra exibir (deals ou andares vagos). Só cai no vazio quando não há nada.
+  const temConteudo = model.length >= 2 || (focal && focal.deals.length > 0);
+  if(!temConteudo){ showVistaEmpty(nodeForEmpty, target.ed); return; }
   render();
   window.dispatchEvent(new Event('resize'));
   const _en = NODES && NODES.find(x=>x.type==='edificio' && x.label===target.ed);
   if(typeof updateTableFromNode==='function') updateTableFromNode(_en||null);
   if(typeof window._onOpenVista==='function') window._onOpenVista(target.ed);
+}
+
+// edId de um prédio pelo NOME (via nós do grafo), pra achar o inventário certo.
+function edIdForBuilding(nome){
+  const n = (typeof NODES!=='undefined') && NODES.find(x=>x.type==='edificio' && x.label===nome);
+  return n ? (n.edificioId || null) : null;
+}
+// Carrega sob demanda os andares de um edifício (se ainda não estiverem em cache).
+async function ensureFloors(edId){
+  if(!edId) return;
+  const F = window.FLOORS_BY_EDIFICIO_ID = window.FLOORS_BY_EDIFICIO_ID || {};
+  if(F[edId]) return; // já veio no payload (prédios com deal) ou já buscado
+  try{
+    const r = await fetch('/api/andares?edificioId='+encodeURIComponent(edId), {cache:'no-store'});
+    F[edId] = r.ok ? ((await r.json()).andares || []) : [];
+  }catch(_){ F[edId] = []; }
 }
 
 // Estado vazio: painel aberto, sem prédios, com a mensagem pedida.
