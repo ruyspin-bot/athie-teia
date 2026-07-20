@@ -607,17 +607,21 @@ function renderEntityPanel(model){
   const entEl = document.getElementById('vd-entities');
   if(!entEl) return;
 
-  // conta ocorrências de cada entidade por tipo em todos os deals visíveis
+  // conta ocorrências de cada entidade por tipo.
+  // No modo normal: apenas deals do prédio focal.
+  // No modo actorFilter: todos os prédios visíveis (o filtro já define o escopo).
+  const dealsParaPanel = actorFilter
+    ? model.flatMap(m=>m.deals)
+    : (model.find(m=>m.focal)||model[0]).deals;
+
   const counts = {}; // { 'cliente::Grupo Primo': { kind, value, count } }
-  model.forEach(m=>{
-    m.deals.forEach(d=>{
-      ENTITY_KINDS.forEach(ek=>{
-        const val = d[ek.key];
-        if(!val) return;
-        const key = ek.key+'::'+val;
-        if(!counts[key]) counts[key]={ kind:ek.key, value:val, count:0, kindLabel:ek.label, color:ek.color };
-        counts[key].count++;
-      });
+  dealsParaPanel.forEach(d=>{
+    ENTITY_KINDS.forEach(ek=>{
+      const val = d[ek.key];
+      if(!val) return;
+      const key = ek.key+'::'+val;
+      if(!counts[key]) counts[key]={ kind:ek.key, value:val, count:0, kindLabel:ek.label, color:ek.color };
+      counts[key].count++;
     });
   });
 

@@ -1014,7 +1014,7 @@ function renderDetail(id){
     else if(n.type==='cliente'||n.type==='broker'||n.type==='gerenciadora'||n.type==='escritorio'||n.type==='dono')
                                    hsUrl = `https://app.hubspot.com/contacts/51253038/companies?query=${encodeURIComponent(n.label)}`;
     else if(n.type==='edificio')   hsUrl = n.edificioId
-                                   ? `https://app.hubspot.com/contacts/51253038/objects/2-65603861/${n.edificioId}`
+                                   ? `https://app.hubspot.com/contacts/51253038/record/2-65603861/${n.edificioId}`
                                    : `https://app.hubspot.com/contacts/51253038/companies?query=${encodeURIComponent(n.label)}`;
     if(hsUrl) h+=`<a href="${hsUrl}" target="_blank" style="display:inline-block;margin-bottom:14px;background:var(--tiffany,#00DEDB);color:#0E1A1A;border-radius:3px;padding:6px 13px;font-family:inherit;font-size:11px;font-weight:700;text-decoration:none">Abrir no HubSpot ↗</a>`;
   })();
