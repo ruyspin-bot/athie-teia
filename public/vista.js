@@ -535,12 +535,13 @@ function render(){
     if(fa){ tip.style.display='none'; setActorFilter(fa.dataset.filterActor, fa.dataset.filterVal); }
   };
   tip.addEventListener('mouseenter', ()=>{ _tipHover=true; clearTimeout(_hideTimer); });
-  tip.addEventListener('mouseleave', ()=>{ _tipHover=false; tip.style.display='none'; });
+  tip.addEventListener('mouseleave', ()=>{ _tipHover=false; _hideTimer=setTimeout(()=>{ tip.style.display='none'; },200); });
 
   host.querySelectorAll('[data-deal]').forEach(r=>{
     const d = modelDealMap[r.dataset.deal];
     if(!d) return; // segurança
     r.addEventListener('mouseenter', e=>{
+      clearTimeout(_hideTimer); // cancela qualquer timer pendente de outro rect
       const hr=host.getBoundingClientRect(), rr=r.getBoundingClientRect();
       // scrollLeft compensa o scroll horizontal do host (overflow-x:auto)
       const sl=host.scrollLeft||0;
@@ -581,7 +582,7 @@ function render(){
         ${d.concorrente?`<div class="vd-tn">▲ Concorrente no deal: ${esc(d.concorrente)}</div>`:''}
         <div class="vd-th">${d.cliente?`<b style="cursor:pointer;text-decoration:underline" data-filter-cliente="${esc(d.cliente)}">⊙ Filtrar por ${esc(d.cliente)}</b> · `:''}clique para fixar · ${hubLinks}</div>`;
     });
-    r.addEventListener('mouseleave', ()=>{ _hideTimer=setTimeout(()=>{ if(!_tipHover) tip.style.display='none'; },150); });
+    r.addEventListener('mouseleave', ()=>{ _hideTimer=setTimeout(()=>{ if(!_tipHover) tip.style.display='none'; },300); });
     r.addEventListener('click', ()=>{ pinned = pinned===d.id?null:d.id; render(); syncDetail(pinned ? d.id : edNodeId(focalEd)); });
   });
   // tooltip dos andares VAGOS: lista os conjuntos (nome, proprietário, área, disp.)
@@ -590,6 +591,7 @@ function render(){
     const cj = d.conjuntos||[];
     if(!cj.length) return; // andar sem conjunto cadastrado
     r.addEventListener('mouseenter', ()=>{
+      clearTimeout(_hideTimer); // cancela timer de qualquer rect anterior
       const hr=host.getBoundingClientRect(), rr=r.getBoundingClientRect();
       const sl=host.scrollLeft||0;
       const rectLeft=rr.left-hr.left+sl, rectRight=rr.right-hr.left+sl, visW=hr.width;
@@ -606,7 +608,7 @@ function render(){
           </div></div>`).join('');
       tip.innerHTML=`<div class="vd-tr"><span class="vd-tf">Andar ${esc(andarDisplay(d))}</span> · ${cj.length} conjunto(s)</div>${rows}`;
     });
-    r.addEventListener('mouseleave', ()=>{ _hideTimer=setTimeout(()=>{ if(!_tipHover) tip.style.display='none'; },150); });
+    r.addEventListener('mouseleave', ()=>{ _hideTimer=setTimeout(()=>{ if(!_tipHover) tip.style.display='none'; },300); });
   });
   host.querySelectorAll('[data-focus]').forEach(el=>{
     el.addEventListener('click', ()=>{ focalEd=el.dataset.focus; pinned=null; _modelCache=null; actorFilter=null; render(); const _en=NODES&&NODES.find(n=>n.type==='edificio'&&n.label===focalEd); if(typeof updateTableFromNode==='function') updateTableFromNode(_en||null); syncDetail(_en?_en.id:edNodeId(focalEd)); });
