@@ -59,6 +59,7 @@ const HUBSPOT_BASE = 'https://api.hubapi.com';
 // ---- Custom Objects da Fase 2 (palpite a confirmar — ver docstring acima) ----
 const OBJ_ANDAR = process.env.HUBSPOT_OBJECT_ANDAR || 'p51253038_andares';
 const OBJ_EDIFICIO = process.env.HUBSPOT_OBJECT_EDIFICIO || 'p51253038_edificios';
+const OBJ_CONJUNTO = process.env.HUBSPOT_OBJECT_CONJUNTO || 'p51253038_conjuntos';
 const PROP_ANDAR_NOME = process.env.HUBSPOT_PROP_ANDAR_NOME || 'nome_do_andar';
 const PROP_ANDAR_NUMERO = process.env.HUBSPOT_PROP_ANDAR_NUMERO || 'numero_do_andar';
 const PROP_EDIFICIO_NOME = process.env.HUBSPOT_PROP_EDIFICIO_NOME || 'nome_do_edificio';
@@ -173,7 +174,11 @@ module.exports = async (req, res) => {
       const andarIds = [...new Set(Object.values(dealAndarAssoc).flatMap((arr) => arr.map((a) => a.toId)))];
 
       if (andarIds.length) {
-        andaresById = await getObjectsById(hs, OBJ_ANDAR, andarIds, [PROP_ANDAR_NOME, PROP_ANDAR_NUMERO]);
+        andaresById = await getObjectsById(hs, OBJ_ANDAR, andarIds, [
+          PROP_ANDAR_NOME, PROP_ANDAR_NUMERO,
+          'disponibilidade', 'area_locavel_m2', 'area_privativa_m2',
+          'preco_locacao_m2', 'aw_id_cretool_unit', 'aw_id_focus',
+        ]);
 
         const andarEdificioAssoc = await getAssociations(hs, OBJ_ANDAR, OBJ_EDIFICIO, andarIds);
         const edificioIds = [...new Set(Object.values(andarEdificioAssoc).flatMap((arr) => arr.map((a) => a.toId)))];
@@ -197,8 +202,13 @@ module.exports = async (req, res) => {
                   id: andarId,
                   nome: andarObj.properties[PROP_ANDAR_NOME] || `Andar ${andarId}`,
                   numero: andarObj.properties[PROP_ANDAR_NUMERO] || null,
+                  disp: andarObj.properties.disponibilidade || null,
+                  area: andarObj.properties.area_locavel_m2
+                    ? parseFloat(andarObj.properties.area_locavel_m2) : null,
+                  cretool: andarObj.properties.aw_id_cretool_unit || null,
+                  focus: andarObj.properties.aw_id_focus || null,
                 }
-              : { id: andarId, nome: `Andar ${andarId}`, numero: null },
+              : { id: andarId, nome: `Andar ${andarId}`, numero: null, disp: null, area: null },
             edificio: edificioObj
               ? { id: edificioAssoc.toId, nome: edificioObj.properties[PROP_EDIFICIO_NOME] || `Edifício ${edificioAssoc.toId}` }
               : null,
@@ -289,6 +299,10 @@ module.exports = async (req, res) => {
           id: a.andar.id,
           nome: a.andar.nome,
           numero: a.andar.numero,
+          disp: a.andar.disp,
+          area: a.andar.area,
+          cretool: a.andar.cretool,
+          focus: a.andar.focus,
           edificio: a.edificio ? a.edificio.nome : 'Sem edifício identificado',
           edificioId: a.edificio ? a.edificio.id : null,
           dono: a.donoCompanyId ? (companiesById[a.donoCompanyId] ? companiesById[a.donoCompanyId].properties.name : `Company ${a.donoCompanyId}`) : null,
@@ -324,19 +338,57 @@ module.exports = async (req, res) => {
           const edAndarAssoc = await getAssociations(hs, OBJ_EDIFICIO, OBJ_ANDAR, edIds);
           const floorIds = [...new Set(Object.values(edAndarAssoc).flatMap((arr) => arr.map((a) => a.toId)))];
           const floorObjs = floorIds.length
-            ? await getObjectsById(hs, OBJ_ANDAR, floorIds, [PROP_ANDAR_NOME, PROP_ANDAR_NUMERO, 'disponibilidade', 'area_privativa_m2'])
+            ? await getObjectsById(hs, OBJ_ANDAR, floorIds, [
+                PROP_ANDAR_NOME, PROP_ANDAR_NUMERO, 'disponibilidade',
+                'area_locavel_m2', 'area_privativa_m2', 'preco_locacao_m2',
+                'aw_id_cretool_unit', 'aw_id_focus',
+              ])
             : {};
+
+          // conjuntos: Andar → Conjunto
+          const floorConjuntoAssoc = floorIds.length
+            ? await getAssociations(hs, OBJ_ANDAR, OBJ_CONJUNTO, floorIds)
+            : {};
+          const conjuntoIds = [...new Set(
+            Object.values(floorConjuntoAssoc).flatMap((arr) => arr.map((a) => a.toId))
+          )];
+          const conjuntosById = conjuntoIds.length
+            ? await getObjectsById(hs, OBJ_CONJUNTO, conjuntoIds, [
+                'nome_do_conjunto', 'disponibilidade', 'area_m2', 'nome_do_proprietario',
+              ])
+            : {};
+
           edIds.forEach((edId) => {
             floorsByEdificioId[edId] = (edAndarAssoc[edId] || [])
               .map((a) => {
                 const o = floorObjs[a.toId];
                 if (!o) return null;
+                const conjuntos = (floorConjuntoAssoc[a.toId] || [])
+                  .map((ca) => {
+                    const cj = conjuntosById[ca.toId];
+                    if (!cj) return null;
+                    const cp = cj.properties;
+                    return {
+                      id: ca.toId,
+                      nome: cp.nome_do_conjunto || null,
+                      disp: cp.disponibilidade || null,
+                      area: cp.area_m2 ? parseFloat(cp.area_m2) : null,
+                      proprietario: cp.nome_do_proprietario || null,
+                    };
+                  })
+                  .filter(Boolean);
                 return {
                   id: a.toId,
                   numero: o.properties[PROP_ANDAR_NUMERO] || null,
                   nome: o.properties[PROP_ANDAR_NOME] || null,
                   disp: o.properties.disponibilidade || null,
-                  area: o.properties.area_privativa_m2 || null,
+                  area: o.properties.area_locavel_m2
+                    ? parseFloat(o.properties.area_locavel_m2)
+                    : (o.properties.area_privativa_m2 ? parseFloat(o.properties.area_privativa_m2) : null),
+                  preco_m2: o.properties.preco_locacao_m2 ? parseFloat(o.properties.preco_locacao_m2) : null,
+                  cretool: o.properties.aw_id_cretool_unit || null,
+                  focus: o.properties.aw_id_focus || null,
+                  conjuntos,
                 };
               })
               .filter(Boolean);

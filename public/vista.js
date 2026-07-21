@@ -878,8 +878,8 @@ function edIdForBuilding(nome){
   const n = (typeof NODES!=='undefined') && NODES.find(x=>x.type==='edificio' && x.label===nome);
   return n ? (n.edificioId || null) : null;
 }
-// Carrega sob demanda os andares (com conjuntos) de um edifício. Busca 1x por
-// prédio, sobrescrevendo floors do payload (que não trazem conjuntos).
+// Carrega sob demanda os andares de edifícios SEM deal (que não vêm no payload).
+// Para prédios com deal, o payload já inclui conjuntos — esta função é no-op.
 const _floorsFetched = new Set();
 async function ensureFloors(edId){
   if(!edId || _floorsFetched.has(edId)) return;
