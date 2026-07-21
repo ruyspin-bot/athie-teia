@@ -526,6 +526,7 @@ function render(){
   // interações
   const tip = document.getElementById('vd-tip');
   let _tipHover = false; // true enquanto o mouse está dentro do tooltip
+  let _hideTimer = null; // delay antes de fechar, permite arrastar mouse até o tooltip
   // click delegation no tooltip: captura "Filtrar por X" mesmo com pointer-events:auto
   tip.onclick = (e)=>{
     const fc = e.target.closest('[data-filter-cliente]');
@@ -533,7 +534,7 @@ function render(){
     const fa = e.target.closest('[data-filter-actor]');
     if(fa){ tip.style.display='none'; setActorFilter(fa.dataset.filterActor, fa.dataset.filterVal); }
   };
-  tip.addEventListener('mouseenter', ()=>{ _tipHover=true; });
+  tip.addEventListener('mouseenter', ()=>{ _tipHover=true; clearTimeout(_hideTimer); });
   tip.addEventListener('mouseleave', ()=>{ _tipHover=false; tip.style.display='none'; });
 
   host.querySelectorAll('[data-deal]').forEach(r=>{
@@ -580,7 +581,7 @@ function render(){
         ${d.concorrente?`<div class="vd-tn">▲ Concorrente no deal: ${esc(d.concorrente)}</div>`:''}
         <div class="vd-th">${d.cliente?`<b style="cursor:pointer;text-decoration:underline" data-filter-cliente="${esc(d.cliente)}">⊙ Filtrar por ${esc(d.cliente)}</b> · `:''}clique para fixar · ${hubLinks}</div>`;
     });
-    r.addEventListener('mouseleave', ()=>{ if(!_tipHover){ tip.style.display='none'; } });
+    r.addEventListener('mouseleave', ()=>{ _hideTimer=setTimeout(()=>{ if(!_tipHover) tip.style.display='none'; },150); });
     r.addEventListener('click', ()=>{ pinned = pinned===d.id?null:d.id; render(); syncDetail(pinned ? d.id : edNodeId(focalEd)); });
   });
   // tooltip dos andares VAGOS: lista os conjuntos (nome, proprietário, área, disp.)
@@ -605,7 +606,7 @@ function render(){
           </div></div>`).join('');
       tip.innerHTML=`<div class="vd-tr"><span class="vd-tf">Andar ${esc(andarDisplay(d))}</span> · ${cj.length} conjunto(s)</div>${rows}`;
     });
-    r.addEventListener('mouseleave', ()=>{ if(!_tipHover){ tip.style.display='none'; } });
+    r.addEventListener('mouseleave', ()=>{ _hideTimer=setTimeout(()=>{ if(!_tipHover) tip.style.display='none'; },150); });
   });
   host.querySelectorAll('[data-focus]').forEach(el=>{
     el.addEventListener('click', ()=>{ focalEd=el.dataset.focus; pinned=null; _modelCache=null; actorFilter=null; render(); const _en=NODES&&NODES.find(n=>n.type==='edificio'&&n.label===focalEd); if(typeof updateTableFromNode==='function') updateTableFromNode(_en||null); syncDetail(_en?_en.id:edNodeId(focalEd)); });
