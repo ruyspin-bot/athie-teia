@@ -337,18 +337,19 @@ module.exports = async (req, res) => {
         if (edIds.length) {
           const edAndarAssoc = await getAssociations(hs, OBJ_EDIFICIO, OBJ_ANDAR, edIds);
           const floorIds = [...new Set(Object.values(edAndarAssoc).flatMap((arr) => arr.map((a) => a.toId)))];
-          const floorObjs = floorIds.length
-            ? await getObjectsById(hs, OBJ_ANDAR, floorIds, [
-                PROP_ANDAR_NOME, PROP_ANDAR_NUMERO, 'disponibilidade',
-                'area_locavel_m2', 'area_privativa_m2', 'preco_locacao_m2',
-                'aw_id_cretool_unit', 'aw_id_focus',
-              ])
-            : {};
-
-          // conjuntos: Andar → Conjunto
-          const floorConjuntoAssoc = floorIds.length
-            ? await getAssociations(hs, OBJ_ANDAR, OBJ_CONJUNTO, floorIds)
-            : {};
+          // floorObjs e floorConjuntoAssoc dependem só de floorIds — busca em paralelo
+          const [floorObjs, floorConjuntoAssoc] = await Promise.all([
+            floorIds.length
+              ? getObjectsById(hs, OBJ_ANDAR, floorIds, [
+                  PROP_ANDAR_NOME, PROP_ANDAR_NUMERO, 'disponibilidade',
+                  'area_locavel_m2', 'area_privativa_m2', 'preco_locacao_m2',
+                  'aw_id_cretool_unit', 'aw_id_focus',
+                ])
+              : Promise.resolve({}),
+            floorIds.length
+              ? getAssociations(hs, OBJ_ANDAR, OBJ_CONJUNTO, floorIds)
+              : Promise.resolve({}),
+          ]);
           const conjuntoIds = [...new Set(
             Object.values(floorConjuntoAssoc).flatMap((arr) => arr.map((a) => a.toId))
           )];
