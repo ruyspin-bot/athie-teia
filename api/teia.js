@@ -391,7 +391,7 @@ module.exports = async (req, res) => {
           )];
           const conjuntosById = conjuntoIds.length
             ? await getObjectsById(hs, OBJ_CONJUNTO, conjuntoIds, [
-                'nome_do_conjunto', 'disponibilidade', 'area_m2', 'nome_do_proprietario',
+                'nome_do_conjunto', 'disponibilidade', 'area_m2', 'nome_do_proprietario', 'nome_do_ocupante',
               ])
             : {};
 
@@ -411,6 +411,7 @@ module.exports = async (req, res) => {
                       disp: cp.disponibilidade || null,
                       area: cp.area_m2 ? parseFloat(cp.area_m2) : null,
                       proprietario: cp.nome_do_proprietario || null,
+                      ocupante: cp.nome_do_ocupante || null,
                     };
                   })
                   .filter(Boolean);

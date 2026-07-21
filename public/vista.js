@@ -602,6 +602,7 @@ function render(){
       const rows = cj.map(c=>`<div style="padding:5px 0;border-top:1px solid rgba(14,26,26,.07)">
           <div style="font-weight:600">${esc(c.nome||'Conjunto')}</div>
           <div class="vd-tg" style="margin-top:2px">
+            ${c.ocupante?`<span>Ocupante</span><b>${esc(c.ocupante)}</b>`:''}
             <span>Proprietário</span><b>${esc(c.proprietario||'—')}</b>
             <span>Área</span><b>${c.area?esc(String(c.area))+' m²':'—'}</b>
             <span>Disponibilidade</span><b>${esc(c.disp||'—')}</b>
