@@ -26,6 +26,10 @@ const { handleWebhookPost }                        = require('./criar-andares');
 const { verificarDeals, rotularClientesFinal }     = require('./verificar-rotulos');
 const { syncPorDeals, syncPorContatos }            = require('./associar-contatos');
 
+// Desativado por decisão da Athié (2026-07-21) — contatos passarão a ser
+// associados manualmente. Para reativar, setar HUBSPOT_SYNC_CONTATOS=true.
+const SYNC_CONTATOS = (process.env.HUBSPOT_SYNC_CONTATOS || 'false').toLowerCase() === 'true';
+
 const OBJ_EDIFICIO          = process.env.HUBSPOT_OBJECT_EDIFICIO || '2-65603861';
 const PROP_EDIFICIO_ANDARES = process.env.HUBSPOT_PROP_EDIFICIO_ANDARES || 'andares_ocupados_pelo_cliente';
 
@@ -69,22 +73,26 @@ module.exports = async (req, res) => {
         // 1. Aplica "Cliente Final" nas empresas primárias (usa isPrimaryAssociation do evento)
         resultados.rotulados = await rotularClientesFinal(hs, dealAssoc);
 
-        // 2. Verifica tags e sincroniza contatos em paralelo
+        // 2. Verifica tags (e opcionalmente sincroniza contatos)
         const dealsById = await getObjectsById(hs, 'deals', dealIds, ['dealname', 'dealstage', 'aw_rotulo_pendente']);
         const deals = Object.values(dealsById);
-        const [rotulos, contatos] = await Promise.all([
-          verificarDeals(hs, deals),
-          syncPorDeals(hs, dealIds),
-        ]);
-        resultados.rotulos  = rotulos;
-        resultados.contatos = contatos;
+        if (SYNC_CONTATOS) {
+          const [rotulos, contatos] = await Promise.all([
+            verificarDeals(hs, deals),
+            syncPorDeals(hs, dealIds),
+          ]);
+          resultados.rotulos  = rotulos;
+          resultados.contatos = contatos;
+        } else {
+          resultados.rotulos  = await verificarDeals(hs, deals);
+          resultados.contatos = { skipped: true };
+        }
       }
     }
 
-    // ── contact.associationChange → associar-contatos ───────────────
-    // Nota: para associationChange, o contato está em fromObjectId
+    // ── contact.associationChange → associar-contatos (desativado) ──
     const contactAssoc = porTipo['contact.associationChange'] || [];
-    if (contactAssoc.length) {
+    if (contactAssoc.length && SYNC_CONTATOS) {
       const contactIds = [...new Set(contactAssoc.map((e) => String(e.fromObjectId)).filter((id) => id && id !== 'undefined'))];
       if (contactIds.length) {
         resultados.contatos_empresa = await syncPorContatos(hs, contactIds);
