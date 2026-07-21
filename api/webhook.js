@@ -25,6 +25,7 @@ const { makeClient, getObjectsById } = require('../lib/hubspot');
 const { handleWebhookPost }                        = require('./criar-andares');
 const { verificarDeals, rotularClientesFinal }     = require('./verificar-rotulos');
 const { syncPorDeals, syncPorContatos }            = require('./associar-contatos');
+const { syncAndarPorConjunto }                     = require('./associar-andares');
 
 // Desativado por decisão da Athié (2026-07-21) — contatos passarão a ser
 // associados manualmente. Para reativar, setar HUBSPOT_SYNC_CONTATOS=true.
@@ -73,19 +74,26 @@ module.exports = async (req, res) => {
         // 1. Aplica "Cliente Final" nas empresas primárias (usa isPrimaryAssociation do evento)
         resultados.rotulados = await rotularClientesFinal(hs, dealAssoc);
 
-        // 2. Verifica tags (e opcionalmente sincroniza contatos)
+        // 2. Verifica tags + auto-associa Andar quando Conjunto é linkado ao deal
         const dealsById = await getObjectsById(hs, 'deals', dealIds, ['dealname', 'dealstage', 'aw_rotulo_pendente']);
         const deals = Object.values(dealsById);
         if (SYNC_CONTATOS) {
-          const [rotulos, contatos] = await Promise.all([
+          const [rotulos, contatos, andaresViaConj] = await Promise.all([
             verificarDeals(hs, deals),
             syncPorDeals(hs, dealIds),
+            syncAndarPorConjunto(hs, dealAssoc),
           ]);
-          resultados.rotulos  = rotulos;
-          resultados.contatos = contatos;
+          resultados.rotulos          = rotulos;
+          resultados.contatos         = contatos;
+          resultados.andares_via_conj = andaresViaConj;
         } else {
-          resultados.rotulos  = await verificarDeals(hs, deals);
-          resultados.contatos = { skipped: true };
+          const [rotulos, andaresViaConj] = await Promise.all([
+            verificarDeals(hs, deals),
+            syncAndarPorConjunto(hs, dealAssoc),
+          ]);
+          resultados.rotulos          = rotulos;
+          resultados.contatos         = { skipped: true };
+          resultados.andares_via_conj = andaresViaConj;
         }
       }
     }

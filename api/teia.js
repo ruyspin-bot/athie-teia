@@ -170,8 +170,34 @@ module.exports = async (req, res) => {
     let fase2Erro = null;
 
     try {
-      const dealAndarAssoc = await getAssociations(hs, 'deals', OBJ_ANDAR, allDealIds);
-      const andarIds = [...new Set(Object.values(dealAndarAssoc).flatMap((arr) => arr.map((a) => a.toId)))];
+      // Deal→Andar (direto) + Deal→Conjunto em paralelo
+      const [dealAndarAssoc, dealConjAssoc] = await Promise.all([
+        getAssociations(hs, 'deals', OBJ_ANDAR, allDealIds),
+        getAssociations(hs, 'deals', OBJ_CONJUNTO, allDealIds),
+      ]);
+
+      // Resolve Conjunto→Andar para conjuntos associados a deals
+      const allConjIds = [...new Set(Object.values(dealConjAssoc).flatMap((arr) => arr.map((a) => a.toId)))];
+      const conjAndarAssoc = allConjIds.length
+        ? await getAssociations(hs, OBJ_CONJUNTO, OBJ_ANDAR, allConjIds)
+        : {};
+
+      // mapa: dealId → [{andarId, conjuntoId}]  (andares chegando via Conjunto)
+      const dealAndarViaConj = {};
+      Object.entries(dealConjAssoc).forEach(([dealId, conjArr]) => {
+        conjArr.forEach((ca) => {
+          (conjAndarAssoc[ca.toId] || []).forEach((aa) => {
+            (dealAndarViaConj[dealId] = dealAndarViaConj[dealId] || []).push({
+              andarId: aa.toId, conjuntoId: ca.toId,
+            });
+          });
+        });
+      });
+
+      // União de todos os andarIds: diretos + derivados de Conjunto
+      const directAndarIds = Object.values(dealAndarAssoc).flatMap((arr) => arr.map((a) => a.toId));
+      const conjAndarIds   = Object.values(dealAndarViaConj).flatMap((arr) => arr.map((x) => x.andarId));
+      const andarIds = [...new Set([...directAndarIds, ...conjAndarIds])];
 
       if (andarIds.length) {
         andaresById = await getObjectsById(hs, OBJ_ANDAR, andarIds, [
@@ -216,9 +242,18 @@ module.exports = async (req, res) => {
           };
         });
 
-        // deal -> lista de andares (objeto completo, dono resolvido depois que tivermos os nomes das companies)
+        // deal -> lista de andares (diretos)
         Object.entries(dealAndarAssoc).forEach(([dealId, arr]) => {
           andaresByDeal[dealId] = arr.map((a) => donoByAndar[a.toId]).filter(Boolean);
+        });
+        // adiciona andares derivados de Conjunto (sem duplicar)
+        Object.entries(dealAndarViaConj).forEach(([dealId, arr]) => {
+          const existing    = andaresByDeal[dealId] || [];
+          const existingIds = new Set(existing.map((e) => e.andar?.id));
+          const extras = arr
+            .filter((x) => !existingIds.has(x.andarId) && donoByAndar[x.andarId])
+            .map((x) => ({ ...donoByAndar[x.andarId], conjuntoId: x.conjuntoId }));
+          if (extras.length) andaresByDeal[dealId] = [...existing, ...extras];
         });
 
         fase2Ok = true;
@@ -303,6 +338,7 @@ module.exports = async (req, res) => {
           area: a.andar.area,
           cretool: a.andar.cretool,
           focus: a.andar.focus,
+          conjuntoId: a.conjuntoId || null, // presente quando o Andar veio via associação Conjunto→Deal
           edificio: a.edificio ? a.edificio.nome : 'Sem edifício identificado',
           edificioId: a.edificio ? a.edificio.id : null,
           dono: a.donoCompanyId ? (companiesById[a.donoCompanyId] ? companiesById[a.donoCompanyId].properties.name : `Company ${a.donoCompanyId}`) : null,
