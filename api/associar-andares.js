@@ -27,14 +27,22 @@ const DEAL_ANDAR_ASSOC = [{ associationCategory: 'USER_DEFINED', associationType
  * @returns {Promise<{conjuntos: number, created: number, erros: string[]}>}
  */
 async function syncAndarPorConjunto(hs, dealAssocEvents) {
-  const conjuntoTypeIds = new Set([CONJUNTO_TYPE_ID, OBJ_CONJUNTO]);
+  // Log para diagnóstico — mostra associationType real de cada evento
+  console.log('[associar-andares] tipos recebidos:', dealAssocEvents.map(e => e.associationType).join(', '));
 
-  // Filtra só eventos de CRIAÇÃO de associação com Conjunto
-  // HubSpot v3 envia changeType: "ADDED"; v4 envia "ASSOCIATION_CREATED"
+  // Filtra criações de associação com Conjunto.
+  // Payload real HubSpot: associationRemoved=false (criação), associationType="DEAL_TO_xxx"
+  // associationType para Conjunto tem o typeId numérico do objeto: 2-65811627 → "65811627"
+  const CONJUNTO_ASSOC_TYPES = new Set([
+    `DEAL_TO_${CONJUNTO_TYPE_ID}`,          // "DEAL_TO_2-65811627"
+    `DEAL_TO_${CONJUNTO_TYPE_ID.replace('2-', '')}`, // "DEAL_TO_65811627"
+    `DEAL_TO_${OBJ_CONJUNTO}`,              // "DEAL_TO_p51253038_conjuntos"
+  ]);
+
   const evtCriados = dealAssocEvents.filter((e) => {
-    const tipo = e.changeType || e.associationChangeType || 'ADDED';
-    const isCriacao = tipo === 'ADDED' || tipo === 'CREATED' || tipo === 'ASSOCIATION_CREATED';
-    return isCriacao && conjuntoTypeIds.has(String(e.toObjectTypeId || ''));
+    const isCriacao = e.associationRemoved === false;
+    const isConjunto = CONJUNTO_ASSOC_TYPES.has(String(e.associationType || ''));
+    return isCriacao && isConjunto;
   });
 
   if (!evtCriados.length) return { skipped: true };
