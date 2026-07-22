@@ -26,38 +26,34 @@ const DEAL_ANDAR_ASSOC = [{ associationCategory: 'USER_DEFINED', associationType
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
-async function getDealsRecentes(hs, fullScan) {
-  const deals = [];
+// Busca Conjuntos que têm pelo menos um Deal associado.
+// hs_lastmodifieddate não é atualizado por associações — por isso
+// a abordagem correta é partir dos Conjuntos com Deal, não de deals recentes.
+async function getDealsViaConjuntos(hs) {
+  const dealIds = new Set();
   let after = undefined;
 
-  // Sem full scan: só deals modificados nas últimas 2h (garante sobreposição com cron 15min)
-  const cutoff = fullScan ? 0 : Date.now() - 2 * 60 * 60 * 1000;
-
   do {
-    const body = {
-      limit: 100,
-      properties: ['dealname', 'hs_lastmodifieddate'],
-      sorts: [{ propertyName: 'hs_lastmodifieddate', direction: 'DESCENDING' }],
-      ...(after ? { after } : {}),
-    };
+    // Pega conjuntos em lotes
+    const res = await hs(`/crm/v3/objects/${OBJ_CONJUNTO}?limit=100&properties=nome_do_conjunto${after ? `&after=${after}` : ''}`);
+    const conjIds = (res.results || []).map(c => c.id);
 
-    if (!fullScan) {
-      body.filterGroups = [{
-        filters: [{
-          propertyName: 'hs_lastmodifieddate',
-          operator: 'GTE',
-          value: String(cutoff),
-        }],
-      }];
+    if (conjIds.length) {
+      // Batch association read: Conjunto → Deals
+      const assocRes = await hs(`/crm/v4/associations/${OBJ_CONJUNTO}/deals/batch/read`, {
+        method: 'POST',
+        body: JSON.stringify({ inputs: conjIds.map(id => ({ id })) }),
+      });
+      for (const r of (assocRes.results || [])) {
+        (r.to || []).forEach(t => dealIds.add(String(t.toObjectId)));
+      }
     }
 
-    const res = await hs('/crm/v3/objects/deals/search', { method: 'POST', body: JSON.stringify(body) });
-    (res.results || []).forEach(d => deals.push(d.id));
     after = res.paging?.next?.after;
     if (after) await sleep(150);
   } while (after);
 
-  return deals;
+  return [...dealIds];
 }
 
 async function syncDeal(hs, dealId) {
@@ -119,13 +115,14 @@ module.exports = async (req, res) => {
   const token = process.env.HUBSPOT_TOKEN;
   if (!token) { res.status(500).json({ error: 'HUBSPOT_TOKEN missing' }); return; }
 
-  const fullScan = req.query?.full === '1';
-  console.log(`[sync-andares] iniciando — modo: ${fullScan ? 'FULL' : 'recente (2h)'}`);
+  // Aceita dealId específico para testes pontuais
+  const specificDeal = req.query?.dealId || (req.body && req.body.dealId);
+  console.log(`[sync-andares] iniciando — ${specificDeal ? `deal específico: ${specificDeal}` : 'via conjuntos com deal'}`);
 
   const hs = makeClient(token);
 
   try {
-    const dealIds = await getDealsRecentes(hs, fullScan);
+    const dealIds = specificDeal ? [String(specificDeal)] : await getDealsViaConjuntos(hs);
     console.log(`[sync-andares] ${dealIds.length} deals para verificar`);
 
     let totalCreated = 0, totalSkipped = 0, totalErros = 0;
