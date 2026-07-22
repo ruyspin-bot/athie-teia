@@ -65,10 +65,19 @@ async function removeAssoc(fromType, fromId, toType, toId) {
   await hs(`/crm/v4/objects/${fromType}/${fromId}/associations/${toType}/${toId}`, { method: 'DELETE' });
 }
 
+// typeId 115 = Conjunto→Andar (USER_DEFINED)
+// typeId 95  = Andar→Edifício "Pertence a" (USER_DEFINED)
+const ASSOC_TYPE = {
+  [`${OBJ_CONJUNTO}|${OBJ_ANDAR}`]: 115,
+  [`${OBJ_ANDAR}|${OBJ_EDIFICIO}`]: 95,
+};
+
 async function createAssoc(fromType, fromId, toType, toId) {
+  const typeId = ASSOC_TYPE[`${fromType}|${toType}`];
+  if (!typeId) throw new Error(`Tipo de associação desconhecido: ${fromType} → ${toType}`);
   await hs(`/crm/v4/objects/${fromType}/${fromId}/associations/${toType}/${toId}`, {
     method: 'PUT',
-    body: JSON.stringify([{ associationCategory: 'HUBSPOT_DEFINED', associationTypeId: 1 }]),
+    body: JSON.stringify([{ associationCategory: 'USER_DEFINED', associationTypeId: typeId }]),
   });
 }
 

@@ -18,6 +18,9 @@ const OBJ_ANDAR    = process.env.HUBSPOT_OBJECT_ANDAR    || 'p51253038_andares';
 // typeId numérico do Conjunto no portal ATIE
 const CONJUNTO_TYPE_ID = process.env.HUBSPOT_CONJUNTO_TYPE_ID || '2-65811627';
 
+// Tipo correto para Deal→Andar no portal ATIE (USER_DEFINED, label "Negócio")
+const DEAL_ANDAR_ASSOC = [{ associationCategory: 'USER_DEFINED', associationTypeId: 92 }];
+
 /**
  * @param {Function} hs - cliente HubSpot (makeClient)
  * @param {Array}    dealAssocEvents - eventos deal.associationChange do webhook
@@ -57,14 +60,7 @@ async function syncAndarPorConjunto(hs, dealAssocEvents) {
 
       for (const andar of andarAssocs) {
         const andarId = andar.toObjectId;
-        // Reutiliza os tipos de associação existentes; fallback para padrão HubSpot
-        const types = (andar.associationTypes || []).map((t) => ({
-          associationCategory: t.category,
-          associationTypeId:   t.typeId,
-        }));
-        const body = types.length
-          ? types
-          : [{ associationCategory: 'HUBSPOT_DEFINED', associationTypeId: 1 }];
+        const body = DEAL_ANDAR_ASSOC;
 
         for (const dealId of dealIdSet) {
           try {
