@@ -182,13 +182,15 @@ async function criarAssoc(conjuntoId, andarId) {
     })
     .map(l => {
       const p = l.split(',');
+      const edificio         = String(p[4]);
+      const edificioEsperado = String(p[6]) || edificio; // fallback: mesmo edifício (cross_building=False)
       return {
-        conjuntoId:       String(p[0]),
-        nome:             p[1],
-        andarRotulo:      parseAndar(p[2]),     // andar esperado (do nome — pode ser Térreo/Subsolo)
-        andarAssociado:   parseAndar(p[3]),     // andar atual (floor number)
-        edificio:         String(p[4]),         // edifício atual (do andar errado)
-        edificioEsperado: String(p[6]),         // edifício correto
+        conjuntoId:   String(p[0]),
+        nome:         p[1],
+        andarRotulo:  parseAndar(p[2]),   // andar esperado (do nome — pode ser Térreo/Subsolo)
+        andarAssociado: parseAndar(p[3]), // andar atual (floor number)
+        edificio,
+        edificioEsperado,
       };
     });
 
