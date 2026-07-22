@@ -64,6 +64,16 @@ async function hs(url, opts = {}, _retry = 0) {
 }
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
+// ── Converte rótulo de andar (texto ou número) em inteiro ─────────────────────
+function parseAndar(rotulo) {
+  const s = String(rotulo).trim();
+  if (/^-?\d+$/.test(s)) return parseInt(s, 10);
+  if (s === 'Térreo' || s === 'Terreo') return 0;
+  const sub = s.match(/^Subsolo\s+(\d+)$/i);
+  if (sub) return -parseInt(sub[1], 10);
+  return NaN;
+}
+
 // ── Chunk helper ──────────────────────────────────────────────────────────────
 function chunks(arr, size) {
   const out = [];
@@ -128,20 +138,25 @@ async function getAndarAtual(conjuntoId) {
 
 // ── 3. Remove associação Conjunto→Andar ──────────────────────────────────────
 async function removerAssoc(conjuntoId, andarId) {
-  await hs(
-    `/crm/v4/objects/${OBJ_CONJUNTO}/${conjuntoId}/associations/${OBJ_ANDAR}/${andarId}`,
-    { method: 'DELETE' },
-  );
+  try {
+    await hs(
+      `/crm/v4/objects/${OBJ_CONJUNTO}/${conjuntoId}/associations/${OBJ_ANDAR}/${andarId}`,
+      { method: 'DELETE' },
+    );
+  } catch (err) {
+    // 404 = associação já foi removida — ok para re-execução idempotente
+    if (!err.message.includes('404')) throw err;
+  }
 }
 
 // ── 4. Cria associação Conjunto→Andar ─────────────────────────────────────────
+// Tipo correto descoberto via API: USER_DEFINED, typeId 115 (portal ATIE 51253038)
 async function criarAssoc(conjuntoId, andarId) {
-  // Tipo "HUBSPOT_DEFINED" typeId=1 (associação padrão entre custom objects)
   await hs(
     `/crm/v4/objects/${OBJ_CONJUNTO}/${conjuntoId}/associations/${OBJ_ANDAR}/${andarId}`,
     {
       method: 'PUT',
-      body: JSON.stringify([{ associationCategory: 'HUBSPOT_DEFINED', associationTypeId: 1 }]),
+      body: JSON.stringify([{ associationCategory: 'USER_DEFINED', associationTypeId: 115 }]),
     },
   );
 }
@@ -168,11 +183,11 @@ async function criarAssoc(conjuntoId, andarId) {
     .map(l => {
       const p = l.split(',');
       return {
-        conjuntoId:      String(p[0]),
-        nome:            p[1],
-        andarRotulo:     parseInt(p[2], 10),   // andar esperado (do nome)
-        andarAssociado:  parseInt(p[3], 10),   // andar atual (floor number)
-        edificio:        String(p[4]),          // edifício atual (do andar errado)
+        conjuntoId:       String(p[0]),
+        nome:             p[1],
+        andarRotulo:      parseAndar(p[2]),     // andar esperado (do nome — pode ser Térreo/Subsolo)
+        andarAssociado:   parseAndar(p[3]),     // andar atual (floor number)
+        edificio:         String(p[4]),         // edifício atual (do andar errado)
         edificioEsperado: String(p[6]),         // edifício correto
       };
     });
