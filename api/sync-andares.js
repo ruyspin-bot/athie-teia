@@ -26,34 +26,46 @@ const DEAL_ANDAR_ASSOC = [{ associationCategory: 'USER_DEFINED', associationType
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
-// Busca Conjuntos que têm pelo menos um Deal associado.
-// hs_lastmodifieddate não é atualizado por associações — por isso
-// a abordagem correta é partir dos Conjuntos com Deal, não de deals recentes.
-async function getDealsViaConjuntos(hs) {
-  const dealIds = new Set();
+// Pagina todos os Deals e retorna só os IDs que têm Conjunto associado
+// mas ainda não têm Andar. Deals são muito menos que Conjuntos (~21k).
+async function getDealsComConjuntoSemAndar(hs) {
+  const pendentes = [];
   let after = undefined;
 
   do {
-    // Pega conjuntos em lotes
-    const res = await hs(`/crm/v3/objects/${OBJ_CONJUNTO}?limit=100&properties=nome_do_conjunto${after ? `&after=${after}` : ''}`);
-    const conjIds = (res.results || []).map(c => c.id);
+    const res = await hs(`/crm/v3/objects/deals?limit=100${after ? `&after=${after}` : ''}`);
+    const dealIds = (res.results || []).map(d => d.id);
 
-    if (conjIds.length) {
-      // Batch association read: Conjunto → Deals
-      const assocRes = await hs(`/crm/v4/associations/${OBJ_CONJUNTO}/deals/batch/read`, {
-        method: 'POST',
-        body: JSON.stringify({ inputs: conjIds.map(id => ({ id })) }),
-      });
-      for (const r of (assocRes.results || [])) {
-        (r.to || []).forEach(t => dealIds.add(String(t.toObjectId)));
+    if (dealIds.length) {
+      // Batch read: Conjunto e Andar de cada deal em paralelo
+      const [conjAssoc, andarAssoc] = await Promise.all([
+        hs(`/crm/v4/associations/deals/${OBJ_CONJUNTO}/batch/read`, {
+          method: 'POST',
+          body: JSON.stringify({ inputs: dealIds.map(id => ({ id })) }),
+        }),
+        hs(`/crm/v4/associations/deals/${OBJ_ANDAR}/batch/read`, {
+          method: 'POST',
+          body: JSON.stringify({ inputs: dealIds.map(id => ({ id })) }),
+        }),
+      ]);
+
+      const conjPorDeal  = {};
+      const andarPorDeal = {};
+      for (const r of (conjAssoc.results  || [])) conjPorDeal[r.from.id]  = (r.to||[]).map(t => String(t.toObjectId));
+      for (const r of (andarAssoc.results || [])) andarPorDeal[r.from.id] = (r.to||[]).map(t => String(t.toObjectId));
+
+      for (const dealId of dealIds) {
+        const temConjunto = (conjPorDeal[dealId]  || []).length > 0;
+        const temAndar    = (andarPorDeal[dealId] || []).length > 0;
+        if (temConjunto && !temAndar) pendentes.push(dealId);
       }
     }
 
     after = res.paging?.next?.after;
-    if (after) await sleep(150);
+    if (after) await sleep(100);
   } while (after);
 
-  return [...dealIds];
+  return pendentes;
 }
 
 async function syncDeal(hs, dealId) {
@@ -122,7 +134,7 @@ module.exports = async (req, res) => {
   const hs = makeClient(token);
 
   try {
-    const dealIds = specificDeal ? [String(specificDeal)] : await getDealsViaConjuntos(hs);
+    const dealIds = specificDeal ? [String(specificDeal)] : await getDealsComConjuntoSemAndar(hs);
     console.log(`[sync-andares] ${dealIds.length} deals para verificar`);
 
     let totalCreated = 0, totalSkipped = 0, totalErros = 0;
