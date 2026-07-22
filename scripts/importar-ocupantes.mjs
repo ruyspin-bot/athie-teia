@@ -81,7 +81,7 @@ async function garantirPropriedade() {
         label: 'Ocupante',
         type: 'string',
         fieldType: 'text',
-        groupName: `${OBJ_CONJUNTO}_information`,
+        groupName: 'conjuntos_information',
         description: 'Empresa ou pessoa que ocupa o conjunto (fonte: planilha espelho)',
       }),
     });
