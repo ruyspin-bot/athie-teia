@@ -69,6 +69,8 @@ module.exports = async (req, res) => {
     // Nota: para associationChange, o deal está em fromObjectId (não objectId)
     const dealAssoc = porTipo['deal.associationChange'] || [];
     if (dealAssoc.length) {
+      // Log temporário para diagnóstico do filtro toObjectTypeId
+      console.log('[webhook] dealAssoc sample:', JSON.stringify(dealAssoc.slice(0, 3)));
       const dealIds = [...new Set(dealAssoc.map((e) => String(e.fromObjectId)).filter((id) => id && id !== 'undefined'))];
       if (dealIds.length) {
         // 1. Aplica "Cliente Final" nas empresas primárias (usa isPrimaryAssociation do evento)
