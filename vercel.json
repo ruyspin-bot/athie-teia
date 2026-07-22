@@ -23,12 +23,19 @@
     },
     "api/criar-andares.js": {
       "maxDuration": 30
+    },
+    "api/sync-andares.js": {
+      "maxDuration": 60
     }
   },
   "crons": [
     {
       "path": "/api/verificar-rotulos",
       "schedule": "0 */6 * * *"
+    },
+    {
+      "path": "/api/sync-andares",
+      "schedule": "*/15 * * * *"
     }
   ]
 }
