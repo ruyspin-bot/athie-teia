@@ -26,10 +26,18 @@ const { handleWebhookPost }                        = require('./criar-andares');
 const { verificarDeals, rotularClientesFinal }     = require('./verificar-rotulos');
 const { syncPorDeals, syncPorContatos }            = require('./associar-contatos');
 const { syncAndarPorConjunto }                     = require('./associar-andares');
+const { enviarDeals }                              = require('./focus-sync');
+const { associarPorDominio, associarContatosDoDeal } = require('./associar-contato-empresa');
 
 // Desativado por decisão da Athié (2026-07-21) — contatos passarão a ser
 // associados manualmente. Para reativar, setar HUBSPOT_SYNC_CONTATOS=true.
 const SYNC_CONTATOS = (process.env.HUBSPOT_SYNC_CONTATOS || 'false').toLowerCase() === 'true';
+
+// Integração Focus (criação de projetos). O disparo real só acontece se
+// FOCUS_SYNC_ENABLED=true e FOCUS_ENDPOINT_URL estiverem setados (ver focus-sync.js).
+const FOCUS_SYNC = (process.env.FOCUS_SYNC_ENABLED || 'false').toLowerCase() === 'true';
+// Auto-associação contato→empresa por domínio (call Athié 23/07). Default: ligado.
+const AUTO_ASSOC_DOMINIO = (process.env.AUTO_ASSOC_DOMINIO || 'true').toLowerCase() === 'true';
 
 const OBJ_EDIFICIO          = process.env.HUBSPOT_OBJECT_EDIFICIO || '2-65603861';
 const PROP_EDIFICIO_ANDARES = process.env.HUBSPOT_PROP_EDIFICIO_ANDARES || 'andares_ocupados_pelo_cliente';
@@ -97,6 +105,12 @@ module.exports = async (req, res) => {
           resultados.contatos         = { skipped: true };
           resultados.andares_via_conj = andaresViaConj;
         }
+
+        // Regra B — contatos adicionados ao Deal → empresa Cliente Final do Deal
+        if (AUTO_ASSOC_DOMINIO) {
+          try { resultados.contatos_do_deal = await associarContatosDoDeal(hs, dealIds); }
+          catch (e) { resultados.contatos_do_deal = { erro: (e.message || '').slice(0, 120) }; }
+        }
       }
     }
 
@@ -107,6 +121,23 @@ module.exports = async (req, res) => {
       if (contactIds.length) {
         resultados.contatos_empresa = await syncPorContatos(hs, contactIds);
       }
+    }
+
+    // ── deal.creation → focus-sync (cria projeto no Focus, grava PRJ_ID/número) ──
+    const dealCreation = porTipo['deal.creation'] || [];
+    if (dealCreation.length && FOCUS_SYNC) {
+      const dealIds = [...new Set(dealCreation.map((e) => String(e.objectId)).filter((id) => id && id !== 'undefined'))];
+      if (dealIds.length) resultados.focus_sync = await enviarDeals(hs, dealIds);
+    }
+
+    // ── contact.creation / contact.propertyChange(email) → auto-associação por domínio ──
+    if (AUTO_ASSOC_DOMINIO) {
+      const contatoNovos = porTipo['contact.creation'] || [];
+      const contatoEmail = (porTipo['contact.propertyChange'] || []).filter((e) => e.propertyName === 'email');
+      const contactIds = [...new Set(
+        [...contatoNovos, ...contatoEmail].map((e) => String(e.objectId)).filter((id) => id && id !== 'undefined'),
+      )];
+      if (contactIds.length) resultados.assoc_dominio = await associarPorDominio(hs, contactIds);
     }
 
     res.status(200).json({ recebido: true, ...resultados, rodado_em: new Date().toISOString() });
